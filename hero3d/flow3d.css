@@ -145,3 +145,5 @@
 @media (min-width:641px){
   .flow-sec.home .flow3d{height:clamp(620px,calc(100vh - 110px),1100px);height:clamp(620px,calc(100svh - 110px),1100px)}
 }
+/* full screen always wins over the inline height rules above */
+.flow-sec.home .flow3d.is-full, .flow3d.is-full { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; max-width: none; max-height: none; border-radius: 0; z-index: 2147483000; }
