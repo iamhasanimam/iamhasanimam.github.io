@@ -147,35 +147,31 @@
    "row": 0
   },
   {
-   "id": "avm",
-   "label": "Virtual Machines",
-   "tech": "Azure Virtual Machines",
+   "id": "aks",
+   "label": "AKS",
+   "tech": "Azure Kubernetes Service",
    "icon": "microsoftazure",
    "tone": "blue",
    "layer": 0,
-   "role": "Compute",
-   "says": "Virtual Machines run the nodes.",
-   "detail": "Private instances in scale sets. Alternatives: OpenStack Nova, ESXi, AWS EC2, Compute Engine.",
+   "role": "Managed Kubernetes",
+   "says": "AKS runs the Kubernetes cluster.",
+   "detail": "Managed control plane; nodes are managed VM scale sets. Alternatives: EKS, GKE, Container Apps.",
    "alts": [
     {
-     "label": "OpenStack",
-     "icon": "openstack"
+     "label": "AKS",
+     "icon": "microsoftazure"
     },
     {
-     "label": "VMware ESXi",
-     "icon": "vmware"
+     "label": "EKS",
+     "icon": "amazoneks"
     },
     {
-     "label": "AWS",
-     "icon": "amazonaws"
-    },
-    {
-     "label": "GCP",
+     "label": "GKE",
      "icon": "googlecloud"
     },
     {
-     "label": "Azure",
-     "icon": "microsoftazure"
+     "label": "OpenShift",
+     "icon": "redhatopenshift"
     }
    ],
    "col": 1,
@@ -1280,22 +1276,22 @@
  "wires": [
   {
    "from": "vnet",
-   "to": "avm",
+   "to": "aks",
    "label": "subnets",
    "style": "solid",
    "flow": true,
    "weight": "normal"
   },
   {
-   "from": "avm",
+   "from": "aks",
    "to": "disks",
-   "label": "disk",
+   "label": "volumes",
    "style": "solid",
    "flow": true,
    "weight": "normal"
   },
   {
-   "from": "avm",
+   "from": "aks",
    "to": "blob",
    "label": "objects",
    "style": "solid",
@@ -1304,14 +1300,14 @@
   },
   {
    "from": "entra",
-   "to": "avm",
-   "label": "roles",
+   "to": "aks",
+   "label": "roles (managed identity)",
    "style": "solid",
    "flow": true,
    "weight": "normal"
   },
   {
-   "from": "avm",
+   "from": "aks",
    "to": "amon",
    "label": "metrics",
    "style": "solid",
@@ -1320,7 +1316,7 @@
   },
   {
    "from": "kubernetes",
-   "to": "avm",
+   "to": "aks",
    "label": "runs on",
    "style": "dashed",
    "flow": true,

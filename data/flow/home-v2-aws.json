@@ -148,35 +148,35 @@
    "row": 0
   },
   {
-   "id": "ec2",
-   "label": "EC2",
-   "tech": "Amazon EC2",
-   "icon": "amazonec2",
+   "id": "eks",
+   "label": "EKS",
+   "tech": "Amazon EKS",
+   "icon": "amazoneks",
    "tone": "blue",
    "layer": 0,
-   "role": "Compute",
-   "says": "EC2 runs the nodes.",
-   "detail": "Private instances reached through SSM. Alternatives: OpenStack Nova, ESXi, Compute Engine, Azure VMs.",
+   "role": "Managed Kubernetes",
+   "says": "EKS runs the Kubernetes cluster.",
+   "detail": "Managed control plane; worker nodes are managed EC2 node groups or Fargate. Alternatives: ECS, GKE, AKS.",
    "alts": [
     {
-     "label": "OpenStack",
-     "icon": "openstack"
+     "label": "EKS",
+     "icon": "amazoneks"
     },
     {
-     "label": "VMware ESXi",
-     "icon": "vmware"
+     "label": "ECS",
+     "icon": "amazonecs"
     },
     {
-     "label": "AWS",
-     "icon": "amazonaws"
-    },
-    {
-     "label": "GCP",
+     "label": "GKE",
      "icon": "googlecloud"
     },
     {
-     "label": "Azure",
+     "label": "AKS",
      "icon": "microsoftazure"
+    },
+    {
+     "label": "OpenShift",
+     "icon": "redhatopenshift"
     }
    ],
    "href": "#/tech/aws",
@@ -1286,22 +1286,22 @@
  "wires": [
   {
    "from": "vpc",
-   "to": "ec2",
+   "to": "eks",
    "label": "subnets",
    "style": "solid",
    "flow": true,
    "weight": "normal"
   },
   {
-   "from": "ec2",
+   "from": "eks",
    "to": "ebs",
-   "label": "disk",
+   "label": "volumes",
    "style": "solid",
    "flow": true,
    "weight": "normal"
   },
   {
-   "from": "ec2",
+   "from": "eks",
    "to": "s3",
    "label": "objects",
    "style": "solid",
@@ -1310,14 +1310,14 @@
   },
   {
    "from": "iam",
-   "to": "ec2",
-   "label": "roles",
+   "to": "eks",
+   "label": "roles (IRSA)",
    "style": "solid",
    "flow": true,
    "weight": "normal"
   },
   {
-   "from": "ec2",
+   "from": "eks",
    "to": "cloudwatch",
    "label": "metrics",
    "style": "solid",
@@ -1326,7 +1326,7 @@
   },
   {
    "from": "kubernetes",
-   "to": "ec2",
+   "to": "eks",
    "label": "runs on",
    "style": "dashed",
    "flow": true,

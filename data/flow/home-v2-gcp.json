@@ -147,35 +147,31 @@
    "row": 0
   },
   {
-   "id": "gce",
-   "label": "Compute Engine",
-   "tech": "Google Compute Engine",
+   "id": "gke",
+   "label": "GKE",
+   "tech": "Google Kubernetes Engine",
    "icon": "googlecloud",
    "tone": "blue",
    "layer": 0,
-   "role": "Compute",
-   "says": "Compute Engine runs the nodes.",
-   "detail": "Virtual machines in private subnets. Alternatives: OpenStack Nova, ESXi, AWS EC2, Azure VMs.",
+   "role": "Managed Kubernetes",
+   "says": "GKE runs the Kubernetes cluster.",
+   "detail": "Managed control plane; nodes are managed Compute Engine node pools, or Autopilot. Alternatives: EKS, AKS, Cloud Run.",
    "alts": [
     {
-     "label": "OpenStack",
-     "icon": "openstack"
-    },
-    {
-     "label": "VMware ESXi",
-     "icon": "vmware"
-    },
-    {
-     "label": "AWS",
-     "icon": "amazonaws"
-    },
-    {
-     "label": "GCP",
+     "label": "GKE",
      "icon": "googlecloud"
     },
     {
-     "label": "Azure",
+     "label": "EKS",
+     "icon": "amazoneks"
+    },
+    {
+     "label": "AKS",
      "icon": "microsoftazure"
+    },
+    {
+     "label": "OpenShift",
+     "icon": "redhatopenshift"
     }
    ],
    "col": 1,
@@ -1280,22 +1276,22 @@
  "wires": [
   {
    "from": "gvpc",
-   "to": "gce",
+   "to": "gke",
    "label": "subnets",
    "style": "solid",
    "flow": true,
    "weight": "normal"
   },
   {
-   "from": "gce",
+   "from": "gke",
    "to": "pd",
-   "label": "disk",
+   "label": "volumes",
    "style": "solid",
    "flow": true,
    "weight": "normal"
   },
   {
-   "from": "gce",
+   "from": "gke",
    "to": "gcs",
    "label": "objects",
    "style": "solid",
@@ -1304,14 +1300,14 @@
   },
   {
    "from": "giam",
-   "to": "gce",
-   "label": "roles",
+   "to": "gke",
+   "label": "roles (Workload Identity)",
    "style": "solid",
    "flow": true,
    "weight": "normal"
   },
   {
-   "from": "gce",
+   "from": "gke",
    "to": "gmon",
    "label": "metrics",
    "style": "solid",
@@ -1320,7 +1316,7 @@
   },
   {
    "from": "kubernetes",
-   "to": "gce",
+   "to": "gke",
    "label": "runs on",
    "style": "dashed",
    "flow": true,
