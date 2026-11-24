@@ -72,13 +72,13 @@
    {
     "title": "Validate the configuration",
     "lang": "bash",
-    "code": "docker run --rm -v \"$PWD/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro\" haproxy:3.0.31 haproxy -c -f /usr/local/etc/haproxy/haproxy.cfg",
+    "code": "docker run --rm -v \"$PWD/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro\" haproxy:3.0 haproxy -c -f /usr/local/etc/haproxy/haproxy.cfg",
     "note": "Require exit code 0 before every reload."
    },
    {
     "title": "Run HAProxy in Docker",
     "lang": "bash",
-    "code": "docker run -d --name haproxy --restart unless-stopped \\\n  --sysctl net.ipv4.ip_unprivileged_port_start=0 \\\n  -p 80:80 -p 443:443 -p 6443:6443 -p 8080:8080 -p 127.0.0.1:8404:8404 \\\n  -v \"$PWD/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro\" \\\n  haproxy:3.0.31\ndocker logs haproxy --tail 20",
+    "code": "docker run -d --name haproxy --restart unless-stopped \\\n  --sysctl net.ipv4.ip_unprivileged_port_start=0 \\\n  -p 80:80 -p 443:443 -p 6443:6443 -p 8080:8080 -p 127.0.0.1:8404:8404 \\\n  -v \"$PWD/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro\" \\\n  haproxy:3.0\ndocker logs haproxy --tail 20",
     "note": "The image runs unprivileged, so the sysctl frees ports below 1024. Pin the minor tag you tested."
    },
    {
@@ -96,7 +96,7 @@
    {
     "title": "keepalived.conf on the MASTER",
     "lang": "conf",
-    "code": "vrrp_script chk_haproxy {\n    script \"/usr/bin/pgrep -x haproxy\"\n    interval 2\n    timeout 2\n    fall 2\n    rise 2\n}\n\nvrrp_instance VI_1 {\n    state MASTER\n    interface eth0              # replace with your NIC\n    virtual_router_id 51\n    priority 150\n    advert_int 1\n    authentication {\n        auth_type PASS\n        auth_pass changeme1     # max 8 chars\n    }\n    virtual_ipaddress {\n        192.0.2.100/24          # replace with a free IP\n    }\n    track_script {\n        chk_haproxy\n    }\n}",
+    "code": "vrrp_script chk_haproxy {\n    script \"/usr/bin/pgrep -x haproxy\"\n    interval 2\n    timeout 2\n    fall 2\n    rise 2\n}\n\nvrrp_instance VI_1 {\n    state MASTER\n    interface eth0              # replace with your NIC\n    virtual_router_id 51\n    priority 150\n    advert_int 1\n    authentication {\n        auth_type PASS\n        auth_pass <CHANGE_ME>     # max 8 chars\n    }\n    virtual_ipaddress {\n        192.0.2.100/24          # replace with a free IP\n    }\n    track_script {\n        chk_haproxy\n    }\n}",
     "note": "Put this in /etc/keepalived/keepalived.conf. On the BACKUP change only state BACKUP and priority 100."
    },
    {

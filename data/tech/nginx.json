@@ -17,7 +17,7 @@
   },
   {
    "title": "HTTP request flow",
-   "body": "listen and server_name pick the server block; unmatched requests hit the default server.\nlocation matching order: exact =, then ^~ prefix, then regex in file order, then longest prefix.\nproxy_pass forwards to a URL or an upstream pool.\nproxy_set_header Host $host passes the original Host to the app.\nproxy_http_version 1.1 with an empty Connection header enables upstream keepalive."
+   "body": "listen and server_name pick the server block; unmatched requests hit the default server.\nlocation matching: exact =, then the longest prefix (a ^~ match stops here), then regexes in file order, else the remembered prefix.\nproxy_pass forwards to a URL or an upstream pool.\nproxy_set_header Host $host passes the original Host to the app.\nproxy_http_version 1.1 with an empty Connection header enables upstream keepalive."
   },
   {
    "title": "Configuration model",

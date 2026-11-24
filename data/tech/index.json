@@ -5,7 +5,7 @@
     "category": "API Gateway",
     "icon": "kong",
     "level": "hands-on",
-    "blurb": "API gateway with workspaces, plugins and declarative config managed as code."
+    "blurb": "API gateway: routes, plugins and declarative config."
   },
   {
     "slug": "nginx",
@@ -13,7 +13,7 @@
     "category": "Edge",
     "icon": "nginx",
     "level": "hands-on",
-    "blurb": "Reverse proxy and TLS terminator in front of the gateway."
+    "blurb": "Reverse proxy, web server and TLS terminator."
   },
   {
     "slug": "haproxy",
@@ -117,7 +117,7 @@
     "category": "CI/CD",
     "icon": "jenkins",
     "level": "hands-on",
-    "blurb": "Pipelines as code with quality, security and diff gates."
+    "blurb": "Pipelines as code with quality and security gates."
   },
   {
     "slug": "k6",

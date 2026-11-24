@@ -1,5 +1,5 @@
 /* Portfolio SPA: hash routing, static JSON data, no build. All data text is inserted with textContent (no innerHTML on data). */
-import { parseRoute, nextRoute } from './route.js?v=20261126p';
+import { parseRoute, nextRoute } from './route.js?v=20261126q';
 (() => {
   'use strict';
 
@@ -8,7 +8,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261126p';
   const LINKEDIN_URL = 'https://www.linkedin.com/in/iamhasanimam';
   const TYPE_CODE_MS = 22; // code typing speed in the hero editor, git log and code blocks (ms per character)
   const PAUSE_MS = 1800;   // pause after a snippet is typed, before the next tab
-  const ASSET_V = '20261126p'; // cache-busting for dynamic imports; keep in sync with index.html
+  const ASSET_V = '20261126q'; // cache-busting for dynamic imports; keep in sync with index.html
 
   // Brand colours (tuned for the dark banner). Slugs missing from simple-icons get a monogram.
   const COLORS = {
@@ -577,7 +577,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261126p';
       more,
       h('div', { class: 'wk-foot' },
         p.repo ? h('a', { class: 'btn wk-repo', href: p.repo, target: '_blank', rel: 'noopener noreferrer', onclick: (e) => e.stopPropagation() }, h('span', { class: 'wk-gh', 'aria-hidden': 'true' }, glyph('github', 'GH')), 'Repo')
-          : h('span', { class: 'badge ' + (/platform/i.test(p.kind) ? '' : 'soon') }, /platform/i.test(p.kind) ? 'Platform' : 'Coming soon'),
+          : h('span', { class: 'badge ' + (/lab/i.test(p.kind) ? '' : 'soon') }, /lab/i.test(p.kind) ? 'Lab' : 'Coming soon'),
         p.year ? h('span', { class: 'wk-year' }, fmtYears(p.year)) : null)].filter(Boolean));
     if (open) {
       if (p.image) more.append(h('img', { class: 'wk-img', src: p.image, alt: p.imageAlt || '', loading: 'lazy', decoding: 'async' }));
@@ -615,7 +615,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261126p';
     const chipsEl = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by category' });
     const paint = () => {
       gridEl.textContent = '';
-      projects.filter((p) => (!cat || p.category === cat) && (kind === 'all' || (kind === 'personal' ? /personal/i.test(p.kind) : /platform/i.test(p.kind))))
+      projects.filter((p) => (!cat || p.category === cat) && (kind === 'all' || (kind === 'personal' ? /personal/i.test(p.kind) : /lab/i.test(p.kind))))
         .forEach((p) => gridEl.append(workCard(p, { expand: true })));
       if (!gridEl.childNodes.length) gridEl.append(comingCard('Nothing here yet.'));
       chipsEl.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.c || null) === cat)));
@@ -623,7 +623,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261126p';
     };
     chipsEl.append(h('button', { type: 'button', class: 'chip', 'data-c': '', onclick: () => { cat = null; paint(); } }, 'All'));
     cats.forEach((c) => chipsEl.append(h('button', { type: 'button', class: 'chip', 'data-c': c, onclick: () => { cat = c; paint(); } }, c)));
-    const kseg = seg(kind, (v) => { kind = v; paint(); }, [['all', 'All'], ['personal', 'Personal'], ['production', 'Platform']]);
+    const kseg = seg(kind, (v) => { kind = v; paint(); }, [['all', 'All'], ['personal', 'Personal'], ['production', 'Labs']]);
     kseg.setAttribute('aria-label', 'Kind');
     root.append(h('div', { class: 'toolbar' }, chipsEl, kseg), gridEl);
     paint();

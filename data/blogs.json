@@ -32,8 +32,7 @@
       "status": "published",
       "readMinutes": 8,
       "source": "linkedin",
-      "demo": "https://app.lauv.in",
-      "note": "repo link; verify short link"
+      "demo": "https://app.lauv.in"
     },
     {
       "title": "How to deploy a MERN stack application on AWS",

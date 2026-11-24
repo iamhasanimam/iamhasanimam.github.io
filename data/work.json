@@ -201,7 +201,7 @@
       "slug": "istio-traffic",
       "title": "Istio traffic management",
       "category": "Kubernetes & Mesh",
-      "kind": "Platform",
+      "kind": "Reference lab",
       "summary": "Canary, blue-green and percentage routing with Istio.",
       "icons": [
         "istio",
@@ -225,15 +225,15 @@
         "DestinationRule",
         "mTLS"
       ],
-      "year": "2025-2026",
-      "status": "shipped"
+      "year": "Lab",
+      "status": "lab"
     },
     {
       "slug": "multicluster-mesh",
-      "title": "Multi-cluster Kubernetes with a service mesh",
+      "title": "Istio multi-cluster concepts",
       "category": "Kubernetes & Mesh",
-      "kind": "Platform",
-      "summary": "Reference lab: two Kubernetes clusters in one Istio mesh.",
+      "kind": "Reference lab",
+      "summary": "Study notes: two Kubernetes clusters in one Istio mesh.",
       "icons": [
         "istio",
         "kubernetes",
@@ -257,15 +257,15 @@
         "NodePort",
         "AUTO_PASSTHROUGH"
       ],
-      "year": "2026",
-      "status": "coming soon"
+      "year": "Lab",
+      "status": "lab"
     },
     {
       "slug": "cluster-hardening",
       "title": "Kubernetes policy and autoscaling",
       "category": "Kubernetes & Mesh",
-      "kind": "Platform",
-      "summary": "Network isolation, autoscaling and highly available identity.",
+      "kind": "Reference lab",
+      "summary": "Network isolation and autoscaling concepts.",
       "icons": [
         "kubernetes",
         "keycloak",
@@ -275,8 +275,7 @@
       ],
       "bullets": [
         "NetworkPolicy and AuthorizationPolicy per namespace",
-        "HorizontalPodAutoscaler rules for stateless services",
-        "Keycloak high availability with Infinispan"
+        "HorizontalPodAutoscaler rules for stateless services"
       ],
       "repo": null,
       "image": null,
@@ -284,19 +283,17 @@
       "stack": [
         "NetworkPolicy",
         "HPA",
-        "Keycloak",
-        "Infinispan",
         "RBAC"
       ],
-      "year": "2025-2026",
-      "status": "shipped"
+      "year": "Lab",
+      "status": "lab"
     },
     {
       "slug": "jenkins-argocd-kong",
-      "title": "Jenkins, Argo CD and Kong concepts",
+      "title": "CI/CD and API gateway concepts",
       "category": "CI/CD",
-      "kind": "Platform",
-      "summary": "CI/CD with Jenkins and Argo CD, and declarative Kong config.",
+      "kind": "Reference lab",
+      "summary": "Study notes on pipelines, GitOps and declarative API gateway config.",
       "icons": [
         "jenkins",
         "argo",
@@ -305,9 +302,9 @@
         "gnubash"
       ],
       "bullets": [
-        "Multi-stage Jenkins pipeline: build, test, scan, push, deploy",
-        "GitOps delivery with Argo CD and Kustomize",
-        "Kong configuration as code with decK"
+        "Pipeline stages: build, test, scan, push, deploy",
+        "GitOps with Argo CD",
+        "Declarative Kong configuration with decK"
       ],
       "repo": null,
       "image": null,
@@ -315,18 +312,16 @@
       "stack": [
         "Jenkins",
         "Argo CD",
-        "Kong",
-        "decK",
-        "Kustomize"
+        "Kong"
       ],
-      "year": "2025-2026",
-      "status": "shipped"
+      "year": "Lab",
+      "status": "lab"
     },
     {
       "slug": "observability-stack",
       "title": "Metrics, logs and traces",
       "category": "Observability",
-      "kind": "Platform",
+      "kind": "Reference lab",
       "summary": "Metrics, logs and traces in Prometheus, Loki, Tempo and Grafana.",
       "icons": [
         "prometheus",
@@ -352,14 +347,14 @@
         "OpenTelemetry",
         "node_exporter"
       ],
-      "year": "2025-2026",
-      "status": "shipped"
+      "year": "Lab",
+      "status": "lab"
     },
     {
       "slug": "edge-haproxy-nginx",
       "title": "HAProxy and NGINX edge",
       "category": "Edge & Networking",
-      "kind": "Platform",
+      "kind": "Reference lab",
       "summary": "Reference lab: load balancer tiers with VRRP failover.",
       "icons": [
         "haproxy",
@@ -384,8 +379,8 @@
         "keepalived",
         "NodePort"
       ],
-      "year": "2025-2026",
-      "status": "shipped"
+      "year": "Lab",
+      "status": "lab"
     }
   ],
   "studied": [
