@@ -77,7 +77,7 @@
         {
           "level": "Edge",
           "items": [
-            "Built high availability with VRRP for NGINX, and used HAProxy for TCP passthrough"
+            "Built high availability with VRRP for NGINX, and HAProxy for TCP and HTTP setups"
           ]
         },
         {
