@@ -1,5 +1,5 @@
 /* Portfolio SPA: hash routing, static JSON data, no build. All data text is inserted with textContent (no innerHTML on data). */
-import { parseRoute, nextRoute } from './route.js?v=20261127k';
+import { parseRoute, nextRoute } from './route.js?v=20261127m';
 (() => {
   'use strict';
 
@@ -8,7 +8,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261127k';
   const LINKEDIN_URL = 'https://www.linkedin.com/in/iamhasanimam';
   const TYPE_CODE_MS = 22; // code typing speed in the hero editor, git log and code blocks (ms per character)
   const PAUSE_MS = 1800;   // pause after a snippet is typed, before the next tab
-  const ASSET_V = '20261127k'; // cache-busting for dynamic imports; keep in sync with index.html
+  const ASSET_V = '20261127m'; // cache-busting for dynamic imports; keep in sync with index.html
 
   // Brand colours (tuned for the dark banner). Slugs missing from simple-icons get a monogram.
   const COLORS = {
@@ -350,12 +350,14 @@ import { parseRoute, nextRoute } from './route.js?v=20261127k';
   async function loadCareer() { const d = await getJSON('data/career.json'); return d && Array.isArray(d.roles) ? d : null; }
 
 
+  // small up-right arrow shown beside external links on phones
+  const extIcon = () => { const e = h('span', { class: 'ext', 'aria-hidden': 'true' }); e.innerHTML = '<svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11L11 5M6.5 5H11v4.5"/></svg>'; return e; };
   const HERO_HINT = 'Tap any technology to see how it connects.';
   function hero() {
     const right = h('div', { class: 'hero-r' });
     const box = h('section', { class: 'hero', 'aria-label': 'Introduction' },
       h('div', null, h('h1', null, 'Hasan Imam'), h('p', { class: 'sub' }, 'DevOps Engineer'), h('p', { class: 'build' }, 'I build systems', h('span', { class: 'build-dim' }, ' that stay up.')), h('p', { class: 'hero-hint', 'aria-label': HERO_HINT }, h('span', { class: 'ht', 'aria-hidden': 'true' }), h('span', { class: 'caret', 'aria-hidden': 'true' })),
-        h('div', { class: 'hero-cta' }, h('button', { class: 'btn primary', type: 'button', onclick: () => { const t = document.getElementById('fl-h'); if (t) t.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }); } }, 'Explore stack'), h('a', { class: 'btn', href: LINKEDIN_URL, target: '_blank', rel: 'noopener noreferrer' }, 'LinkedIn'), h('a', { class: 'btn', href: GITHUB, target: '_blank', rel: 'noopener noreferrer' }, 'GitHub')),
+        h('div', { class: 'hero-cta' }, h('button', { class: 'btn primary', type: 'button', onclick: () => { const t = document.getElementById('fl-h'); if (t) t.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }); } }, 'Explore stack'), h('a', { class: 'btn', href: LINKEDIN_URL, target: '_blank', rel: 'noopener noreferrer' }, 'LinkedIn', extIcon()), h('a', { class: 'btn', href: GITHUB, target: '_blank', rel: 'noopener noreferrer' }, 'GitHub', extIcon())),
         termCard()), right);
     box.append(h('div', { class: 'scan', 'aria-hidden': 'true' }));
     // the hint types itself out once, in a theme gradient (no animation for reduced motion)
