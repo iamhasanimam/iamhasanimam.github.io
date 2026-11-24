@@ -495,12 +495,13 @@ details.more > summary { padding: 2px 0 6px var(--s4); list-style: none; cursor:
 .cat.co .ind-wrap, .q-company .ind-wrap { flex-direction: row; align-items: baseline; gap: 0; }
 .cat.co .sector::before, .q-company .sector::before { content: "·"; margin: 0 6px; }
 
-/* hero hint: typed out, gradient follows the theme */
-.hero-hint { margin: 0 0 var(--s3); min-height: 1.6em; font-size: var(--t-md, 15px); font-weight: 600; line-height: 1.5; }
-.hero-hint .ht { background: linear-gradient(90deg, #64d2ff, #0a84ff, #bf5af2, #ff375f, #64d2ff); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; animation: hint-shift 6s linear infinite; }
-:root[data-theme="light"] .hero-hint .ht { background-image: linear-gradient(90deg, #0071e3, #7d3cc2, #d0245a, #0a84ff, #0071e3); }
-.hero-hint .caret { display: inline-block; width: 2px; height: 1.05em; margin-left: 2px; vertical-align: -0.15em; background: #0a84ff; animation: caret-blink 1s steps(2) infinite; }
+/* hero hint: typed out, silver metallic gradient (graphite silver in light mode) with a slow sheen */
+.hero-hint { margin: 0 0 var(--s3); min-height: 1.6em; font-size: var(--t-md, 15px); font-weight: 600; letter-spacing: .01em; line-height: 1.5; }
+.hero-hint .ht { background: linear-gradient(100deg, #8d97a6 0%, #dfe4ec 22%, #ffffff 38%, #aab2bf 55%, #eef1f6 75%, #8d97a6 100%); background-size: 260% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; animation: hint-shift 7s ease-in-out infinite alternate; }
+:root[data-theme="light"] .hero-hint .ht { background-image: linear-gradient(100deg, #3b414d 0%, #8a93a2 25%, #1d1d1f 45%, #6d7685 65%, #2a2e36 85%, #3b414d 100%); }
+.hero-hint .caret { display: inline-block; width: 2px; height: 1.05em; margin-left: 2px; vertical-align: -0.15em; background: #c9d0db; animation: caret-blink 1s steps(2) infinite; }
+:root[data-theme="light"] .hero-hint .caret { background: #3b414d; }
 .hero-hint .caret.done { animation: none; opacity: 0; }
-@keyframes hint-shift { to { background-position: 250% 0; } }
+@keyframes hint-shift { from { background-position: 0 0; } to { background-position: 100% 0; } }
 @keyframes caret-blink { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .hero-hint .ht, .hero-hint .caret { animation: none; } }
