@@ -556,3 +556,13 @@ details.more > summary { padding: 2px 0 6px var(--s4); list-style: none; cursor:
 .lv-out { padding: 8px 12px; border-radius: 10px; gap: 10px; }
 .lv-out strong { font-size: var(--t-sm); }
 .rcard .chips { margin-top: 8px; }
+/* phones: the label sits above its points (no wide left column); tighter card spacing. Placed last so it wins over the desktop rules above. */
+@media (max-width: 760px) {
+  .rcard { padding: 14px 14px; margin-bottom: 12px; }
+  .lv { grid-template-columns: 1fr; gap: 4px; padding: 8px 10px; }
+  .lv-t { margin: 0; }
+  .lv-l { padding-left: 16px; }
+  .lv-out { flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; }
+  .ryear { font-size: 15px; }
+}
+@media (max-width: 760px) { .story { padding-left: 24px; } .rcard .node { left: -22px; } .path { left: 8px; } }
