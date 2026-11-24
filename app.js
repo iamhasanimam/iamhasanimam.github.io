@@ -1,5 +1,5 @@
 /* Portfolio SPA: hash routing, static JSON data, no build. All data text is inserted with textContent (no innerHTML on data). */
-import { parseRoute, nextRoute } from './route.js?v=20261126b';
+import { parseRoute, nextRoute } from './route.js?v=20261126k';
 (() => {
   'use strict';
 
@@ -8,7 +8,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261126b';
   const LINKEDIN_URL = 'https://www.linkedin.com/in/iamhasanimam';
   const TYPE_CODE_MS = 22; // code typing speed in the hero editor, git log and code blocks (ms per character)
   const PAUSE_MS = 1800;   // pause after a snippet is typed, before the next tab
-  const ASSET_V = '20261126b'; // cache-busting for dynamic imports; keep in sync with index.html
+  const ASSET_V = '20261126k'; // cache-busting for dynamic imports; keep in sync with index.html
 
   // Brand colours (tuned for the dark banner). Slugs missing from simple-icons get a monogram.
   const COLORS = {
@@ -460,11 +460,13 @@ import { parseRoute, nextRoute } from './route.js?v=20261126b';
   }
   let careerView = (() => { const v = new URLSearchParams(location.search).get('view'); return v === 'git' || v === 'story' ? v : 'quest'; })();
 
+  // employer name plus its industry type (product based or service based); no logos
+  const coTag = (r) => h('span', { class: 'ind ' + (/product/i.test(r.industry || '') ? 'prod' : 'svc') }, r.industry || '');
   function careerCompact(c) {
     const body = h('ol', { class: 'trail' }, orderedRoles(c, false).map((r) => {
       const p = roleParts(r);
       return h('li', { class: 'tn rv' + (p.current ? ' now' : '') }, h('span', { class: 'dot', 'aria-hidden': 'true' }), h('div', { class: 'yr' }, p.years),
-        h('h3', null, r.title), h('p', null, words(p.headline, 14)));
+        h('h3', null, r.title), h('div', { class: 'co' }, h('span', null, r.company), coTag(r)), h('p', null, words(p.headline, 14)));
     }));
     return h('section', { 'aria-labelledby': 'tr-h', id: 'trajectory' },
       h('div', { class: 'sec' }, eb('// career', h('h2', { id: 'tr-h' }, 'Career trajectory')),
@@ -482,7 +484,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261126b';
     const stopScroll = () => { if (unscroll) { unscroll(); unscroll = null; } };
     cleanups.push(() => { stopQuest(); stopScroll(); });
     function paint() {
-      stopQuest(); stopScroll();
+      stopQuest(); stopScroll(); const old = root.querySelector('.toolbar .q-skip'); if (old) old.remove();
       if (careerView === 'quest') paintQuest();
       else if (careerView === 'git') { host.replaceChildren(gitLog(c, false)); reveal(host); }
       else paintStory();
@@ -496,6 +498,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261126b';
         if (careerView !== 'quest' || !qh.isConnected) return;
         questMod = m;
         await m.mountQuest(qh, { base: 'about:blank#', careerUrl: 'data/career.json', placeholder: true, onNavigate(hs) { navigate(hs); } });
+        try { const sk = qh.querySelector('.q-skip'), tb = root.querySelector('.toolbar'); if (sk && tb && careerView === 'quest') tb.append(sk); } catch (e) { /* ignore */ }
       } catch (e) { careerView = 'story'; paintStory(); }
     }
     root.append(h('div', { class: 'toolbar' }, seg(careerView, (v) => { careerView = v; paint(); }, [['quest', 'Quest'], ['story', 'Story'], ['git', 'git log']])), host);
@@ -511,7 +514,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261126b';
           return h('article', { class: 'rcard rv' + (p.current ? ' now' : '') },
             h('span', { class: 'node', 'aria-hidden': 'true' }),
             h('div', { class: 'ryear' }, p.years),
-            h('h2', null, r.title), h('div', { class: 'cat' }, [r.company, r.location].filter(Boolean).join(' \u00b7 ')),
+            h('h2', null, r.title), h('div', { class: 'cat co' }, h('span', null, [r.company, r.location].filter(Boolean).join(' \u00b7 ')), coTag(r)),
             h('p', { class: 'headline' }, p.headline),
             p.imp ? h('div', { class: 'impact' }, h('strong', null, p.imp.value), h('span', null, p.imp.label)) : null,
             p.bullets.length ? bulletList(p.bullets, 3) : null,
@@ -899,10 +902,6 @@ import { parseRoute, nextRoute } from './route.js?v=20261126b';
   }
 
   // ---------- misc ----------
-  function labStrip() {
-    return h('section', { 'aria-label': 'DevOps Lab' }, h('div', { class: 'strip' }, h('strong', null, 'Lab'), h('span', { class: 'badge soon' }, 'Coming soon')));
-  }
-  function labPage(root) { root.append(h('h1', { class: 'big-h' }, 'DevOps Lab'), labStrip()); }
 
   function connectCard() {
     return h('section', { 'aria-labelledby': 'cn-h', id: 'connect' }, h('div', { class: 'sec' }, eb('// connect', h('h2', { id: 'cn-h' }, 'Connect'))),
@@ -932,7 +931,6 @@ import { parseRoute, nextRoute } from './route.js?v=20261126b';
       root.append(h('section', { 'aria-labelledby': 'tc-h' }, h('div', { class: 'sec' }, eb('// stack', h('h2', { id: 'tc-h' }, 'Technologies')), h('a', { class: 'more', href: '#/technologies' }, 'All \u2192')),
         h('div', { class: 'grid icons' }, idx.map(techCard))));
     }
-    root.append(labStrip());
     root.append(connectCard());
     reveal(root);
   }
@@ -940,7 +938,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261126b';
   // ---------- router ----------
   const state = { q: '' };
   const view = $('#view');
-  const titles = { overview: 'Overview', technologies: 'Technologies', work: 'Work', career: 'Career', writing: 'Writing', lab: 'DevOps Lab', connect: 'Connect' };
+  const titles = { overview: 'Overview', technologies: 'Technologies', work: 'Work', career: 'Career', writing: 'Writing', connect: 'Connect' };
   const OUT_MS = 80; // fade-out; the fade-in (120 ms) lives in CSS (#view transition)
   let token = 0, curRoute = null, pushIntent = false, pushTimer = 0, lastY = 0, firstRender = true, rendering = false;
   const scrollPos = new Map(); // route key -> scrollY
@@ -985,7 +983,6 @@ import { parseRoute, nextRoute } from './route.js?v=20261126b';
       else if (rt.name === 'work') await projectsPage(root);
       else if (rt.name === 'career') await careerPage(root);
       else if (rt.name === 'writing') await blogsPage(root);
-      else if (rt.name === 'lab') labPage(root);
       else if (rt.name === 'connect') connectPage(root);
       else root.append(h('h1', { class: 'big-h' }, 'Not found'), h('div', { class: 'empty' }, 'No such page. ', h('a', { href: '#/' }, 'Back to overview')));
     } catch (e) {
@@ -1052,7 +1049,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261126b';
     if ($('#palette')) return;
     const prev = document.activeElement;
     const go = (hash) => () => { navigate(hash); };
-    const cmds = [['overview', '#/'], ['career', '#/career'], ['work', '#/work'], ['writing', '#/writing'], ['technologies', '#/technologies'], ['connect', '#/connect'], ['lab', '#/lab']]
+    const cmds = [['overview', '#/'], ['career', '#/career'], ['work', '#/work'], ['writing', '#/writing'], ['technologies', '#/technologies'], ['connect', '#/connect']]
       .map(([n, hs]) => ({ label: 'cd ' + n, hint: 'go to page', run: go(hs) }));
     cmds.push({ label: 'goto connect', hint: 'LinkedIn and GitHub', run: go('#/connect') },
       { label: 'theme dark', hint: 'switch theme', run: () => setTheme('dark') }, { label: 'theme light', hint: 'switch theme', run: () => setTheme('light') });

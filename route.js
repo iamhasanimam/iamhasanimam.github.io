@@ -1,6 +1,6 @@
 /* Pure routing helpers (no DOM). Used by app.js and tests/router.test.mjs. */
 const ALIAS = { projects: 'work', blogs: 'writing' };
-const KNOWN = new Set(['overview', 'career', 'work', 'writing', 'technologies', 'lab', 'connect']);
+const KNOWN = new Set(['overview', 'career', 'work', 'writing', 'technologies', 'connect']);
 
 export function parseRoute(hash) {
   let h = typeof hash === 'string' ? hash : '';

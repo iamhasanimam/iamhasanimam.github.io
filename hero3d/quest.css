@@ -1,18 +1,18 @@
 /* quest - all rules scoped under .quest */
 .quest {
-  --q-accent: #8ab4f8;
-  --q-ink: #e8eaed;
-  --q-mute: rgba(232, 234, 237, 0.78);
-  --q-glass: rgba(41, 42, 45, 0.78);
-  --q-line: rgba(232, 234, 237, 0.16);
+  --q-accent: #0a84ff;
+  --q-ink: #f5f5f7;
+  --q-mute: #98989d;
+  --q-glass: rgba(28, 28, 30, 0.92);
+  --q-line: rgba(255, 255, 255, 0.12);
   --q-mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
   position: relative; width: 100%; height: var(--q-len, 500vh);
-  background: #202124; color: var(--q-ink);
+  background: #000; color: var(--q-ink);
   font-family: Inter, "Segoe UI", system-ui, sans-serif; font-weight: 300;
 }
 .quest *, .quest *::before, .quest *::after { box-sizing: border-box; }
 .quest .q-root { position: relative; height: 100%; }
-.quest .q-sticky { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: #202124; }
+.quest .q-sticky { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: #000; }
 .quest .q-stage, .quest .q-speed, .quest .q-vignette { position: absolute; inset: 0; }
 .quest .q-stage canvas { display: block; width: 100%; height: 100%; }
 .quest .q-vignette { pointer-events: none; background: radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0, 0, 14, 0.62) 100%); }
@@ -23,12 +23,12 @@
 @keyframes q-blink { 50% { opacity: 0.3; } }
 .quest .q-mono { font-family: var(--q-mono); letter-spacing: 0.14em; text-transform: uppercase; font-weight: 400; }
 .quest .q-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.quest .q-skip { position: absolute; z-index: 10; left: 12px; top: -60px; padding: 10px 16px; background: var(--q-accent); color: #202124; border-radius: 999px; text-decoration: none; font-size: 13px; }
-.quest .q-skip:focus { top: 12px; outline: 2px solid #fff; }
+.quest .q-skip { position: absolute; z-index: 10; left: 0; top: -64px; height: 36px; display: inline-flex; align-items: center; padding: 0 18px; background: var(--q-accent); color: #fff; border-radius: 999px; text-decoration: none; font: 500 13px/1 Inter, system-ui, sans-serif; }
+.quest .q-skip:focus { top: 12px; outline: 2px solid #fff; outline-offset: 2px; }
 
 /* HUD */
 .quest .q-hud { position: absolute; inset: 0; pointer-events: none; }
-.quest .q-panel { position: absolute; top: 16px; padding: 14px 16px; background: var(--q-glass); border: 1px solid var(--q-line); border-radius: 14px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.quest .q-panel { position: absolute; top: 16px; padding: 14px 16px; background: var(--q-glass); border: 1px solid var(--q-line); border-radius: 14px; -webkit-}
 .quest .q-hud-l { left: 16px; width: 250px; }
 .quest .q-hud-r { right: 16px; width: 270px; }
 .quest .q-level { font-size: 13px; color: var(--q-accent); }
@@ -37,18 +37,18 @@
 .quest .q-xp { margin-top: 12px; }
 .quest .q-xp-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--q-mute); }
 .quest .q-xp-bar { height: 8px; margin-top: 5px; background: rgba(255, 255, 255, 0.12); border-radius: 999px; overflow: hidden; }
-.quest .q-xp-fill { height: 100%; width: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, #4285f4, var(--q-accent));  }
+.quest .q-xp-fill { height: 100%; width: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, #0a84ff, var(--q-accent));  }
 .quest .q-map { margin-top: 12px; }
 .quest .q-map svg { width: 100%; height: auto; display: block; }
 .quest .q-badges-t { font-size: 11px; color: var(--q-mute); margin-bottom: 8px; }
 .quest .q-badge-row { display: grid; gap: 6px; }
-.quest .q-badge { display: flex; align-items: center; gap: 10px; font-size: 12px; line-height: 1.3; padding: 6px 8px; border-radius: 10px; border: 1px solid rgba(138, 180, 248, 0.6); background: rgba(138, 180, 248, 0.12); transition: opacity 0.3s, filter 0.3s; }
+.quest .q-badge { display: flex; align-items: center; gap: 10px; font-size: 12px; line-height: 1.3; padding: 6px 8px; border-radius: 10px; border: 1px solid rgba(10, 132, 255, 0.6); background: rgba(138, 180, 248, 0.12); transition: opacity 0.3s, filter 0.3s; }
 .quest .q-badge.is-locked { opacity: 0.4; filter: grayscale(1); border-color: var(--q-line); background: transparent; }
 .quest .q-badge-ico { color: var(--q-accent); font-size: 16px; }
 .quest .q-badge.is-locked .q-badge-ico { color: var(--q-mute); }
-.quest .q-badge.pop { animation: q-pop 0.9s cubic-bezier(.2, 1.6, .4, 1); box-shadow: 0 0 0 0 rgba(255, 159, 28, 0.8); }
+.quest .q-badge.pop { animation: q-pop 0.9s cubic-bezier(.2, 1.6, .4, 1); box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.8); }
 @keyframes q-pop { 0% { transform: scale(0.6); box-shadow: 0 0 0 0 rgba(255, 159, 28, 0.9); } 55% { transform: scale(1.12); } 100% { transform: scale(1); box-shadow: 0 0 0 26px rgba(255, 159, 28, 0); } }
-.quest .q-toast { position: absolute; left: 50%; top: 20px; transform: translate(-50%, -150%); display: grid; gap: 2px; text-align: center; padding: 12px 22px; background: var(--q-glass); border: 1px solid var(--q-accent); border-radius: 14px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); opacity: 0; transition: transform 0.4s cubic-bezier(.2, 1.4, .4, 1), opacity 0.3s; pointer-events: none; z-index: 4; max-width: 90%; }
+.quest .q-toast { position: absolute; left: 50%; top: 20px; transform: translate(-50%, -150%); display: grid; gap: 2px; text-align: center; padding: 12px 22px; background: var(--q-glass); border: 1px solid var(--q-accent); border-radius: 14px; -webkit-opacity: 0; transition: transform 0.4s cubic-bezier(.2, 1.4, .4, 1), opacity 0.3s; pointer-events: none; z-index: 4; max-width: 90%; }
 .quest .q-toast.is-on { transform: translate(-50%, 0); opacity: 1; }
 .quest .q-toast .q-mono { font-size: 11px; color: var(--q-accent); }
 .quest .q-toast b { font-weight: 500; font-size: 15px; }
@@ -57,7 +57,7 @@
 @keyframes q-bob { 50% { transform: translate(-50%, -5px); } }
 
 /* cards */
-.quest .q-card { color: var(--q-ink); background: var(--q-glass); border: 1px solid var(--q-line); border-radius: 20px; padding: 22px 24px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 24px 70px rgba(0, 0, 20, 0.55); }
+.quest .q-card { color: var(--q-ink); background: var(--q-glass); border: 1px solid var(--q-line); border-radius: 20px; padding: 22px 24px; -webkit-box-shadow: 0 24px 70px rgba(0, 0, 20, 0.55); }
 .quest .q-sticky > .q-card { position: absolute; top: 50%; width: min(420px, 36vw); opacity: 0; pointer-events: none; transform: translate(0, -50%); transition: opacity 0.35s; }
 .quest .q-card.is-left { left: 4vw; top: 50%; }
 .quest .q-card.is-right { right: 4vw; left: auto; top: 50%; }
@@ -79,12 +79,12 @@
 /* buttons */
 .quest .q-btn { font: inherit; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; display: inline-block; color: var(--q-ink); background: var(--q-glass); border: 1px solid var(--q-line); border-radius: 999px; padding: 12px 22px; cursor: pointer; pointer-events: auto; }
 .quest .q-btn:hover { border-color: var(--q-accent); }
-.quest .q-primary { background: var(--q-accent); border-color: var(--q-accent); color: #202124; font-weight: 500; }
+.quest .q-primary { background: var(--q-accent); border-color: var(--q-accent); color: #000; font-weight: 500; }
 .quest .q-btn:focus-visible, .quest a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; box-shadow: 0 0 0 5px var(--q-accent); }
 .quest .q-exit { position: absolute; right: 16px; bottom: 16px; padding: 8px 14px; font-size: 11px; }
 
 /* final */
-.quest .q-sticky > .q-final { position: absolute; left: 50%; bottom: 8vh; transform: translate(-50%, 30px); width: min(640px, 92vw); text-align: center; padding: 26px 28px; background: var(--q-glass); border: 1px solid var(--q-accent); border-radius: 22px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); opacity: 0; pointer-events: none; transition: opacity 0.6s, transform 0.6s; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+.quest .q-sticky > .q-final { position: absolute; left: 50%; bottom: 8vh; transform: translate(-50%, 30px); width: min(640px, 92vw); text-align: center; padding: 26px 28px; background: var(--q-glass); border: 1px solid var(--q-accent); border-radius: 22px; -webkit-opacity: 0; pointer-events: none; transition: opacity 0.6s, transform 0.6s; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
 .quest .q-sticky > .q-final.is-in { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
 .quest .q-final-k { margin: 0; font-size: 11px; color: var(--q-accent); }
 .quest .q-final-t { margin: 6px 0 16px; font-size: clamp(30px, 5vw, 46px); font-weight: 300; letter-spacing: 0.03em; }
@@ -98,7 +98,7 @@
 .quest .q-static { display: none; }
 .quest.is-static { height: auto; }
 .quest.is-static .q-sticky, .quest.is-static .q-skip { display: none; }
-.quest.is-static .q-static { display: block; padding: 56px 16px; background: #202124; }
+.quest.is-static .q-static { display: block; padding: 56px 16px; background: #000; }
 .quest .q-static-h { text-align: center; font-weight: 300; font-size: 32px; margin: 0 0 24px; }
 .quest .q-static-list { list-style: none; margin: 0 auto; padding: 0; max-width: 640px; display: grid; gap: 18px; }
 .quest .q-card-static { position: static; }

@@ -41,6 +41,8 @@ export function mountAlts(container, handle, opts = {}) {
   const list = el('div', { class: 'fa-list' });
   root.append(head, sub, list);
 
+  const narrow = () => { try { return matchMedia('(max-width: 1000px)').matches; } catch (e) { return false; } };
+  const showScene = () => { if (narrow() && host && host.scrollIntoView) { try { host.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* ignore */ } } };
   const focus = (id) => { if (can('focus')) { try { handle.focus(id); } catch (e) { /* ignore */ } } };
   const mark = (id) => rows.forEach((r, k) => r.row.classList.toggle('is-hot', k === id));
   const open = (id, on) => { const r = rows.get(id); if (!r || !r.body) return; r.body.hidden = !on; r.head.setAttribute('aria-expanded', String(on)); r.row.classList.toggle('is-open', on); };
@@ -75,12 +77,12 @@ export function mountAlts(container, handle, opts = {}) {
         const all = [{ label: b.label, tech: b.tech, icon: b.icon, isDefault: true }, ...alts.filter((a) => a.label !== b.label)];
         all.forEach((a) => {
           const btn = el('button', { type: 'button', class: 'fa-chip', 'aria-pressed': String(!!a.isDefault) }, logo(a.icon, a.label, opts.icon), el('span', null, a.label));
-          btn.addEventListener('click', () => apply(b.id, a.isDefault ? null : a));
+          btn.addEventListener('click', () => { apply(b.id, a.isDefault ? null : a); focus(b.id); showScene(); });
           btn.addEventListener('mouseenter', () => focus(b.id)); btn.addEventListener('focus', () => focus(b.id));
           rec.chips.push({ btn, alt: a }); body.append(btn);
         });
         rec.body = body; row.append(body);
-        headBtn.addEventListener('click', () => open(b.id, body.hidden));
+        headBtn.addEventListener('click', () => { open(b.id, body.hidden); focus(b.id); showScene(); });
       }
       headBtn.addEventListener('mouseenter', () => focus(b.id)); headBtn.addEventListener('focus', () => focus(b.id));
       row.addEventListener('mouseleave', () => { if (!row.contains(document.activeElement)) focus(null); });

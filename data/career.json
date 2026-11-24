@@ -50,7 +50,8 @@
       "impact": {
         "value": "400 req/s",
         "label": "p95 under 50 ms"
-      }
+      },
+      "industry": "Service based"
     },
     {
       "company": "Wingify (VWO)",
@@ -71,7 +72,8 @@
       "impact": {
         "value": "40%",
         "label": "faster resolution via runbooks"
-      }
+      },
+      "industry": "Product based"
     },
     {
       "company": "IT By Design / Liongard",
@@ -94,7 +96,8 @@
       "impact": {
         "value": "-25%",
         "label": "escalations"
-      }
+      },
+      "industry": "Product based"
     },
     {
       "company": "IT By Design / System Solutions Inc",
@@ -120,7 +123,8 @@
       "impact": {
         "value": "30%",
         "label": "less patching downtime"
-      }
+      },
+      "industry": "Service based"
     },
     {
       "company": "RealTimeDataServices",
@@ -137,7 +141,8 @@
         "Remote desktop",
         "Virtualisation"
       ],
-      "headline": "Built a remote-desktop platform from bare metal"
+      "headline": "Built a remote-desktop platform from bare metal",
+      "industry": "Service based"
     }
   ],
   "education": [

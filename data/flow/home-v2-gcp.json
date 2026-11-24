@@ -1,5 +1,5 @@
 {
- "title": "Platform v3",
+ "title": "At a glance",
  "subtitle": "GCP",
  "layers": [
   {
@@ -51,6 +51,7 @@
    "label": "Request",
    "focus": [
     "users",
+    "cloudflare",
     "haproxy",
     "nginx",
     "kong",
@@ -430,7 +431,7 @@
    "tech": "Keycloak",
    "icon": "keycloak",
    "tone": "blue",
-   "layer": 3,
+   "layer": 2,
    "role": "Identity",
    "says": "Keycloak signs users in.",
    "detail": "OpenID Connect single sign-on issues tokens that every service can validate.",
@@ -466,7 +467,7 @@
    "tech": "Vault",
    "icon": "vault",
    "tone": "blue",
-   "layer": 3,
+   "layer": 6,
    "role": "Secrets",
    "says": "Vault hands out secrets.",
    "detail": "Stores credentials and certificates, and issues short-lived secrets to workloads on demand.",
@@ -1134,6 +1135,150 @@
    "detail": "Builds pipelines, runs playbooks and watches the dashboards.",
    "col": 0,
    "row": 1
+  },
+  {
+   "id": "cloudflare",
+   "label": "Cloudflare",
+   "tech": "Cloudflare",
+   "icon": "cloudflare",
+   "tone": "blue",
+   "layer": 4,
+   "role": "CDN and WAF",
+   "says": "Cloudflare filters public traffic.",
+   "detail": "A CDN and web application firewall in front of the load balancer. Alternatives: CloudFront, Akamai, Fastly.",
+   "alts": [
+    {
+     "label": "Cloudflare",
+     "icon": "cloudflare"
+    },
+    {
+     "label": "CloudFront",
+     "icon": null
+    },
+    {
+     "label": "Akamai",
+     "icon": "akamai"
+    },
+    {
+     "label": "Fastly",
+     "icon": "fastly"
+    }
+   ],
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "traefik",
+   "label": "Traefik",
+   "tech": "Traefik",
+   "icon": "traefikproxy",
+   "tone": "blue",
+   "layer": 4,
+   "role": "Ingress proxy",
+   "says": "Traefik routes by host and path.",
+   "detail": "A dynamic reverse proxy and ingress controller. Alternatives: NGINX, Envoy, Caddy.",
+   "alts": [
+    {
+     "label": "Traefik",
+     "icon": "traefikproxy"
+    },
+    {
+     "label": "NGINX",
+     "icon": "nginx"
+    },
+    {
+     "label": "Envoy",
+     "icon": "envoyproxy"
+    },
+    {
+     "label": "Caddy",
+     "icon": "caddy"
+    }
+   ],
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "openapi",
+   "label": "OpenAPI",
+   "tech": "OpenAPI",
+   "icon": "openapiinitiative",
+   "tone": "blue",
+   "layer": 3,
+   "role": "API contract",
+   "says": "OpenAPI describes the API.",
+   "detail": "A machine-readable contract for routes, schemas and auth. Alternatives: Swagger, AsyncAPI.",
+   "alts": [
+    {
+     "label": "OpenAPI",
+     "icon": "openapiinitiative"
+    },
+    {
+     "label": "Swagger",
+     "icon": "swagger"
+    },
+    {
+     "label": "AsyncAPI",
+     "icon": null
+    }
+   ],
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "postman",
+   "label": "Postman",
+   "tech": "Postman",
+   "icon": "postman",
+   "tone": "blue",
+   "layer": 3,
+   "role": "API testing",
+   "says": "Postman tests the endpoints.",
+   "detail": "Collections of requests and checks run against the gateway. Alternatives: Insomnia, curl, Hoppscotch.",
+   "alts": [
+    {
+     "label": "Postman",
+     "icon": "postman"
+    },
+    {
+     "label": "Insomnia",
+     "icon": "insomnia"
+    },
+    {
+     "label": "curl",
+     "icon": null
+    }
+   ],
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "k6",
+   "label": "k6",
+   "tech": "k6",
+   "icon": "k6",
+   "tone": "blue",
+   "layer": 3,
+   "role": "Load testing",
+   "says": "k6 loads the API.",
+   "detail": "Scripted load tests that measure latency and errors. Alternatives: JMeter, Gatling, Locust.",
+   "alts": [
+    {
+     "label": "k6",
+     "icon": "k6"
+    },
+    {
+     "label": "JMeter",
+     "icon": "apachejmeter"
+    },
+    {
+     "label": "Gatling",
+     "icon": "gatling"
+    }
+   ],
+   "col": 0,
+   "row": 0,
+   "href": "#/tech/k6"
   }
  ],
  "wires": [
@@ -1182,14 +1327,6 @@
    "to": "gce",
    "label": "runs on",
    "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "users",
-   "to": "haproxy",
-   "label": "HTTPS",
-   "style": "solid",
    "flow": true,
    "weight": "normal"
   },
@@ -1392,6 +1529,62 @@
    "style": "solid",
    "flow": true,
    "weight": "normal"
+  },
+  {
+   "from": "users",
+   "to": "cloudflare",
+   "label": "HTTPS",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "cloudflare",
+   "to": "haproxy",
+   "label": "filtered",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "haproxy",
+   "to": "traefik",
+   "label": "balances",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "traefik",
+   "to": "kong",
+   "label": "routes",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "openapi",
+   "to": "kong",
+   "label": "describes",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "postman",
+   "to": "kong",
+   "label": "tests",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "k6",
+   "to": "kong",
+   "label": "loads",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
   }
  ],
  "steps": [
@@ -1400,11 +1593,16 @@
    "text": "Users reach HAProxy over HTTPS.",
    "boxes": [
     "users",
+    "cloudflare",
     "haproxy"
    ],
    "wires": [
     [
      "users",
+     "cloudflare"
+    ],
+    [
+     "cloudflare",
      "haproxy"
     ]
    ]

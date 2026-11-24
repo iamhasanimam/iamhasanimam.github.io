@@ -110,7 +110,8 @@ function createQuest(host, opts) {
   function buildCardContent(c, role, idx, typedHeadline) {
     c.textContent = '';
     const top = el('div', 'q-mono q-card-k', c, `LEVEL ${idx + 1} / 5  ·  ${yearOf(role)} – ${endOf(role)}`);
-    el('p', 'q-company', c, role.company || '');
+    const co = el('p', 'q-company', c, role.company || '');
+    if (role.industry) { const tg = document.createElement('span'); tg.className = 'ind ' + (/product/i.test(role.industry) ? 'prod' : 'svc'); tg.textContent = role.industry; co.appendChild(tg); }
     el('h3', 'q-card-title', c, role.title || '');
     const hd = el('p', 'q-headline', c, typedHeadline ? '' : role.headline || '');
     if (role.impact) {

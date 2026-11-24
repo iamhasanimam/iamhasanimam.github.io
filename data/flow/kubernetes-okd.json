@@ -1,428 +1,475 @@
 {
  "title": "Kubernetes",
- "subtitle": "Outside traffic reaches pods through node ports, Services and Ingress.",
+ "subtitle": "A control plane plus worker nodes that run containerized applications.",
  "layers": [
   {
    "layer": 0,
-   "label": "Edge"
+   "label": "Addons"
   },
   {
    "layer": 1,
-   "label": "Platform"
+   "label": "Worker node"
   },
   {
    "layer": 2,
    "label": "Control plane"
-  }
- ],
- "groups": [
+  },
   {
-   "id": "g-node",
-   "label": "On every node",
-   "boxes": [
-    "nodeport",
-    "kubeproxy"
-   ]
+   "layer": 3,
+   "label": "Clients",
+   "kind": "outside",
+   "side": "left",
+   "arrange": "vertical"
+  },
+  {
+   "layer": 4,
+   "label": "Cloud",
+   "kind": "outside",
+   "side": "right",
+   "arrange": "vertical"
   }
  ],
+ "groups": [],
  "boxes": [
   {
-   "id": "lb",
-   "label": "Load Balancer",
-   "tech": "NGINX / HAProxy / cloud LB",
-   "icon": "nginx",
-   "layer": 0,
+   "id": "api",
+   "label": "kube-apiserver",
+   "tech": "kube-apiserver",
+   "icon": "kubernetes",
+   "tone": "blue",
+   "layer": 2,
    "col": 0,
    "row": 0,
-   "says": "An external proxy fronts the cluster.",
-   "detail": "Fronts NodePorts or a LoadBalancer address. Alternatives: HAProxy, NGINX, Envoy, Traefik, cloud LBs.",
-   "href": "#/tech/nginx"
+   "says": "The API server is the front end.",
+   "detail": "Exposes the Kubernetes API. Scales horizontally: run several instances behind a balancer."
   },
   {
-   "id": "nodeport",
-   "label": "NodePort",
-   "tech": "Service NodePort",
-   "icon": null,
-   "layer": 0,
+   "id": "etcd",
+   "label": "etcd",
+   "tech": "etcd",
+   "icon": "etcd",
+   "tone": "blue",
+   "layer": 2,
    "col": 1,
    "row": 0,
-   "says": "NodePort opens a port on every node.",
-   "detail": "Range 30000-32767. Also the target behind LoadBalancer and Ingress controllers."
+   "says": "etcd stores all cluster data.",
+   "detail": "Consistent, highly available key value store behind the API server. Back it up."
   },
   {
-   "id": "kubeproxy",
+   "id": "sched",
+   "label": "kube-scheduler",
+   "tech": "kube-scheduler",
+   "icon": "kubernetes",
+   "tone": "blue",
+   "layer": 2,
+   "col": 2,
+   "row": 0,
+   "says": "The scheduler picks a node.",
+   "detail": "Watches for new Pods with no node and selects one using resources, constraints and affinity."
+  },
+  {
+   "id": "kcm",
+   "label": "kube-controller-manager",
+   "tech": "kube-controller-manager",
+   "icon": "kubernetes",
+   "tone": "blue",
+   "layer": 2,
+   "col": 0,
+   "row": 1,
+   "says": "Controllers run reconcile loops.",
+   "detail": "Node, Job, EndpointSlice and ServiceAccount controllers, compiled into one process."
+  },
+  {
+   "id": "ccm",
+   "label": "cloud-controller-manager",
+   "tech": "cloud-controller-manager",
+   "icon": "kubernetes",
+   "tone": "blue",
+   "layer": 2,
+   "col": 1,
+   "row": 1,
+   "says": "It links the cluster to a cloud.",
+   "detail": "Runs only cloud-specific controllers: node, route and service (load balancers). Absent on premises."
+  },
+  {
+   "id": "kubelet",
+   "label": "kubelet",
+   "tech": "kubelet",
+   "icon": "kubernetes",
+   "tone": "blue",
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "The kubelet runs the Pods.",
+   "detail": "Agent on every node. Ensures containers described in PodSpecs are running and healthy."
+  },
+  {
+   "id": "kproxy",
    "label": "kube-proxy",
    "tech": "kube-proxy",
-   "icon": null,
-   "layer": 0,
-   "col": 2,
-   "row": 0,
-   "says": "kube-proxy rewrites to a ready pod.",
-   "detail": "Programs iptables or IPVS rules from Services and EndpointSlices on each node."
-  },
-  {
-   "id": "svc",
-   "label": "Service",
-   "tech": "Service",
-   "icon": null,
-   "layer": 0,
-   "col": 3,
-   "row": 0,
-   "says": "A Service balances at L4.",
-   "detail": "ClusterIP gives pods one stable address. Endpoints follow readiness."
-  },
-  {
-   "id": "ingress",
-   "label": "Ingress",
-   "tech": "Ingress / Gateway API",
-   "icon": null,
-   "layer": 0,
-   "col": 2,
-   "row": 1,
-   "says": "Ingress routes by Host and path.",
-   "detail": "L7 entry behind a NodePort or LoadBalancer. Alternatives: Gateway API, Traefik, Envoy."
-  },
-  {
-   "id": "deploy",
-   "label": "Deployment",
-   "tech": "Deployment",
-   "icon": null,
-   "layer": 1,
-   "col": 0,
-   "row": 0,
-   "says": "Deployments roll out and roll back.",
-   "detail": "A ReplicaSet per version. maxSurge and maxUnavailable pace rollouts; rollout undo reverts."
-  },
-  {
-   "id": "hpa",
-   "label": "HPA",
-   "tech": "HorizontalPodAutoscaler",
-   "icon": null,
+   "icon": "kubernetes",
+   "tone": "blue",
    "layer": 1,
    "col": 1,
    "row": 0,
-   "says": "HPA scales replicas on metrics.",
-   "detail": "Reads metrics-server and sets replicas between min and max."
+   "says": "kube-proxy implements Services.",
+   "detail": "Optional network proxy on each node. Keeps rules so traffic reaches Pods."
   },
   {
-   "id": "netpol",
-   "label": "NetworkPolicy",
-   "tech": "NetworkPolicy",
-   "icon": null,
+   "id": "runtime",
+   "label": "Container runtime",
+   "tech": "containerd",
+   "icon": "containerd",
+   "tone": "blue",
    "layer": 1,
    "col": 2,
    "row": 0,
-   "says": "NetworkPolicy denies by default.",
-   "detail": "Selects pods, then allows by namespace and label. Needs an enforcing CNI."
+   "says": "The runtime runs containers.",
+   "detail": "containerd, CRI-O or any CRI implementation. Manages container lifecycle.",
+   "href": "#/tech/docker"
   },
   {
    "id": "pods",
    "label": "Pods",
-   "tech": "Pod",
-   "icon": null,
+   "tech": "Pods",
+   "icon": "kubernetes",
+   "tone": "blue",
    "layer": 1,
-   "col": 3,
-   "row": 0,
-   "says": "Pods run your containers.",
-   "detail": "Requests and limits set placement and OOM behaviour. Alternatives to Kubernetes: Nomad, Swarm."
+   "col": 0,
+   "row": 1,
+   "says": "Pods hold the workload.",
+   "detail": "The application containers that the node hosts."
   },
   {
-   "id": "rbac",
-   "label": "RBAC",
-   "tech": "RBAC",
-   "icon": null,
-   "layer": 2,
+   "id": "dns",
+   "label": "Cluster DNS",
+   "tech": "CoreDNS",
+   "icon": "coredns",
+   "tone": "blue",
+   "layer": 0,
    "col": 0,
    "row": 0,
-   "says": "RBAC grants least privilege.",
-   "detail": "Role and RoleBinding per namespace. ClusterRole for cluster scope. Verify with auth can-i."
+   "says": "Cluster DNS names every Service.",
+   "detail": "A DNS server for Kubernetes services. Containers include it in their search path."
   },
   {
-   "id": "api",
-   "label": "API Server",
-   "tech": "Kubernetes",
+   "id": "dash",
+   "label": "Dashboard",
+   "tech": "Dashboard",
    "icon": "kubernetes",
-   "layer": 2,
+   "tone": "blue",
+   "layer": 0,
    "col": 1,
    "row": 0,
-   "says": "The API server is the front door.",
-   "detail": "Authenticates, authorizes, validates and persists to etcd. Everything else watches it.",
-   "inner": [
-    {
-     "id": "apiserver",
-     "label": "API server"
-    },
-    {
-     "id": "etcd",
-     "label": "etcd"
-    },
-    {
-     "id": "scheduler",
-     "label": "Scheduler"
-    },
-    {
-     "id": "controllers",
-     "label": "Controllers"
-    }
-   ]
+   "says": "The Dashboard is a web UI.",
+   "detail": "General purpose web UI to manage and troubleshoot applications and the cluster."
   },
   {
-   "id": "kubelet",
-   "label": "Kubelet",
-   "tech": "kubelet",
-   "icon": null,
-   "layer": 2,
+   "id": "mon",
+   "label": "Resource monitoring",
+   "tech": "Prometheus",
+   "icon": "prometheus",
+   "tone": "blue",
+   "layer": 0,
    "col": 2,
    "row": 0,
-   "says": "The kubelet runs pods on nodes.",
-   "detail": "Pulls images through the runtime, runs probes and reports node and pod status."
+   "says": "Monitoring records metrics.",
+   "detail": "Time-series metrics about containers in a central database with a UI.",
+   "href": "#/tech/prometheus"
+  },
+  {
+   "id": "logs",
+   "label": "Cluster logging",
+   "tech": "Fluent Bit",
+   "icon": "fluentbit",
+   "tone": "blue",
+   "layer": 0,
+   "col": 0,
+   "row": 1,
+   "says": "Logging saves container logs.",
+   "detail": "A cluster-level mechanism that ships container logs to a central, searchable store."
+  },
+  {
+   "id": "cni",
+   "label": "Network plugin",
+   "tech": "Cilium",
+   "icon": "cilium",
+   "tone": "blue",
+   "layer": 0,
+   "col": 1,
+   "row": 1,
+   "says": "CNI gives Pods an address.",
+   "detail": "Implements the container network interface: allocates Pod IPs and connects Pods."
+  },
+  {
+   "id": "kubectl",
+   "label": "kubectl",
+   "tech": "kubectl",
+   "icon": "actor-ops",
+   "tone": "blue",
+   "layer": 3,
+   "col": 0,
+   "row": 0,
+   "says": "Admins talk to the API server.",
+   "detail": "kubectl and other clients call the Kubernetes API."
+  },
+  {
+   "id": "cloud",
+   "label": "Cloud provider API",
+   "tech": "Cloud provider",
+   "icon": null,
+   "tone": "blue",
+   "layer": 4,
+   "col": 0,
+   "row": 0,
+   "says": "The cloud supplies infrastructure.",
+   "detail": "Load balancers, routes and nodes managed through the provider API. Alternatives: AWS, Azure, GCP, OpenStack."
   }
  ],
  "wires": [
   {
-   "from": "lb",
-   "to": "nodeport",
-   "label": "TCP",
+   "from": "kubectl",
+   "to": "api",
+   "label": "calls",
    "style": "solid",
    "flow": true,
    "weight": "bold"
-  },
-  {
-   "from": "nodeport",
-   "to": "kubeproxy",
-   "style": "solid",
-   "flow": true,
-   "weight": "bold"
-  },
-  {
-   "from": "kubeproxy",
-   "to": "svc",
-   "style": "solid",
-   "flow": true,
-   "weight": "bold"
-  },
-  {
-   "from": "svc",
-   "to": "pods",
-   "style": "solid",
-   "flow": true,
-   "weight": "bold"
-  },
-  {
-   "from": "nodeport",
-   "to": "ingress",
-   "label": "or via controller",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "ingress",
-   "to": "svc",
-   "label": "L7 to L4",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "netpol",
-   "to": "pods",
-   "label": "allow / deny",
-   "style": "dashed",
-   "flow": false,
-   "weight": "normal"
   },
   {
    "from": "api",
-   "to": "deploy",
+   "to": "etcd",
+   "label": "stores",
    "style": "solid",
-   "flow": false,
+   "flow": true,
    "weight": "normal"
   },
   {
-   "from": "deploy",
-   "to": "pods",
-   "label": "ReplicaSet",
+   "from": "sched",
+   "to": "api",
+   "label": "watches",
    "style": "solid",
-   "flow": false,
+   "flow": true,
    "weight": "normal"
   },
   {
-   "from": "hpa",
-   "to": "deploy",
-   "label": "scale",
+   "from": "kcm",
+   "to": "api",
+   "label": "reconciles",
    "style": "solid",
-   "flow": false,
+   "flow": true,
    "weight": "normal"
   },
   {
-   "from": "api",
-   "to": "kubelet",
+   "from": "ccm",
+   "to": "api",
+   "label": "watches",
    "style": "solid",
-   "flow": false,
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "ccm",
+   "to": "cloud",
+   "label": "calls",
+   "style": "dashed",
+   "flow": true,
    "weight": "normal"
   },
   {
    "from": "kubelet",
-   "to": "pods",
+   "to": "api",
+   "label": "registers",
    "style": "solid",
-   "flow": false,
+   "flow": true,
    "weight": "normal"
   },
   {
-   "from": "rbac",
-   "to": "api",
+   "from": "kubelet",
+   "to": "runtime",
+   "label": "starts",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "runtime",
+   "to": "pods",
+   "label": "runs",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "kproxy",
+   "to": "pods",
+   "label": "routes to",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "dns",
+   "to": "pods",
+   "label": "resolves for",
    "style": "dashed",
-   "flow": false,
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "cni",
+   "to": "pods",
+   "label": "networks",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "dash",
+   "to": "api",
+   "label": "uses",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "mon",
+   "to": "kubelet",
+   "label": "scrapes",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "logs",
+   "to": "runtime",
+   "label": "collects",
+   "style": "dashed",
+   "flow": true,
    "weight": "normal"
   }
  ],
  "tabs": [
   {
-   "id": "traffic",
-   "label": "Traffic",
-   "focus": [
-    "lb",
-    "nodeport",
-    "kubeproxy",
-    "svc",
-    "ingress",
-    "pods"
-   ]
-  },
-  {
    "id": "control",
    "label": "Control plane",
    "focus": [
     "api",
-    "rbac",
+    "etcd",
+    "sched",
+    "kcm",
+    "ccm",
+    "kubectl"
+   ]
+  },
+  {
+   "id": "node",
+   "label": "Node",
+   "focus": [
     "kubelet",
-    "deploy",
+    "kproxy",
+    "runtime",
     "pods"
    ]
   },
   {
-   "id": "scale",
-   "label": "Scale and isolate",
+   "id": "addons",
+   "label": "Addons",
    "focus": [
-    "hpa",
-    "deploy",
-    "netpol",
-    "pods"
+    "dns",
+    "dash",
+    "mon",
+    "logs",
+    "cni"
    ]
   }
  ],
  "steps": [
   {
-   "title": "Proxy",
-   "text": "The proxy forwards to a node port.",
+   "title": "Apply",
+   "text": "kubectl sends a request to the API server.",
    "boxes": [
-    "lb",
-    "nodeport"
+    "kubectl",
+    "api"
    ],
    "wires": [
     [
-     "lb",
-     "nodeport"
+     "kubectl",
+     "api"
     ]
    ]
   },
   {
-   "title": "Node",
-   "text": "kube-proxy picks a ready endpoint.",
-   "boxes": [
-    "nodeport",
-    "kubeproxy",
-    "svc"
-   ],
-   "wires": [
-    [
-     "nodeport",
-     "kubeproxy"
-    ],
-    [
-     "kubeproxy",
-     "svc"
-    ]
-   ]
-  },
-  {
-   "title": "Pods",
-   "text": "The Service balances across ready pods.",
-   "boxes": [
-    "svc",
-    "pods"
-   ],
-   "wires": [
-    [
-     "svc",
-     "pods"
-    ]
-   ]
-  },
-  {
-   "title": "Ingress",
-   "text": "Or an Ingress picks the Service by host.",
-   "boxes": [
-    "nodeport",
-    "ingress",
-    "svc"
-   ],
-   "wires": [
-    [
-     "nodeport",
-     "ingress"
-    ],
-    [
-     "ingress",
-     "svc"
-    ]
-   ]
-  },
-  {
-   "title": "Reconcile",
-   "text": "The API server and Deployment create pods.",
+   "title": "Store",
+   "text": "The API server records it in etcd.",
    "boxes": [
     "api",
-    "deploy",
-    "pods"
+    "etcd"
    ],
    "wires": [
     [
      "api",
-     "deploy"
+     "etcd"
+    ]
+   ]
+  },
+  {
+   "title": "Schedule",
+   "text": "The scheduler picks a node.",
+   "boxes": [
+    "sched",
+    "api"
+   ],
+   "wires": [
+    [
+     "sched",
+     "api"
+    ]
+   ]
+  },
+  {
+   "title": "Start",
+   "text": "The kubelet starts the containers.",
+   "boxes": [
+    "kubelet",
+    "runtime",
+    "pods"
+   ],
+   "wires": [
+    [
+     "kubelet",
+     "runtime"
     ],
     [
-     "deploy",
+     "runtime",
      "pods"
     ]
    ]
   },
   {
-   "title": "Scale",
-   "text": "HPA raises replicas when CPU climbs.",
+   "title": "Serve",
+   "text": "kube-proxy routes Service traffic to the Pods.",
    "boxes": [
-    "hpa",
-    "deploy"
+    "kproxy",
+    "pods"
    ],
    "wires": [
     [
-     "hpa",
-     "deploy"
+     "kproxy",
+     "pods"
     ]
    ]
   }
  ],
  "declarations": [
-  "The API server decides.",
-  "Services balance at L4.",
-  "Ingress routes at L7.",
-  "Rollouts undo cleanly."
+  "The API server is the front end.",
+  "etcd holds the state.",
+  "Controllers reconcile.",
+  "kubelet runs Pods."
  ],
  "run": {
-  "cmd": "kubectl -n dev rollout undo deploy/web",
+  "cmd": "kubectl get pods -n kube-system",
   "lines": [
-   "deployment.apps/web rolled back"
+   "kube-apiserver  etcd  kube-scheduler"
   ]
  }
 }

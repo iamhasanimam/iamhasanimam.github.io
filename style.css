@@ -433,3 +433,47 @@ details.more > summary { padding: 2px 0 6px var(--s4); list-style: none; cursor:
 .hero-graph { position: relative; isolation: isolate; }
 @media (prefers-reduced-motion: reduce) { .avail .dot { animation: none; } }
 
+
+/* employer name + industry tag in the career journey */
+.co { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 2px 0 var(--s1); color: var(--muted); font-size: var(--t-sm); }
+.ind { display: inline-flex; align-items: center; height: 20px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.ind.prod { background: color-mix(in srgb, #30d158 16%, transparent); color: #30d158; }
+.ind.svc { background: color-mix(in srgb, #0a84ff 16%, transparent); color: #0a84ff; }
+:root[data-theme="light"] .ind.prod { color: #1f8a3b; } :root[data-theme="light"] .ind.svc { color: #0066cc; }
+.q-company { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* scene buttons never wrap; the infrastructure switch wraps instead of cutting options off on phones */
+.flow3d .flow3d__tab, .flow3d .flow3d__cbtn { white-space: nowrap; flex: none; }
+.flow3d .flow3d__tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; max-width: calc(100% - 150px); }
+.flow3d .flow3d__tabs::-webkit-scrollbar { display: none; }
+@media (max-width: 640px) {
+  .flow-bar { flex-direction: column; align-items: stretch; }
+  .flow-ctl { flex-wrap: wrap; row-gap: 6px; }
+  .flow-bar .seg { height: auto; flex-wrap: wrap; width: 100%; }
+  .flow-bar .seg button { flex: 1 1 auto; height: 30px; padding: 0 10px; }
+  .flow3d .flow3d__tabs { max-width: 100%; }
+}
+
+/* career: the skip link sits in the toolbar row, same height and colours as the other controls */
+.toolbar .q-skip { position: static; display: inline-flex; align-items: center; height: 34px; padding: 0 16px; border-radius: 999px; background: var(--primary); color: var(--on-primary); text-decoration: none; font: 500 var(--t-sm) var(--font); margin-left: auto; }
+.toolbar .q-skip:hover { background: color-mix(in srgb, var(--primary) 88%, #fff); }
+.toolbar .q-skip:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+/* career trajectory (home): flat timeline, every row aligned across the five roles (subgrid), theme-coloured dots and line */
+.trail { grid-template-rows: auto; }
+.tn { display: grid; grid-row: span 5; grid-template-rows: subgrid; row-gap: 6px; padding-top: 0; text-align: left; }
+.tn::after { top: 9px; left: 19px; right: -32px; height: 3px; border-radius: 2px; background: var(--primary); opacity: .85; }
+.tn .dot { position: relative; top: auto; left: 0; border-color: var(--primary); background: var(--bg); margin-bottom: 14px; }
+.tn.now .dot { border-color: #30d158; box-shadow: 0 0 0 4px rgba(48,209,88,.25); }
+.tn .yr { margin: 0; color: var(--primary); font-size: var(--t-lg); font-weight: 600; }
+.tn h3 { margin: 0; align-self: start; }
+.tn .co { flex-direction: column; align-items: flex-start; gap: 5px; margin: 0; }
+.tn p { margin: 0; align-self: start; }
+@media (max-width: 860px) {
+  .tn { grid-row: auto; display: block; padding-top: 0; }
+  .tn::after { left: -27px; top: 23px; bottom: -16px; right: auto; width: 3px; height: auto; }
+  .tn .dot { position: absolute; left: -36px; top: 4px; margin: 0; }
+  .tn > * + * { margin-top: 6px; }
+}
+.tn .co { justify-content: space-between; align-self: stretch; }
+@media (max-width: 860px) { .tn .co { justify-content: flex-start; } }

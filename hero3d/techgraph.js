@@ -100,9 +100,25 @@ export function mountTechGraph(container, opts = {}) {
     x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(name.slice(0, 2), 96, 100);
     const t = new THREE.CanvasTexture(c); t.anisotropy = aniso; return t;
   }
+  /* logos whose official artwork is multi-colour (Elasticsearch) or a wordmark in a fixed grey (VMware) are drawn from local copies of the official SVG with their own colours, untinted */
+  const COLOR_ICONS = new Set(['elasticsearch', 'vmware']);
+  function loadColorIcon(slug) {
+    return fetch(new URL('../assets/icons/' + slug + '.svg', import.meta.url)).then((r) => { if (!r.ok) throw 0; return r.text(); }).then((svg) => new Promise((res, rej) => {
+      const vb = (svg.match(/viewBox="([^"]+)"/) || [])[1], [, , vw, vh] = (vb || '0 0 100 100').split(/\s+/).map(Number);
+      const s = svg.replace(/(<svg[^>]*?)\swidth="[^"]*"/, '$1').replace(/(<svg[^>]*?)\sheight="[^"]*"/, '$1').replace('<svg', `<svg width="${vw * 4}" height="${vh * 4}"`).replace(/#343741/gi, '#aab2bd').replace(/#717074/gi, '#a8abb0');
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas'); c.width = c.height = 192; const x = c.getContext('2d'), k = Math.min(168 / vw, 168 / vh), w = vw * k, h = vh * k;
+        x.drawImage(img, (192 - w) / 2, (192 - h) / 2, w, h);
+        const t = new THREE.CanvasTexture(c); t.anisotropy = aniso; t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; res(t);
+      };
+      img.onerror = rej; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
+    })).catch(() => null);
+  }
   function loadIcon(tile) {
     const slug = tile.icon;
     if (texCache.has(slug)) return texCache.get(slug);
+    if (COLOR_ICONS.has(slug)) { const pc = loadColorIcon(slug); texCache.set(slug, pc); return pc; }
     const p = fetch(ICON_CDN + slug + '.svg').then((r) => { if (!r.ok) throw 0; return r.text(); }).then((svg) => new Promise((res, rej) => {
       const s = svg.replace('<svg', '<svg width="192" height="192" fill="#fff"');
       const img = new Image();
@@ -584,7 +600,7 @@ export function mountTechGraph(container, opts = {}) {
       t.sideMat.color.copy(t.faceMat.color).multiplyScalar(theme === 'dark' ? 0.62 : 0.86);
       t.outMat.color.copy(C.edge); t.outMat.opacity = 0; // no resting border; only the hover ring shows
       t.ringMat.color.copy(t.brandC); t.ringMat.opacity = s.ring * 0.95;
-      t.iconMat.color.copy(C.text).lerp(t.brandC, s.c); t.iconMat.opacity = s.o;
+      if (COLOR_ICONS.has(t.icon)) t.iconMat.color.setRGB(1, 1, 1); else t.iconMat.color.copy(C.text).lerp(t.brandC, s.c); t.iconMat.opacity = s.o;
       t.glowMat.color.copy(t.brandC); t.glowMat.opacity = s.ring * (theme === 'dark' ? 0.34 : 0.28) + wv * (theme === 'dark' ? 0.2 : 0.14);
       t.shadowMat.opacity = (s.lift / 14) * (theme === 'dark' ? 0.5 : 0.22);
       t.shadow.position.set(t.x, t.y + bob - s.lift * 0.45, 0.2);
