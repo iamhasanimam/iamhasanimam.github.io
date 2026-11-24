@@ -1,19 +1,19 @@
 {
  "slug": "openbao",
- "name": "OpenBao",
+ "name": "Vault",
  "category": "Secrets Management",
- "icon": "openbao",
+ "icon": "vault",
  "level": "hands-on",
  "tagline": "Stores secrets encrypted, issues short-lived credentials, audits every access.",
- "whatItIs": "",
+ "whatItIs": "HashiCorp Vault is an identity-based secrets manager. It encrypts secrets at rest, issues short-lived credentials on demand and records every access.",
  "howItWorks": [
   {
    "title": "Barrier, seal and unseal",
-   "body": "Storage holds only ciphertext sealed by the barrier key.\noperator init splits the root key into N Shamir shares.\nK shares unseal; the key then lives only in memory.\nAuto-unseal hands the root key to a KMS or HSM.\nbao operator seal locks everything instantly."
+   "body": "Storage holds only ciphertext sealed by the barrier key.\noperator init splits the root key into N Shamir shares.\nK shares unseal; the key then lives only in memory.\nAuto-unseal hands the root key to a KMS or HSM.\nvault operator seal locks everything instantly."
   },
   {
    "title": "Raft integrated storage",
-   "body": "Data is replicated on each node; no external database.\nOne active leader writes; standbys forward or redirect.\nA majority commits each write: 2 of 3, 3 of 5.\nPort 8200 serves the API, 8201 serves cluster traffic.\nbao operator raft snapshot save captures a restorable backup."
+   "body": "Data is replicated on each node; no external database.\nOne active leader writes; standbys forward or redirect.\nA majority commits each write: 2 of 3, 3 of 5.\nPort 8200 serves the API, 8201 serves cluster traffic.\nvault operator raft snapshot save captures a restorable backup."
   },
   {
    "title": "Auth, tokens and policies",
@@ -29,7 +29,7 @@
   },
   {
    "title": "What sits in front",
-   "body": "Clients (Users, apps, CI jobs) call the HTTPS API on port 8200.\nA load balancer in the Edge layer can front several nodes and health-check /v1/sys/health.\nA Kubernetes pod (Platform) can authenticate with its service account JWT.\nCI authenticates with AppRole or JWT and gets a short-lived token per run."
+   "body": "Clients (users, apps, CI jobs) call the HTTPS API on port 8200.\nA load balancer in the Edge layer can front several nodes and health-check /v1/sys/health.\nA Kubernetes pod (Platform) can authenticate with its service account JWT.\nCI authenticates with AppRole or JWT and gets a short-lived token per run."
   },
   {
    "title": "What sits behind",
@@ -37,7 +37,7 @@
   },
   {
    "title": "Alternatives",
-   "body": "HashiCorp Vault: choose it for the original with commercial support; OpenBao is a fork under the Linux Foundation.\nCloud secret managers (AWS Secrets Manager, Azure Key Vault, GCP Secret Manager): choose them for provider-managed storage.\nSOPS: choose it to keep encrypted secrets in Git without a server.\nKubernetes Secrets with External Secrets Operator: choose it to sync from an existing store."
+   "body": "OpenBao: choose it for a Vault-compatible fork under the Linux Foundation with the same API and CLI concepts.\nCloud secret managers (AWS Secrets Manager, Azure Key Vault, Google Secret Manager): choose them for provider-managed storage.\nSOPS: choose it to keep encrypted secrets in Git without a server.\nKubernetes Secrets with External Secrets Operator: choose it to sync from an existing store."
   }
  ],
  "flow": [
@@ -62,59 +62,59 @@
    {
     "title": "Prepare host, directories and TLS",
     "lang": "bash",
-    "code": "sudo useradd --system --home /srv/openbao --shell /usr/sbin/nologin bao\nsudo mkdir -p /srv/openbao/{config,data,tls,logs,backup}\nsudo openssl req -x509 -newkey rsa:4096 -nodes -days 365 \\\n  -keyout /srv/openbao/tls/tls.key -out /srv/openbao/tls/tls.crt \\\n  -subj '/CN=bao-1.example.internal' \\\n  -addext 'subjectAltName=DNS:bao-1.example.internal,IP:127.0.0.1,IP:<NODE_IP>'\nsudo chown -R bao:bao /srv/openbao && sudo chmod 600 /srv/openbao/tls/tls.key",
+    "code": "sudo useradd --system --home /srv/vault --shell /usr/sbin/nologin vault\nsudo mkdir -p /srv/vault/{config,data,tls,logs,backup}\nsudo openssl req -x509 -newkey rsa:4096 -nodes -days 365 \\\n  -keyout /srv/vault/tls/tls.key -out /srv/vault/tls/tls.crt \\\n  -subj '/CN=vault-1.example.internal' \\\n  -addext 'subjectAltName=DNS:vault-1.example.internal,IP:127.0.0.1,IP:<NODE_IP>'\nsudo chown -R vault:vault /srv/vault && sudo chmod 600 /srv/vault/tls/tls.key",
     "note": "Replace <NODE_IP> and the DNS name. Use an internal CA in production."
    },
    {
     "title": "Write the server config with Raft storage",
     "lang": "hcl",
-    "code": "# /srv/openbao/config/bao.hcl\nui            = true\ndisable_mlock = true\napi_addr      = \"https://bao-1.example.internal:8200\"\ncluster_addr  = \"https://bao-1.example.internal:8201\"\nlistener \"tcp\" {\n  address       = \"0.0.0.0:8200\"\n  tls_cert_file = \"/openbao/tls/tls.crt\"\n  tls_key_file  = \"/openbao/tls/tls.key\"\n}\nstorage \"raft\" {\n  path    = \"/openbao/data\"\n  node_id = \"bao-1\"\n  retry_join {\n    leader_api_addr     = \"https://bao-2.example.internal:8200\"\n    leader_ca_cert_file = \"/openbao/tls/tls.crt\"\n  }\n}",
+    "code": "# /srv/vault/config/vault.hcl\nui            = true\ndisable_mlock = true\napi_addr      = \"https://vault-1.example.internal:8200\"\ncluster_addr  = \"https://vault-1.example.internal:8201\"\nlistener \"tcp\" {\n  address       = \"0.0.0.0:8200\"\n  tls_cert_file = \"/vault/tls/tls.crt\"\n  tls_key_file  = \"/vault/tls/tls.key\"\n}\nstorage \"raft\" {\n  path    = \"/vault/file\"\n  node_id = \"vault-1\"\n  retry_join {\n    leader_api_addr     = \"https://vault-2.example.internal:8200\"\n    leader_ca_cert_file = \"/vault/tls/tls.crt\"\n  }\n}",
     "note": "Repeat per node with its own node_id and addresses. disable_mlock is the documented choice for Raft."
    },
    {
     "title": "Open the firewall and run the container",
     "lang": "bash",
-    "code": "sudo ufw allow from <LAN_CIDR> to any port 8200,8201 proto tcp\ndocker run -d --name bao --restart unless-stopped \\\n  --user \"$(id -u bao):$(id -g bao)\" -p 8200:8200 -p 8201:8201 \\\n  -v /srv/openbao/config:/openbao/config:ro -v /srv/openbao/data:/openbao/data \\\n  -v /srv/openbao/tls:/openbao/tls:ro -v /srv/openbao/logs:/openbao/logs \\\n  -v /srv/openbao/backup:/openbao/backup \\\n  openbao/openbao:2.1.0 server\nbao() { docker exec -i -e BAO_ADDR=https://127.0.0.1:8200 \\\n  -e BAO_CACERT=/openbao/tls/tls.crt -e BAO_TOKEN bao bao \"$@\"; }",
-    "note": "8200 is the API, 8201 is node-to-node Raft traffic. Limit both to the cluster subnet."
+    "code": "sudo ufw allow from <LAN_CIDR> to any port 8200,8201 proto tcp\ndocker run -d --name vault --restart unless-stopped \\\n  --user \"$(id -u vault):$(id -g vault)\" -p 8200:8200 -p 8201:8201 \\\n  -v /srv/vault/config:/vault/config:ro -v /srv/vault/data:/vault/file \\\n  -v /srv/vault/tls:/vault/tls:ro -v /srv/vault/logs:/vault/logs \\\n  -v /srv/vault/backup:/vault/backup \\\n  hashicorp/vault:1.18.5 server\nvault() { docker exec -i -e VAULT_ADDR=https://127.0.0.1:8200 \\\n  -e VAULT_CACERT=/vault/tls/tls.crt -e VAULT_TOKEN vault vault \"$@\"; }",
+    "note": "8200 is the API, 8201 is node-to-node Raft traffic. Limit both to the cluster subnet. For a throwaway lab only: docker run --cap-add=IPC_LOCK -p 8200:8200 hashicorp/vault:1.18.5 server -dev."
    },
    {
     "title": "Initialise and unseal",
     "lang": "bash",
-    "code": "bao operator init -key-shares=5 -key-threshold=3 > ~/bao-init.txt\nbao operator unseal   # run three times, one share each\nexport BAO_TOKEN=<ROOT_TOKEN>\nbao status\nbao operator raft list-peers",
+    "code": "vault operator init -key-shares=5 -key-threshold=3 > ~/vault-init.txt\nvault operator unseal   # run three times, one share each\nexport VAULT_TOKEN=<ROOT_TOKEN>\nvault status\nvault operator raft list-peers",
     "note": "Give each share to a different custodian. Revoke the root token after setup."
    },
    {
     "title": "KV v2, policy and AppRole",
     "lang": "bash",
-    "code": "bao secrets enable -path=secret kv-v2\nbao kv put secret/myapp/config db_user=app db_pass='<VALUE>'\nbao policy write myapp - <<'EOF'\npath \"secret/data/myapp/*\"     { capabilities = [\"read\"] }\npath \"secret/metadata/myapp/*\" { capabilities = [\"list\"] }\nEOF\nbao auth enable approle\nbao write auth/approle/role/myapp token_policies=myapp token_ttl=1h \\\n  token_max_ttl=4h secret_id_ttl=10m secret_id_num_uses=1\nbao read -field=role_id auth/approle/role/myapp/role-id\nbao write -f -field=secret_id auth/approle/role/myapp/secret-id",
+    "code": "vault secrets enable -path=secret kv-v2\nvault kv put secret/myapp/config db_user=app db_pass='<VALUE>'\nvault policy write myapp - <<'EOF'\npath \"secret/data/myapp/*\"     { capabilities = [\"read\"] }\npath \"secret/metadata/myapp/*\" { capabilities = [\"list\"] }\nEOF\nvault auth enable approle\nvault write auth/approle/role/myapp token_policies=myapp token_ttl=1h \\\n  token_max_ttl=4h secret_id_ttl=10m secret_id_num_uses=1\nvault read -field=role_id auth/approle/role/myapp/role-id\nvault write -f -field=secret_id auth/approle/role/myapp/secret-id",
     "note": "KV v2 policies target secret/data/... and secret/metadata/... A policy on secret/myapp/ matches nothing."
    },
    {
     "title": "Dynamic PostgreSQL credentials",
     "lang": "bash",
-    "code": "bao secrets enable database\nbao write database/config/appdb plugin_name=postgresql-database-plugin \\\n  allowed_roles=app-ro \\\n  connection_url='postgresql://{{username}}:{{password}}@db.example.internal:5432/appdb' \\\n  username=baoadmin password='<ADMIN_PASSWORD>'\nbao write -f database/rotate-root/appdb\nbao write database/roles/app-ro db_name=appdb default_ttl=1h max_ttl=24h \\\n  creation_statements=\"CREATE ROLE \\\"{{name}}\\\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; GRANT SELECT ON ALL TABLES IN SCHEMA public TO \\\"{{name}}\\\";\"\nbao read database/creds/app-ro",
+    "code": "vault secrets enable database\nvault write database/config/appdb plugin_name=postgresql-database-plugin \\\n  allowed_roles=app-ro \\\n  connection_url='postgresql://{{username}}:{{password}}@db.example.internal:5432/appdb' \\\n  username=vaultadmin password='<ADMIN_PASSWORD>'\nvault write -f database/rotate-root/appdb\nvault write database/roles/app-ro db_name=appdb default_ttl=1h max_ttl=24h \\\n  creation_statements=\"CREATE ROLE \\\"{{name}}\\\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; GRANT SELECT ON ALL TABLES IN SCHEMA public TO \\\"{{name}}\\\";\"\nvault read database/creds/app-ro",
     "note": "Each read mints a unique user that expires with its lease. rotate-root hides the admin password from humans."
    },
    {
     "title": "Audit device and Raft snapshot backup",
     "lang": "bash",
-    "code": "bao audit enable file file_path=/openbao/logs/audit.log\nbao operator raft snapshot save /openbao/backup/bao-$(date +%F).snap\n# host crontab, token bound to a snapshot-only policy:\n0 2 * * * docker exec -e BAO_ADDR=https://127.0.0.1:8200 -e BAO_CACERT=/openbao/tls/tls.crt -e BAO_TOKEN=<BACKUP_TOKEN> bao bao operator raft snapshot save /openbao/backup/bao-$(date +\\%F).snap\n# restore: bao operator raft snapshot restore -force /openbao/backup/<FILE>.snap",
-    "note": "If every audit device fails, OpenBao refuses requests. Copy snapshots off-host."
+    "code": "vault audit enable file file_path=/vault/logs/audit.log\nvault operator raft snapshot save /vault/backup/vault-$(date +%F).snap\n# host crontab, token bound to a snapshot-only policy:\n0 2 * * * docker exec -e VAULT_ADDR=https://127.0.0.1:8200 -e VAULT_CACERT=/vault/tls/tls.crt -e VAULT_TOKEN=<BACKUP_TOKEN> vault vault operator raft snapshot save /vault/backup/vault-$(date +\\%F).snap\n# restore: vault operator raft snapshot restore -force /vault/backup/<FILE>.snap",
+    "note": "If every audit device fails, Vault refuses requests. Copy snapshots off-host."
    },
    {
     "title": "Inject secrets with Agent",
     "lang": "hcl",
-    "code": "# /etc/openbao/agent.hcl  (run: bao agent -config=/etc/openbao/agent.hcl)\nvault {\n  address = \"https://bao-1.example.internal:8200\"\n  ca_cert = \"/etc/openbao/ca.crt\"\n}\nauto_auth {\n  method \"approle\" {\n    config = {\n      role_id_file_path   = \"/etc/openbao/role_id\"\n      secret_id_file_path = \"/etc/openbao/secret_id\"\n    }\n  }\n}\ntemplate {\n  contents    = \"{{ with secret \\\"secret/data/myapp/config\\\" }}DB_PASS={{ .Data.data.db_pass }}{{ end }}\"\n  destination = \"/run/myapp/env\"\n  perms       = \"0640\"\n}",
+    "code": "# /etc/vault/agent.hcl  (run: vault agent -config=/etc/vault/agent.hcl)\nvault {\n  address = \"https://vault-1.example.internal:8200\"\n  ca_cert = \"/etc/vault/ca.crt\"\n}\nauto_auth {\n  method \"approle\" {\n    config = {\n      role_id_file_path   = \"/etc/vault/role_id\"\n      secret_id_file_path = \"/etc/vault/secret_id\"\n    }\n  }\n}\ntemplate {\n  contents    = \"{{ with secret \\\"secret/data/myapp/config\\\" }}DB_PASS={{ .Data.data.db_pass }}{{ end }}\"\n  destination = \"/run/myapp/env\"\n  perms       = \"0640\"\n}",
     "note": "Agent logs in, renews the token and rewrites the file when the secret changes. The app only reads a file."
    }
   ]
  },
  "verify": [
-  "bao status: Initialized true, Sealed false, Storage Type raft.",
-  "bao operator raft list-peers: all nodes listed, one leader.",
-  "curl -s --cacert tls.crt https://bao-1.example.internal:8200/v1/sys/health returns 200 on the leader.",
-  "bao read database/creds/app-ro returns a new username each time.",
-  "tail /srv/openbao/logs/audit.log shows each request as JSON."
+  "vault status: Initialized true, Sealed false, Storage Type raft.",
+  "vault operator raft list-peers: all nodes listed, one leader.",
+  "curl -s --cacert tls.crt https://vault-1.example.internal:8200/v1/sys/health returns 200 on the leader.",
+  "vault read database/creds/app-ro returns a new username each time.",
+  "tail /srv/vault/logs/audit.log shows each request as JSON."
  ],
  "pitfalls": [
   "Policies on secret/myapp miss KV v2; use secret/data/myapp.",
@@ -122,24 +122,24 @@
   "A full audit disk blocks every request.",
   "Standby nodes need leader_ca_cert or retry_join fails on TLS.",
   "Use secret_id_num_uses=1; a reusable secret ID is a password.",
-  "Dev mode is in-memory and unsealed; never use it in production."
+  "Dev mode (vault server -dev) is in-memory and unsealed: lab use only, never production."
  ],
  "furtherReading": [
   {
    "label": "Seal and unseal",
-   "url": "https://openbao.org/docs/concepts/seal/"
+   "url": "https://developer.hashicorp.com/vault/docs/concepts/seal"
   },
   {
    "label": "Integrated storage (Raft)",
-   "url": "https://openbao.org/docs/internals/integrated-storage/"
+   "url": "https://developer.hashicorp.com/vault/docs/internals/integrated-storage"
   },
   {
    "label": "AppRole auth",
-   "url": "https://openbao.org/docs/auth/approle/"
+   "url": "https://developer.hashicorp.com/vault/docs/auth/approle"
   },
   {
-   "label": "Agent",
-   "url": "https://openbao.org/docs/agent-and-proxy/agent/"
+   "label": "Vault Agent",
+   "url": "https://developer.hashicorp.com/vault/docs/agent-and-proxy/agent"
   }
  ],
  "keyPoints": [

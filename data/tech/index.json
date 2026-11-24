@@ -49,7 +49,7 @@
   },
   {
     "slug": "openbao",
-    "name": "OpenBao",
+    "name": "Vault",
     "category": "Secrets",
     "icon": "vault",
     "level": "hands-on",

@@ -409,3 +409,18 @@ details.more > summary { padding: 2px 0 6px var(--s4); list-style: none; cursor:
 @media (max-width: 640px) { .flow-sec.home .flow-host { height: auto; } }
 
 .mico { border: 0; }
+
+/* arch ui */
+.flow-stage { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--s3, 12px); align-items: start; }
+.flow-stage.no-side { grid-template-columns: minmax(0, 1fr); }
+.flow-side { display: flex; flex-direction: column; min-height: 0; max-height: clamp(720px, 84vh, 960px); height: clamp(720px, 84vh, 960px); }
+.flow-side[hidden] { display: none; }
+.flow-side .fa-panel { flex: 1; min-height: 0; }
+.flow-bar .seg { flex-wrap: wrap; height: auto; min-height: 32px; }
+.flow-bar .seg button { height: 32px; }
+@media (max-width: 1000px) {
+  .flow-stage { grid-template-columns: minmax(0, 1fr); }
+  .flow-side { height: auto; max-height: 460px; }
+}
+.malts { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; margin-top: 2px; }
+.malt { padding: 1px 6px; border: var(--bd); border-radius: 99px; color: var(--muted); font-size: 10px; line-height: 1.4; }

@@ -1,5 +1,5 @@
 /* Portfolio SPA: hash routing, static JSON data, no build. All data text is inserted with textContent (no innerHTML on data). */
-import { parseRoute, nextRoute } from './route.js?v=20261125e';
+import { parseRoute, nextRoute } from './route.js?v=20261125n';
 (() => {
   'use strict';
 
@@ -8,7 +8,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261125e';
   const LINKEDIN_URL = 'https://www.linkedin.com/in/iamhasanimam';
   const TYPE_CODE_MS = 22; // code typing speed in the hero editor, git log and code blocks (ms per character)
   const PAUSE_MS = 1800;   // pause after a snippet is typed, before the next tab
-  const ASSET_V = '20261125e'; // cache-busting for dynamic imports; keep in sync with index.html
+  const ASSET_V = '20261125n'; // cache-busting for dynamic imports; keep in sync with index.html
 
   // Brand colours (tuned for the dark banner). Slugs missing from simple-icons get a monogram.
   const COLORS = {
@@ -27,7 +27,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261125e';
      ['amazonaws', 'AWS', 'aws'], ['vmware', 'VMware', 'vmware-esxi'], ['linux', 'Linux', 'linux-networking']],
     [['redis', 'Redis', 'redis'], ['istio', 'Istio', 'istio'], ['keycloak', 'Keycloak', 'keycloak'], ['grafana', 'Grafana', 'grafana'],
      ['prometheus', 'Prometheus', 'prometheus'], ['ansible', 'Ansible', 'ansible'], ['jenkins', 'Jenkins', 'jenkins']],
-    [null, ['vault', 'OpenBao', 'openbao'], ['apachekafka', 'Kafka', 'kafka'], ['postgresql', 'PostgreSQL', 'postgresql'],
+    [null, ['vault', 'Vault', 'openbao'], ['apachekafka', 'Kafka', 'kafka'], ['postgresql', 'PostgreSQL', 'postgresql'],
      ['python', 'Python', 'python'], ['elasticsearch', 'Elasticsearch', 'elasticsearch'], ['nodedotjs', 'Node.js', 'nodejs']]
   ];
   // ---------- helpers ----------
@@ -781,7 +781,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261125e';
   const curTheme = () => document.documentElement.dataset.theme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
   const themeSubs = new Set();
   // home architecture toggles: Architecture v1 | v2, and (v2 only) Infrastructure OpenStack | VMware ESXi | AWS
-  const INFRA = [['openstack', 'OpenStack'], ['esxi', 'VMware ESXi'], ['aws', 'AWS']];
+  const INFRA = [['openstack', 'OpenStack'], ['esxi', 'VMware ESXi'], ['aws', 'AWS'], ['gcp', 'GCP'], ['azure', 'Azure']];
   function homeState() {
     const st = { arch: 'v2', infra: 'openstack' };
     try { const o = JSON.parse(sessionStorage.getItem('home-arch') || '{}'); if (o.arch === 'v1' || o.arch === 'v2') st.arch = o.arch; if (INFRA.some(([k]) => k === o.infra)) st.infra = o.infra; } catch (e) { /* ignore */ }
@@ -804,24 +804,28 @@ import { parseRoute, nextRoute } from './route.js?v=20261125e';
     return h('div', { class: 'flow-ctl' }, h('span', { class: 'flow-ctl-l' }, label), grp);
   }
   // phone layout of the home stack: a 3D scene this wide is not legible at 390px, so show the same layers as a clean vertical stack of cards with the real logos
-  const NARROW = () => { try { return window.matchMedia('(max-width: 640px)').matches; } catch (e) { return false; } };
+  const NARROW = () => false; // phones get the 3D architecture too (the card-stack fallback mobileStack is kept but unused)
+  // zone order for the phone stack (top to bottom); matched by label so it follows whatever layer indices the spec uses
+  const ZONE_RANK = [/^users?$/i, /edge/i, /api/i, /cluster/i, /data/i, /observ/i, /operator/i, /infra/i];
+  const zoneRank = (l) => { const i = ZONE_RANK.findIndex((re) => re.test(String(l.label || ''))); return i < 0 ? 50 - (l.layer || 0) : i; };
   function mobileStack(sp) {
-    const order = [4, 3, 2, 5, 6, 1, 0], have = new Set((sp.layers || []).map((l) => l.layer));
-    const keys = order.every((k) => have.has(k)) ? order : (sp.layers || []).map((l) => l.layer).sort((x, y) => y - x);
+    const layers = (sp.layers || []).slice().sort((x, y) => zoneRank(x) - zoneRank(y) || y.layer - x.layer);
     const wrap = h('div', { class: 'mstack' });
-    keys.forEach((k, i) => {
-      const L = (sp.layers || []).find((l) => l.layer === k); if (!L) return;
-      const items = sp.boxes.filter((b) => b.layer === k).sort((x, y) => (x.row - y.row) || (x.col - y.col));
+    layers.forEach((L, i) => {
+      const items = sp.boxes.filter((b) => b.layer === L.layer).sort((x, y) => (x.row - y.row) || (x.col - y.col));
+      if (!items.length) return;
       const tiles = items.map((b) => {
         const inner = String(b.icon || '').startsWith('actor-') ? h('span', { class: 'mono' }, (b.label || '?').slice(0, 1)) : glyph(b.icon, b.label);
         const tag = b.href && String(b.href).startsWith('#/') ? 'a' : 'div';
-        const el = h(tag, { class: 'mtile', title: b.says || b.label }, h('span', { class: 'mico' }, inner), h('span', { class: 'mlbl' }, b.label + (b.replicas > 1 ? ' ×' + b.replicas : '')));
+        const alts = Array.isArray(b.alts) ? b.alts.filter((a) => a && a.label) : [];
+        const el = h(tag, { class: 'mtile', title: b.says || b.label }, h('span', { class: 'mico' }, inner), h('span', { class: 'mlbl' }, b.label + (b.replicas > 1 ? ' ×' + b.replicas : '')),
+          alts.length ? h('span', { class: 'malts', 'aria-label': 'Alternatives' }, alts.map((a) => h('span', { class: 'malt' }, a.label))) : null);
         if (tag === 'a') el.setAttribute('href', b.href);
         el.style.setProperty('--bc', (curTheme() === 'light' && COLORS_LIGHT[b.icon]) || COLORS[b.icon] || '#8ab4f8');
         return el;
       });
       wrap.append(h('section', { class: 'mlayer' }, h('h3', null, L.label), h('div', { class: 'mrow' }, tiles)));
-      if (i < keys.length - 1) wrap.append(h('div', { class: 'mflow', 'aria-hidden': 'true' }, '↓'));
+      if (i < layers.length - 1) wrap.append(h('div', { class: 'mflow', 'aria-hidden': 'true' }, '↓'));
     });
     return wrap;
   }
@@ -832,19 +836,26 @@ import { parseRoute, nextRoute } from './route.js?v=20261125e';
     let spec = await getJSON(`data/flow/${encodeURIComponent(slugOf())}.json`);
     if (!okSpec(spec)) return null;
     const host = h('div', { class: 'flow-host' });
+    const side = home ? h('div', { class: 'flow-side' }) : null; let alts = null;
+    const stage = home ? h('div', { class: 'flow-stage' }, host, side) : host;
+    const setAlts = async (hd) => {
+      try { if (alts) alts.destroy(); } catch (e) { /* ignore */ } alts = null; if (!side) return; side.replaceChildren();
+      if (!hd || typeof hd.getBoxes !== 'function' || typeof hd.swapTech !== 'function') { side.hidden = true; stage.classList.add('no-side'); return; }
+      try { const m = await import(`./hero3d/flow-alts.js?v=${ASSET_V}`); if (hd !== handle) return; alts = m.mountAlts(side, hd, { host, icon: (s, n) => (s && !String(s).startsWith('actor-') ? glyph(s, n) : null) }); side.hidden = !alts.supported; stage.classList.toggle('no-side', !alts.supported); } catch (e) { side.hidden = true; stage.classList.add('no-side'); }
+    };
     const head = home ? h('div', { class: 'sec' }, eb('// platform', h('h2', { id: 'fl-h' }, 'The stack, layer by layer')))
       : h('div', { class: 'sec' }, eb('// flow', h('h2', null, 'Flow')));
     let bar = null, infraBar = null, handle = null, gen = 0;
     const remount = async () => {
       if (!handle && !host.firstChild) return; // not mounted (off screen): the next lazy mount reads the new state
       const my = ++gen;
-      try { if (handle && handle.unmount) handle.unmount(); } catch (e) { /* ignore */ } handle = null; host.replaceChildren(); if (chipBar) chipBar.replaceChildren();
+      try { if (handle && handle.unmount) handle.unmount(); } catch (e) { /* ignore */ } handle = null; host.replaceChildren(); if (chipBar) chipBar.replaceChildren(); if (alts) { try { alts.destroy(); } catch (e) { /* ignore */ } alts = null; } if (side) side.replaceChildren();
       const sp = await getJSON(`data/flow/${slugOf()}.json`);
       if (my !== gen || !okSpec(sp)) return;
       if (home && NARROW()) { host.replaceChildren(mobileStack(sp)); return; }
       const m = await import(`./hero3d/flow3d.js?v=${ASSET_V}`);
       if (my !== gen) return;
-      handle = await m.mountFlow(host, sp, { theme: curTheme(), flyIn: false }); setChips(handle);
+      handle = await m.mountFlow(host, sp, { theme: curTheme(), flyIn: false }); setChips(handle); setAlts(handle);
     };
     let chipBar = null;
     const setChips = (hd) => {
@@ -869,7 +880,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261125e';
       bar = h('div', { class: 'flow-bar' }, infraBar);
       saveHomeState(hs);
     }
-    const wrap = h('section', { class: 'flow-sec' + (home ? ' home' : ''), 'aria-label': home ? 'Stack' : 'Flow' }, head, bar, chipBar, host);
+    const wrap = h('section', { class: 'flow-sec' + (home ? ' home' : ''), 'aria-label': home ? 'Stack' : 'Flow' }, head, bar, chipBar, stage);
     host.addEventListener('flow3d:open', (e) => { const hr = e.detail && e.detail.href; if (typeof hr === 'string' && hr.startsWith('#/')) navigate(hr); });
     const sub = (t) => { try { if (handle && handle.setTheme) handle.setTheme(t); } catch (e) { /* ignore */ } };
     themeSubs.add(sub); cleanups.push(() => themeSubs.delete(sub));
@@ -877,8 +888,8 @@ import { parseRoute, nextRoute } from './route.js?v=20261125e';
       const m = await import(`./hero3d/flow3d.js?v=${ASSET_V}`);
       const sp = home ? (await getJSON(`data/flow/${slugOf()}.json`)) || spec : spec;
       if (home && NARROW()) { host.replaceChildren(mobileStack(sp)); return; }
-      handle = await m.mountFlow(host, sp, { theme: curTheme() }); setChips(handle);
-    }, () => { try { if (handle && handle.unmount) handle.unmount(); } catch (e) { /* ignore */ } handle = null; host.replaceChildren(); }, () => { wrap.remove(); });
+      handle = await m.mountFlow(host, sp, { theme: curTheme() }); setChips(handle); setAlts(handle);
+    }, () => { try { if (alts) alts.destroy(); } catch (e) { /* ignore */ } alts = null; if (side) side.replaceChildren(); try { if (handle && handle.unmount) handle.unmount(); } catch (e) { /* ignore */ } handle = null; host.replaceChildren(); }, () => { wrap.remove(); });
     return wrap;
   }
   function declList(arr) {

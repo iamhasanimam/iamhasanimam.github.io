@@ -1,0 +1,1537 @@
+{
+ "title": "Platform v3",
+ "subtitle": "Azure",
+ "layers": [
+  {
+   "layer": 0,
+   "label": "Infrastructure"
+  },
+  {
+   "layer": 1,
+   "label": "Observability zone"
+  },
+  {
+   "layer": 2,
+   "label": "Data zone"
+  },
+  {
+   "layer": 3,
+   "label": "Cluster zone"
+  },
+  {
+   "layer": 4,
+   "label": "API / Ops zone"
+  },
+  {
+   "layer": 5,
+   "label": "Edge zone"
+  },
+  {
+   "layer": 6,
+   "label": "Users",
+   "kind": "outside",
+   "side": "left",
+   "arrange": "vertical"
+  },
+  {
+   "layer": 7,
+   "label": "Operators",
+   "kind": "outside",
+   "side": "right",
+   "arrange": "vertical"
+  }
+ ],
+ "groups": [],
+ "tabs": [
+  {
+   "id": "request",
+   "label": "Request",
+   "focus": [
+    "users",
+    "haproxy",
+    "nginx",
+    "kong",
+    "istio",
+    "web",
+    "order",
+    "payment",
+    "postgres"
+   ]
+  },
+  {
+   "id": "sso",
+   "label": "SSO",
+   "focus": [
+    "users",
+    "kong",
+    "web",
+    "keycloak",
+    "redis",
+    "order"
+   ]
+  },
+  {
+   "id": "events",
+   "label": "Events",
+   "focus": [
+    "web",
+    "order",
+    "kafka",
+    "payment",
+    "notification"
+   ]
+  },
+  {
+   "id": "delivery",
+   "label": "Delivery",
+   "focus": [
+    "devs",
+    "git",
+    "jenkins",
+    "argo",
+    "kubernetes",
+    "ops"
+   ]
+  },
+  {
+   "id": "observe",
+   "label": "Observe",
+   "focus": [
+    "order",
+    "otel",
+    "loki",
+    "tempo",
+    "prometheus",
+    "grafana"
+   ]
+  }
+ ],
+ "boxes": [
+  {
+   "id": "vnet",
+   "label": "VNet",
+   "tech": "Azure Virtual Network",
+   "icon": "microsoftazure",
+   "tone": "blue",
+   "layer": 0,
+   "role": "Networking",
+   "says": "The VNet isolates the network.",
+   "detail": "Subnets, route tables and network security groups around the workloads.",
+   "alts": [
+    {
+     "label": "Azure VNet",
+     "icon": "microsoftazure"
+    },
+    {
+     "label": "OpenStack Neutron",
+     "icon": "openstack"
+    },
+    {
+     "label": "VMware vSwitch",
+     "icon": "vmware"
+    },
+    {
+     "label": "AWS VPC",
+     "icon": "amazonaws"
+    },
+    {
+     "label": "Google VPC",
+     "icon": "googlecloud"
+    }
+   ],
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "avm",
+   "label": "Virtual Machines",
+   "tech": "Azure Virtual Machines",
+   "icon": "microsoftazure",
+   "tone": "blue",
+   "layer": 0,
+   "role": "Compute",
+   "says": "Virtual Machines run the nodes.",
+   "detail": "Private instances in scale sets. Alternatives: OpenStack Nova, ESXi, AWS EC2, Compute Engine.",
+   "alts": [
+    {
+     "label": "OpenStack",
+     "icon": "openstack"
+    },
+    {
+     "label": "VMware ESXi",
+     "icon": "vmware"
+    },
+    {
+     "label": "AWS",
+     "icon": "amazonaws"
+    },
+    {
+     "label": "GCP",
+     "icon": "googlecloud"
+    },
+    {
+     "label": "Azure",
+     "icon": "microsoftazure"
+    }
+   ],
+   "col": 1,
+   "row": 0
+  },
+  {
+   "id": "disks",
+   "label": "Managed Disks",
+   "tech": "Azure Managed Disks",
+   "icon": "microsoftazure",
+   "tone": "blue",
+   "layer": 0,
+   "role": "Block storage",
+   "says": "Managed Disks back the volumes.",
+   "detail": "Encrypted block storage with snapshots and zone redundancy.",
+   "alts": [
+    {
+     "label": "Managed Disks",
+     "icon": "microsoftazure"
+    },
+    {
+     "label": "OpenStack Cinder",
+     "icon": "openstack"
+    },
+    {
+     "label": "vSAN",
+     "icon": "vmware"
+    },
+    {
+     "label": "AWS EBS",
+     "icon": "amazonaws"
+    },
+    {
+     "label": "Persistent Disk",
+     "icon": "googlecloud"
+    }
+   ],
+   "col": 2,
+   "row": 0
+  },
+  {
+   "id": "blob",
+   "label": "Blob Storage",
+   "tech": "Azure Blob Storage",
+   "icon": "microsoftazure",
+   "tone": "blue",
+   "layer": 0,
+   "role": "Cloud storage",
+   "says": "Blob Storage keeps objects.",
+   "detail": "Versioned containers for artifacts, logs and backups.",
+   "alts": [
+    {
+     "label": "Azure Blob",
+     "icon": "microsoftazure"
+    },
+    {
+     "label": "Amazon S3",
+     "icon": "amazons3"
+    },
+    {
+     "label": "MinIO",
+     "icon": "minio"
+    },
+    {
+     "label": "Ceph",
+     "icon": "ceph"
+    },
+    {
+     "label": "Cloud Storage",
+     "icon": "googlecloudstorage"
+    }
+   ],
+   "col": 0,
+   "row": 1
+  },
+  {
+   "id": "entra",
+   "label": "Entra ID",
+   "tech": "Microsoft Entra ID",
+   "icon": "microsoftazure",
+   "tone": "blue",
+   "layer": 0,
+   "role": "Cloud identity",
+   "says": "Entra ID grants least privilege.",
+   "detail": "Roles and conditional access control who reaches each resource.",
+   "alts": [
+    {
+     "label": "Entra ID",
+     "icon": "microsoftazure"
+    },
+    {
+     "label": "OpenStack Keystone",
+     "icon": "openstack"
+    },
+    {
+     "label": "AWS IAM",
+     "icon": "amazonaws"
+    },
+    {
+     "label": "Google IAM",
+     "icon": "googlecloud"
+    }
+   ],
+   "col": 1,
+   "row": 1
+  },
+  {
+   "id": "amon",
+   "label": "Azure Monitor",
+   "tech": "Azure Monitor",
+   "icon": "microsoftazure",
+   "tone": "blue",
+   "layer": 0,
+   "role": "Cloud monitoring",
+   "says": "Azure Monitor watches the subscription.",
+   "detail": "Metrics, logs and alerts for the infrastructure.",
+   "alts": [
+    {
+     "label": "Azure Monitor",
+     "icon": "microsoftazure"
+    },
+    {
+     "label": "CloudWatch",
+     "icon": "amazoncloudwatch"
+    },
+    {
+     "label": "Cloud Monitoring",
+     "icon": "googlecloud"
+    },
+    {
+     "label": "Prometheus",
+     "icon": "prometheus"
+    },
+    {
+     "label": "Datadog",
+     "icon": "datadog"
+    }
+   ],
+   "col": 2,
+   "row": 1
+  },
+  {
+   "id": "haproxy",
+   "label": "HAProxy",
+   "tech": "HAProxy",
+   "icon": "haproxy",
+   "tone": "blue",
+   "layer": 5,
+   "role": "Load balancer",
+   "says": "HAProxy accepts public traffic.",
+   "detail": "A virtual IP with failover spreads TCP and HTTP traffic across healthy proxies.",
+   "alts": [
+    {
+     "label": "HAProxy",
+     "icon": "haproxy"
+    },
+    {
+     "label": "NGINX",
+     "icon": "nginx"
+    },
+    {
+     "label": "Envoy",
+     "icon": "envoyproxy"
+    },
+    {
+     "label": "Traefik",
+     "icon": "traefikproxy"
+    },
+    {
+     "label": "Caddy",
+     "icon": "caddy"
+    }
+   ],
+   "href": "#/tech/haproxy",
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "nginx",
+   "label": "NGINX",
+   "tech": "NGINX",
+   "icon": "nginx",
+   "tone": "blue",
+   "layer": 5,
+   "role": "Reverse proxy",
+   "says": "NGINX terminates TLS.",
+   "detail": "Handles HTTPS, compression and caching, then forwards requests to the API gateway.",
+   "alts": [
+    {
+     "label": "NGINX",
+     "icon": "nginx"
+    },
+    {
+     "label": "Envoy",
+     "icon": "envoyproxy"
+    },
+    {
+     "label": "Traefik",
+     "icon": "traefikproxy"
+    },
+    {
+     "label": "Caddy",
+     "icon": "caddy"
+    },
+    {
+     "label": "HAProxy",
+     "icon": "haproxy"
+    }
+   ],
+   "href": "#/tech/nginx",
+   "col": 1,
+   "row": 0
+  },
+  {
+   "id": "kong",
+   "label": "Kong",
+   "tech": "Kong",
+   "icon": "kong",
+   "tone": "blue",
+   "layer": 4,
+   "role": "API gateway",
+   "says": "Kong enforces API policy.",
+   "detail": "Routes requests and applies authentication, rate limits and plugins before traffic reaches the cluster.",
+   "alts": [
+    {
+     "label": "Kong",
+     "icon": "kong"
+    },
+    {
+     "label": "Envoy Gateway",
+     "icon": "envoyproxy"
+    },
+    {
+     "label": "Apigee",
+     "icon": "googlecloud"
+    },
+    {
+     "label": "AWS API Gateway",
+     "icon": "amazonapigateway"
+    },
+    {
+     "label": "Traefik",
+     "icon": "traefikproxy"
+    }
+   ],
+   "href": "#/tech/kong",
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "keycloak",
+   "label": "Keycloak",
+   "tech": "Keycloak",
+   "icon": "keycloak",
+   "tone": "blue",
+   "layer": 4,
+   "role": "Identity",
+   "says": "Keycloak signs users in.",
+   "detail": "OpenID Connect single sign-on issues tokens that every service can validate.",
+   "alts": [
+    {
+     "label": "Keycloak",
+     "icon": "keycloak"
+    },
+    {
+     "label": "Authentik",
+     "icon": "authentik"
+    },
+    {
+     "label": "Okta",
+     "icon": "okta"
+    },
+    {
+     "label": "Auth0",
+     "icon": "auth0"
+    },
+    {
+     "label": "Cognito",
+     "icon": "amazoncognito"
+    }
+   ],
+   "href": "#/tech/keycloak",
+   "col": 1,
+   "row": 0
+  },
+  {
+   "id": "openbao",
+   "label": "Vault",
+   "tech": "Vault",
+   "icon": "vault",
+   "tone": "blue",
+   "layer": 4,
+   "role": "Secrets",
+   "says": "Vault hands out secrets.",
+   "detail": "Stores credentials and certificates, and issues short-lived secrets to workloads on demand.",
+   "alts": [
+    {
+     "label": "Vault",
+     "icon": "vault"
+    },
+    {
+     "label": "AWS Secrets Manager",
+     "icon": "amazonaws"
+    },
+    {
+     "label": "Azure Key Vault",
+     "icon": "microsoftazure"
+    },
+    {
+     "label": "Google Secret Manager",
+     "icon": "googlecloud"
+    }
+   ],
+   "href": "#/tech/openbao",
+   "col": 2,
+   "row": 0
+  },
+  {
+   "id": "git",
+   "label": "Git",
+   "tech": "Git",
+   "icon": "git",
+   "tone": "blue",
+   "layer": 4,
+   "role": "Source control",
+   "says": "Git holds the source of truth.",
+   "detail": "Every change to code and configuration is reviewed and versioned here.",
+   "alts": [
+    {
+     "label": "Git",
+     "icon": "git"
+    },
+    {
+     "label": "GitLab",
+     "icon": "gitlab"
+    },
+    {
+     "label": "GitHub Actions",
+     "icon": "githubactions"
+    }
+   ],
+   "col": 0,
+   "row": 1
+  },
+  {
+   "id": "jenkins",
+   "label": "Jenkins",
+   "tech": "Jenkins",
+   "icon": "jenkins",
+   "tone": "blue",
+   "layer": 4,
+   "role": "CI",
+   "says": "Jenkins builds and tests.",
+   "detail": "Pipelines build images, run tests and scans, then publish a manifest change.",
+   "alts": [
+    {
+     "label": "Jenkins",
+     "icon": "jenkins"
+    },
+    {
+     "label": "GitLab CI",
+     "icon": "gitlab"
+    },
+    {
+     "label": "GitHub Actions",
+     "icon": "githubactions"
+    }
+   ],
+   "href": "#/tech/jenkins",
+   "col": 1,
+   "row": 1
+  },
+  {
+   "id": "argo",
+   "label": "Argo CD",
+   "tech": "Argo CD",
+   "icon": "argo",
+   "tone": "blue",
+   "layer": 4,
+   "role": "GitOps",
+   "says": "Argo CD syncs the cluster.",
+   "detail": "Watches Git and applies the desired state, so the cluster matches the repository.",
+   "alts": [
+    {
+     "label": "Argo CD",
+     "icon": "argo"
+    },
+    {
+     "label": "Flux",
+     "icon": "flux"
+    },
+    {
+     "label": "Fleet",
+     "icon": null
+    }
+   ],
+   "href": "#/tech/jenkins",
+   "col": 2,
+   "row": 1
+  },
+  {
+   "id": "ansible",
+   "label": "Ansible",
+   "tech": "Ansible",
+   "icon": "ansible",
+   "tone": "blue",
+   "layer": 4,
+   "role": "Configuration",
+   "says": "Ansible configures the hosts.",
+   "detail": "Idempotent playbooks keep operating system and runtime settings consistent.",
+   "alts": [
+    {
+     "label": "Ansible",
+     "icon": "ansible"
+    },
+    {
+     "label": "Terraform",
+     "icon": "terraform"
+    },
+    {
+     "label": "Puppet",
+     "icon": "puppet"
+    }
+   ],
+   "href": "#/tech/ansible",
+   "col": 0,
+   "row": 2
+  },
+  {
+   "id": "istio",
+   "label": "Istio",
+   "tech": "Istio",
+   "icon": "istio",
+   "tone": "blue",
+   "layer": 3,
+   "role": "Service mesh",
+   "says": "Istio secures service traffic.",
+   "detail": "Sidecars add mutual TLS, retries and traffic rules between every pair of services.",
+   "alts": [
+    {
+     "label": "Istio",
+     "icon": "istio"
+    },
+    {
+     "label": "Linkerd",
+     "icon": "linkerd"
+    },
+    {
+     "label": "Cilium",
+     "icon": "cilium"
+    }
+   ],
+   "href": "#/tech/istio",
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "web",
+   "label": "Frontend",
+   "tech": "Node.js",
+   "icon": "nodedotjs",
+   "tone": "blue",
+   "layer": 3,
+   "role": "Frontend service",
+   "says": "The frontend serves the web app.",
+   "detail": "Three replicas render pages, keep sessions and call the backend services.",
+   "alts": [
+    {
+     "label": "Node.js",
+     "icon": "nodedotjs"
+    },
+    {
+     "label": "Python",
+     "icon": "python"
+    },
+    {
+     "label": "Go",
+     "icon": "go"
+    },
+    {
+     "label": "Java",
+     "icon": "openjdk"
+    },
+    {
+     "label": ".NET",
+     "icon": "dotnet"
+    }
+   ],
+   "replicas": 3,
+   "col": 1,
+   "row": 0
+  },
+  {
+   "id": "redis",
+   "label": "Redis",
+   "tech": "Redis",
+   "icon": "redis",
+   "tone": "blue",
+   "layer": 3,
+   "role": "Cache",
+   "says": "Redis keeps sessions fast.",
+   "detail": "An in-memory store for sessions and hot data with expiry.",
+   "alts": [
+    {
+     "label": "Redis",
+     "icon": "redis"
+    },
+    {
+     "label": "Memcached",
+     "icon": null
+    },
+    {
+     "label": "Valkey",
+     "icon": null
+    }
+   ],
+   "href": "#/tech/redis",
+   "col": 2,
+   "row": 0
+  },
+  {
+   "id": "order",
+   "label": "Order",
+   "tech": "Python",
+   "icon": "python",
+   "tone": "blue",
+   "layer": 3,
+   "role": "Backend service",
+   "says": "Order owns the order lifecycle.",
+   "detail": "Three replicas publish events, write orders to the database and validate tokens.",
+   "alts": [
+    {
+     "label": "Python",
+     "icon": "python"
+    },
+    {
+     "label": "Node.js",
+     "icon": "nodedotjs"
+    },
+    {
+     "label": "Go",
+     "icon": "go"
+    },
+    {
+     "label": "Java",
+     "icon": "openjdk"
+    },
+    {
+     "label": ".NET",
+     "icon": "dotnet"
+    }
+   ],
+   "replicas": 3,
+   "href": "#/tech/python",
+   "col": 0,
+   "row": 1
+  },
+  {
+   "id": "kafka",
+   "label": "Kafka",
+   "tech": "Apache Kafka",
+   "icon": "apachekafka",
+   "tone": "blue",
+   "layer": 3,
+   "role": "Message queue",
+   "says": "Kafka decouples the services.",
+   "detail": "A durable event log lets producers and consumers scale and fail independently.",
+   "alts": [
+    {
+     "label": "Kafka",
+     "icon": "apachekafka"
+    },
+    {
+     "label": "RabbitMQ",
+     "icon": "rabbitmq"
+    },
+    {
+     "label": "NATS",
+     "icon": null
+    }
+   ],
+   "href": "#/tech/kafka",
+   "col": 1,
+   "row": 1
+  },
+  {
+   "id": "payment",
+   "label": "Payment",
+   "tech": "Node.js",
+   "icon": "nodedotjs",
+   "tone": "blue",
+   "layer": 3,
+   "role": "Backend service",
+   "says": "Payment settles the charge.",
+   "detail": "Two replicas consume order events and record the result idempotently.",
+   "alts": [
+    {
+     "label": "Node.js",
+     "icon": "nodedotjs"
+    },
+    {
+     "label": "Python",
+     "icon": "python"
+    },
+    {
+     "label": "Go",
+     "icon": "go"
+    },
+    {
+     "label": "Java",
+     "icon": "openjdk"
+    },
+    {
+     "label": ".NET",
+     "icon": "dotnet"
+    }
+   ],
+   "replicas": 2,
+   "col": 2,
+   "row": 1
+  },
+  {
+   "id": "notification",
+   "label": "Notification",
+   "tech": "Python",
+   "icon": "python",
+   "tone": "blue",
+   "layer": 3,
+   "role": "Backend service",
+   "says": "Notification tells the user.",
+   "detail": "Two replicas consume events and send email and push messages.",
+   "alts": [
+    {
+     "label": "Python",
+     "icon": "python"
+    },
+    {
+     "label": "Node.js",
+     "icon": "nodedotjs"
+    },
+    {
+     "label": "Go",
+     "icon": "go"
+    },
+    {
+     "label": "Java",
+     "icon": "openjdk"
+    },
+    {
+     "label": ".NET",
+     "icon": "dotnet"
+    }
+   ],
+   "replicas": 2,
+   "href": "#/tech/python",
+   "col": 0,
+   "row": 2
+  },
+  {
+   "id": "kubernetes",
+   "label": "Kubernetes",
+   "tech": "Kubernetes",
+   "icon": "kubernetes",
+   "tone": "blue",
+   "layer": 3,
+   "role": "Orchestrator",
+   "says": "Kubernetes schedules everything.",
+   "detail": "The control plane places containers, restarts failures and scales replicas.",
+   "alts": [
+    {
+     "label": "Kubernetes",
+     "icon": "kubernetes"
+    },
+    {
+     "label": "Nomad",
+     "icon": "nomad"
+    },
+    {
+     "label": "Amazon ECS",
+     "icon": "amazonecs"
+    },
+    {
+     "label": "Cloud Run",
+     "icon": "googlecloud"
+    }
+   ],
+   "href": "#/tech/kubernetes-okd",
+   "col": 1,
+   "row": 2
+  },
+  {
+   "id": "postgres",
+   "label": "PostgreSQL",
+   "tech": "PostgreSQL",
+   "icon": "postgresql",
+   "tone": "blue",
+   "layer": 2,
+   "role": "Database",
+   "says": "PostgreSQL stores the records.",
+   "detail": "A relational database with transactions, replication and point-in-time recovery.",
+   "alts": [
+    {
+     "label": "PostgreSQL",
+     "icon": "postgresql"
+    },
+    {
+     "label": "MySQL",
+     "icon": "mysql"
+    },
+    {
+     "label": "MariaDB",
+     "icon": "mariadb"
+    }
+   ],
+   "href": "#/tech/postgresql",
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "elasticsearch",
+   "label": "Elasticsearch",
+   "tech": "Elasticsearch",
+   "icon": "elasticsearch",
+   "tone": "blue",
+   "layer": 2,
+   "role": "Search",
+   "says": "Elasticsearch answers searches.",
+   "detail": "An inverted index for full-text search and filtering at scale.",
+   "alts": [
+    {
+     "label": "Elasticsearch",
+     "icon": "elasticsearch"
+    },
+    {
+     "label": "OpenSearch",
+     "icon": "opensearch"
+    },
+    {
+     "label": "Solr",
+     "icon": "apachesolr"
+    }
+   ],
+   "col": 1,
+   "row": 0
+  },
+  {
+   "id": "objstore",
+   "label": "Object storage",
+   "tech": "MinIO",
+   "icon": "minio",
+   "tone": "blue",
+   "layer": 2,
+   "role": "Object storage",
+   "says": "Object storage keeps backups.",
+   "detail": "S3-compatible buckets hold backups, artifacts and logs cheaply.",
+   "alts": [
+    {
+     "label": "MinIO",
+     "icon": "minio"
+    },
+    {
+     "label": "Amazon S3",
+     "icon": "amazons3"
+    },
+    {
+     "label": "Ceph",
+     "icon": "ceph"
+    },
+    {
+     "label": "Cloud Storage",
+     "icon": "googlecloud"
+    },
+    {
+     "label": "Azure Blob",
+     "icon": "microsoftazure"
+    }
+   ],
+   "href": "#/tech/loki-minio",
+   "col": 0,
+   "row": 1
+  },
+  {
+   "id": "otel",
+   "label": "OpenTelemetry",
+   "tech": "OpenTelemetry",
+   "icon": "opentelemetry",
+   "tone": "blue",
+   "layer": 1,
+   "role": "Telemetry",
+   "says": "OpenTelemetry collects signals.",
+   "detail": "One vendor-neutral agent gathers traces, metrics and logs from every service.",
+   "alts": [
+    {
+     "label": "OpenTelemetry",
+     "icon": "opentelemetry"
+    },
+    {
+     "label": "Fluent Bit",
+     "icon": "fluentbit"
+    },
+    {
+     "label": "Datadog agent",
+     "icon": "datadog"
+    }
+   ],
+   "href": "#/tech/prometheus",
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "prometheus",
+   "label": "Prometheus",
+   "tech": "Prometheus",
+   "icon": "prometheus",
+   "tone": "blue",
+   "layer": 1,
+   "role": "Metrics",
+   "says": "Prometheus scrapes metrics.",
+   "detail": "A time-series database with a query language and alert rules.",
+   "alts": [
+    {
+     "label": "Prometheus",
+     "icon": "prometheus"
+    },
+    {
+     "label": "VictoriaMetrics",
+     "icon": "victoriametrics"
+    },
+    {
+     "label": "Datadog",
+     "icon": "datadog"
+    }
+   ],
+   "href": "#/tech/prometheus",
+   "col": 1,
+   "row": 0
+  },
+  {
+   "id": "loki",
+   "label": "Loki",
+   "tech": "Grafana Loki",
+   "icon": "grafana",
+   "tone": "blue",
+   "layer": 1,
+   "role": "Logs",
+   "says": "Loki stores the logs.",
+   "detail": "Indexes only labels, so log storage stays cheap and queries stay fast.",
+   "alts": [
+    {
+     "label": "Loki",
+     "icon": "grafana"
+    },
+    {
+     "label": "Elasticsearch",
+     "icon": "elasticsearch"
+    },
+    {
+     "label": "OpenSearch",
+     "icon": "opensearch"
+    }
+   ],
+   "href": "#/tech/loki-minio",
+   "col": 2,
+   "row": 0
+  },
+  {
+   "id": "tempo",
+   "label": "Tempo",
+   "tech": "Grafana Tempo",
+   "icon": "grafana",
+   "tone": "blue",
+   "layer": 1,
+   "role": "Traces",
+   "says": "Tempo stores the traces.",
+   "detail": "Follows one request across services to show where the time went.",
+   "alts": [
+    {
+     "label": "Tempo",
+     "icon": "grafana"
+    },
+    {
+     "label": "Jaeger",
+     "icon": "jaeger"
+    },
+    {
+     "label": "Zipkin",
+     "icon": null
+    }
+   ],
+   "href": "#/tech/loki-minio",
+   "col": 0,
+   "row": 1
+  },
+  {
+   "id": "grafana",
+   "label": "Grafana",
+   "tech": "Grafana",
+   "icon": "grafana",
+   "tone": "blue",
+   "layer": 1,
+   "role": "Dashboards",
+   "says": "Grafana shows it all.",
+   "detail": "Dashboards and alerts over metrics, logs and traces in one place.",
+   "alts": [
+    {
+     "label": "Grafana",
+     "icon": "grafana"
+    },
+    {
+     "label": "Kibana",
+     "icon": "kibana"
+    },
+    {
+     "label": "Datadog",
+     "icon": "datadog"
+    }
+   ],
+   "href": "#/tech/grafana",
+   "col": 1,
+   "row": 1
+  },
+  {
+   "id": "users",
+   "label": "End users",
+   "tech": "End users",
+   "icon": "actor-user",
+   "tone": "blue",
+   "layer": 6,
+   "role": "Users",
+   "says": "End users use the apps.",
+   "detail": "Real traffic enters through the edge and travels down the stack.",
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "devs",
+   "label": "Developers",
+   "tech": "Developers",
+   "icon": "actor-dev",
+   "tone": "blue",
+   "layer": 7,
+   "role": "Operators",
+   "says": "Developers ship the code.",
+   "detail": "They push changes to Git and the delivery pipeline does the rest.",
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "ops",
+   "label": "DevOps engineer",
+   "tech": "DevOps engineer",
+   "icon": "actor-ops",
+   "tone": "blue",
+   "layer": 7,
+   "role": "Operators",
+   "says": "The DevOps engineer runs the platform.",
+   "detail": "Builds pipelines, runs playbooks and watches the dashboards.",
+   "col": 0,
+   "row": 1
+  }
+ ],
+ "wires": [
+  {
+   "from": "vnet",
+   "to": "avm",
+   "label": "subnets",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "avm",
+   "to": "disks",
+   "label": "disk",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "avm",
+   "to": "blob",
+   "label": "objects",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "entra",
+   "to": "avm",
+   "label": "roles",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "avm",
+   "to": "amon",
+   "label": "metrics",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "kubernetes",
+   "to": "avm",
+   "label": "runs on",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "users",
+   "to": "haproxy",
+   "label": "HTTPS",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "haproxy",
+   "to": "nginx",
+   "label": "TCP",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "nginx",
+   "to": "kong",
+   "label": "HTTP",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "kong",
+   "to": "istio",
+   "label": "mTLS",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "istio",
+   "to": "web",
+   "label": "route",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "web",
+   "to": "order",
+   "label": "call",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "web",
+   "to": "redis",
+   "label": "session",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "web",
+   "to": "keycloak",
+   "label": "login",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "order",
+   "to": "kafka",
+   "label": "publish",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "kafka",
+   "to": "payment",
+   "label": "consume",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "kafka",
+   "to": "notification",
+   "label": "consume",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "openbao",
+   "to": "order",
+   "label": "secrets",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "order",
+   "to": "postgres",
+   "label": "SQL",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "payment",
+   "to": "postgres",
+   "label": "SQL",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "notification",
+   "to": "elasticsearch",
+   "label": "index",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "postgres",
+   "to": "objstore",
+   "label": "backup",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "order",
+   "to": "otel",
+   "label": "telemetry",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "otel",
+   "to": "loki",
+   "label": "logs",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "loki",
+   "to": "grafana",
+   "label": "",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "tempo",
+   "to": "grafana",
+   "label": "",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "prometheus",
+   "to": "grafana",
+   "label": "metrics",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "devs",
+   "to": "git",
+   "label": "push",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "git",
+   "to": "jenkins",
+   "label": "webhook",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "jenkins",
+   "to": "argo",
+   "label": "manifest",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "argo",
+   "to": "kubernetes",
+   "label": "sync",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "ops",
+   "to": "ansible",
+   "label": "playbooks",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  }
+ ],
+ "steps": [
+  {
+   "title": "Enter",
+   "text": "Users reach HAProxy over HTTPS.",
+   "boxes": [
+    "users",
+    "haproxy"
+   ],
+   "wires": [
+    [
+     "users",
+     "haproxy"
+    ]
+   ]
+  },
+  {
+   "title": "Route",
+   "text": "NGINX terminates TLS and Kong applies API policy.",
+   "boxes": [
+    "haproxy",
+    "nginx",
+    "kong"
+   ],
+   "wires": [
+    [
+     "haproxy",
+     "nginx"
+    ],
+    [
+     "nginx",
+     "kong"
+    ]
+   ]
+  },
+  {
+   "title": "Mesh",
+   "text": "Istio admits traffic and forwards it to the frontend.",
+   "boxes": [
+    "kong",
+    "istio",
+    "web"
+   ],
+   "wires": [
+    [
+     "kong",
+     "istio"
+    ],
+    [
+     "istio",
+     "web"
+    ]
+   ]
+  },
+  {
+   "title": "Login",
+   "text": "The frontend redirects to Keycloak for OIDC login.",
+   "boxes": [
+    "web",
+    "keycloak"
+   ],
+   "wires": [
+    [
+     "web",
+     "keycloak"
+    ]
+   ]
+  },
+  {
+   "title": "Session",
+   "text": "The frontend stores the session in Redis and calls services.",
+   "boxes": [
+    "web",
+    "redis",
+    "order"
+   ],
+   "wires": [
+    [
+     "web",
+     "redis"
+    ],
+    [
+     "web",
+     "order"
+    ]
+   ]
+  },
+  {
+   "title": "Events",
+   "text": "Order publishes to Kafka; Payment and Notification consume.",
+   "boxes": [
+    "order",
+    "kafka",
+    "payment",
+    "notification"
+   ],
+   "wires": [
+    [
+     "order",
+     "kafka"
+    ],
+    [
+     "kafka",
+     "payment"
+    ],
+    [
+     "kafka",
+     "notification"
+    ]
+   ]
+  },
+  {
+   "title": "Persist",
+   "text": "Services write their records to PostgreSQL.",
+   "boxes": [
+    "order",
+    "payment",
+    "postgres"
+   ],
+   "wires": [
+    [
+     "order",
+     "postgres"
+    ],
+    [
+     "payment",
+     "postgres"
+    ]
+   ]
+  }
+ ],
+ "run": {
+  "cmd": "kubectl get deploy -n shop",
+  "lines": [
+   "web 3/3  order 3/3",
+   "payment 2/2  notification 2/2"
+  ]
+ },
+ "declarations": [
+  "Istio secures service traffic.",
+  "Kafka decouples the services.",
+  "Git drives every deployment.",
+  "Grafana shows metrics, logs, traces."
+ ]
+}

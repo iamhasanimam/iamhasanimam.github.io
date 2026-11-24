@@ -4,6 +4,9 @@
  *   h -> { mode, camera, controls, getDistance(), zoomIn(), zoomOut(), reset(), focus(id), enter(boxId), exit(), setTab(id|null),
  *          startWalk(), stopWalk(), setTheme(t), setHeight(px|css), expand(), collapse(), project(id), unmount() }
  *
+ * WAVE 7 (v3): default view Isometric; bright indigo-slate / white backdrop, per-zone light neon cubes, glassy floor slabs, hair-thin gradient
+ *   wires with tiny glowing spheres. handle.focus(id|null) = hover-style highlight (dim others, glow, light wires; no camera move; camera fly is flyTo(id)),
+ *   swapTech(id,{label,tech,icon}), getBoxes() -> [{id,label,tech,icon,layer,zone,alts}]. Host events: flow3d:hover {id|null}, flow3d:pick {id} (cube with alts; skips navigation).
  * WORLD: layers/groups are thin-line wireframe volumes (corner brackets on layers), components are small grey boxes with the brand
  * icon on the top face, wires are thin gradient lines with bubbles (and short ghost trails), and every box fires thin lightning
  * arcs along its outgoing wires. Neutral monochrome + one accent (--primary, else #8ab4f8 dark / #1a73e8 light).
@@ -35,12 +38,13 @@ import { arcPoints, innerLayout, rng } from './flow-fx.js';
 const LIFT = (CARD.h - BOX.h) / 2; // upright cards: tile centre sits LIFT above the flat-tile anchor so the card stands on the slab
 const FOCUS_DIM = 0.12, FOCUS_NEIGHBOUR = 0.35, MIN_TILE_PX = 56;
 const FOV = 18, PAD_FIT = 0.015, DEG = Math.PI / 180;
-const VIEWS = [{ id: 'front', label: 'Front', az: -12, el: 31 }, { id: 'iso', label: 'Isometric', az: -45, el: 32 }, { id: 'bird', label: "Bird's eye", az: 0, el: 80 }];
+const VIEWS = [{ id: 'iso', label: 'Isometric', az: -38, el: 33 }, { id: 'front', label: 'Front', az: -12, el: 31 }, { id: 'bird', label: "Bird's eye", az: 0, el: 80 }];
 const BIRD = 2;
 const AZ = VIEWS[0].az * DEG, EL = VIEWS[0].el * DEG;
 const BUBBLE_SPEED = 1.1, TR = 1, DIM = 0.25, FADE_OTHERS = 0.12, ARC_MAX = 16, ARC_SEG = 9;
 const SWAY_SPEED = 0.015, SWAY_MAX = (12 * Math.PI) / 180, FLY_MS = 1600, ENTER_MS = 700;
-const WIRE_W = 0.9, WIRE_W_BOLD = 1.3, WIRE_W_HOT = 1.2; // very thin wires (Line2 linewidth, px)
+const WIRE_W = 0.6, WIRE_W_BOLD = 0.6, WIRE_W_HOT = 0.6; // hair-thin wires (Line2 linewidth, px)
+const BUB_R = 0.06; // travelling bubble radius (world units)
 const SUB = { w: 0.6, h: 0.36, d: 0.6 };
 const HINT_KEY = 'flow3d-hint-seen', Y_AXIS = new THREE.Vector3(0, 1, 0);
 
@@ -70,12 +74,11 @@ function glowTexture() {
 
 function palette(theme, cssPrimary, cssBg) {
   const dark = theme === 'dark', col = (c) => new THREE.Color(c);
-  let accent = col(dark ? '#8ab4f8' : '#1a73e8'), bg = col(dark ? '#202124' : '#ffffff');
+  let accent = col(dark ? '#8ab4f8' : '#1a73e8'), bg = col(dark ? '#2c3254' : '#f6f8fd');
   if (cssPrimary) { try { accent = new THREE.Color(cssPrimary); } catch { /* keep */ } }
-  if (cssBg && /^#|^rgb/i.test(cssBg)) { try { bg = new THREE.Color(cssBg); } catch { /* keep */ } }
   return dark
-    ? { dark, accent, bg, volume: col('#e8eaed'), volumeOp: 0.28, side: '#3a3c40', top: '#45474c', edge: col('#e8eaed'), edgeOp: 0.5, wire: col('#e8eaed'), floorOp: 0.05, icon: 'rgba(255,255,255,.8)' }
-    : { dark, accent, bg, volume: col('#5f6368'), volumeOp: 0.34, side: '#e8eaed', top: '#f4f5f6', edge: col('#dadce0'), edgeOp: 1, wire: col('#3c4043'), floorOp: 0.05, icon: 'rgba(60,64,67,.85)' };
+    ? { dark, accent, bg, bgTop: '#353c63', bgBot: '#242a47', volume: col('#c9d0ff'), volumeOp: 0.4, side: '#8d95c8', top: '#a8afdc', edge: col('#ffffff'), edgeOp: 0.5, wire: col('#dfe4ff'), floorOp: 0.12, grid: '#aab4ff', ground: '#4a5388', groundOp: 0.55, icon: 'rgba(255,255,255,.8)' }
+    : { dark, accent, bg, bgTop: '#ffffff', bgBot: '#eef2fa', volume: col('#5f6368'), volumeOp: 0.34, side: '#e6ebf8', top: '#f4f6fc', edge: col('#c9d0e4'), edgeOp: 1, wire: col('#3c4043'), floorOp: 0.14, grid: '#8f9bc4', ground: '#dfe6f7', groundOp: 0.8, icon: 'rgba(60,64,67,.85)' };
 }
 
 function fallbackList(container, spec, boxes) {
@@ -84,21 +87,30 @@ function fallbackList(container, spec, boxes) {
   const ul = h('ul'); boxes.forEach((b) => { const li = h('li'); const label = b.short || b.label || b.id; if (b.href || b.slug) { const a = h('a', '', label); a.href = b.href || `#/tech/${b.slug}`; li.appendChild(a); } else li.appendChild(h('strong', '', label)); ul.appendChild(li); });
   f.appendChild(ul); root.appendChild(f); container.appendChild(root);
   const n = () => {};
-  return { mode: 'fallback', camera: null, getDistance: () => 0, zoomIn: n, zoomOut: n, reset: n, focus: n, enter: n, exit: n, setTab: n, startWalk: n, stopWalk: n, setTheme: n, setHeight: n, expand: n, collapse: n, unmount() { root.remove(); container.classList.remove('flow3d'); } };
+  return { mode: 'fallback', camera: null, getDistance: () => 0, zoomIn: n, zoomOut: n, reset: n, focus: n, flyTo: n, swapTech: n, getBoxes: () => [], enter: n, exit: n, setTab: n, startWalk: n, stopWalk: n, setTheme: n, setHeight: n, expand: n, collapse: n, unmount() { root.remove(); container.classList.remove('flow3d'); } };
 }
 
 export async function mountFlow(container, spec = {}, opts = {}) {
   ensureCss();
   const boxesSpec = (spec.boxes || []).filter((b) => b && b.id);
   const ids = new Set(boxesSpec.map((b) => b.id));
-  /* Apple system colours (dark / light variants): blue, purple, pink, green, cyan, indigo. No orange. */
-  const NEON = ['#0a84ff', '#bf5af2', '#ff375f', '#30d158', '#64d2ff', '#5e5ce6'].map((h) => new THREE.Color(h)), MATERIAL = ['#007aff', '#af52de', '#ff2d55', '#34c759', '#32ade6', '#5856d6'].map((h) => new THREE.Color(h));
+  /* light NEON per zone (matched on the zone label), darkened a little for lines on the light theme */
+  const ZONE_NEON = [[/edge/i, '#7dffc4'], [/api|ops/i, '#5eeaff'], [/cluster|kubernetes/i, '#8fa8ff'], [/data/i, '#ff8fd8'], [/observ/i, '#c59bff'], [/infra/i, '#8ad8ff'], [/user|operator|actor|outside/i, '#c7d6ff']];
+  const FALLBACK_NEON = ['#7dffc4', '#5eeaff', '#8fa8ff', '#ff8fd8', '#c59bff', '#8ad8ff'];
+  const layerLabels = new Map((spec.layers || []).map((l) => [l.layer, String(l.label || '')]));
+  const neonCache = new Map(), lineCache = new Map();
+  const neonOf = (k) => { if (!neonCache.has(k)) { const lab = layerLabels.get(k) || ''; const z = ZONE_NEON.find(([re]) => re.test(lab)); neonCache.set(k, new THREE.Color(z ? z[1] : FALLBACK_NEON[Math.abs(Number(k) || 0) % FALLBACK_NEON.length])); } return neonCache.get(k); };
+  const lineOf = (k) => { if (!lineCache.has(k)) lineCache.set(k, neonOf(k).clone().multiplyScalar(0.7)); return lineCache.get(k); };
   let composer = null, bloom = null, cw = 1, chg = 1;
   const BLOOM = false; // nothing blurred, crystal clear
-  let layerKeysMemo = null;
-  const layerCol = (k) => { if (!layerKeysMemo) layerKeysMemo = [...new Set(boxesSpec.map((b) => (Number.isFinite(b.layer) ? b.layer : 0)))].sort((a, b) => a - b); return (P.dark ? NEON : MATERIAL)[Math.max(0, layerKeysMemo.indexOf(k)) % NEON.length]; };
+  const layerCol = (k) => (P.dark ? neonOf(k) : lineOf(k)); // line / wire / slab colour (readable on both backdrops)
   const _sc = new THREE.Color(), _tc = new THREE.Color(), _white = new THREE.Color('#ffffff'), _black = new THREE.Color('#15161a'), _nGrey = new THREE.Color('#5f6368');
-  const paintBox = (b, k) => { const lc = layerCol(b.layer); b.lc = lc; _sc.copy(lc); _tc.copy(lc); if (P.dark) { _sc.multiplyScalar(0.92); } else { _sc.lerp(_white, 0.02); } b.sideMat.color.copy(_sc).multiplyScalar(k); b.topMat.color.copy(_tc).multiplyScalar(k); b.sideMat.emissive.copy(lc); b.topMat.emissive.copy(lc); b.sideMat.emissiveIntensity = 0.06 + 0.3 * (k - 1); b.topMat.emissiveIntensity = 0.06 + 0.3 * (k - 1); if (b.hullMat) b.hullMat.color.copy(P.dark ? lc : _sc.copy(lc).multiplyScalar(0.55)); };
+  const paintBox = (b, k) => {
+    const nc = neonOf(b.layer); b.lc = nc; _sc.copy(nc).lerp(_white, P.dark ? 0.28 : 0.4); _tc.copy(nc).lerp(_white, P.dark ? 0.5 : 0.58);
+    b.sideMat.color.copy(_sc).multiplyScalar(k); b.topMat.color.copy(_tc).multiplyScalar(k);
+    b.sideMat.emissive.copy(nc); b.topMat.emissive.copy(nc); const ei = 0.12 + 0.55 * (k - 1); b.sideMat.emissiveIntensity = ei; b.topMat.emissiveIntensity = ei * 0.8;
+    if (b.hullMat) b.hullMat.color.copy(P.dark ? nc : lineOf(b.layer));
+  };
   if (!boxesSpec.length || !webglOk()) return fallbackList(container, spec, boxesSpec);
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' }); } catch { return fallbackList(container, spec, boxesSpec); }
@@ -133,9 +145,12 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   const cen = { x: (L.bounds.min.x + L.bounds.max.x) / 2, y: (L.bounds.min.y + L.bounds.max.y) / 2, z: (L.bounds.min.z + L.bounds.max.z) / 2 };
   const V3 = (p) => new THREE.Vector3(p.x - cen.x, p.y - cen.y, p.z - cen.z);
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 500), world = new THREE.Group(); scene.add(world);
-  scene.fog = new THREE.Fog(P.bg.getHex(), 50, 120);
-  const amb = new THREE.AmbientLight(0xffffff, 0.75), dl = new THREE.DirectionalLight(0xffffff, 1.25), hemi = new THREE.HemisphereLight(0xffffff, 0x556677, 0.55); dl.position.set(-6, 14, 10); scene.add(amb, hemi, dl);
-  const setLights = () => { amb.intensity = P.dark ? 1.3 : 2.6; dl.intensity = P.dark ? 0.9 : 1.1; }; setLights();
+  scene.fog = null; // bright and airy: nothing fades into darkness
+  const bgCanvas = document.createElement('canvas'); bgCanvas.width = 2; bgCanvas.height = 256; const bgTex = new THREE.CanvasTexture(bgCanvas); bgTex.colorSpace = THREE.SRGBColorSpace;
+  const paintBg = () => { const x = bgCanvas.getContext('2d'), g = x.createLinearGradient(0, 0, 0, 256); g.addColorStop(0, P.bgTop); g.addColorStop(1, P.bgBot); x.fillStyle = g; x.fillRect(0, 0, 2, 256); bgTex.needsUpdate = true; };
+  paintBg(); scene.background = bgTex; disposables.push(bgTex);
+  const amb = new THREE.AmbientLight(0xffffff, 1.6), dl = new THREE.DirectionalLight(0xffffff, 1.6), hemi = new THREE.HemisphereLight(0xffffff, 0x9aa4d8, 1.1); dl.position.set(-8, 16, 12); scene.add(amb, hemi, dl);
+  const setLights = () => { amb.intensity = P.dark ? 2.0 : 2.3; hemi.intensity = P.dark ? 1.2 : 1.0; dl.intensity = P.dark ? 1.5 : 1.6; }; setLights();
 
   /* ---------- volumes + corner brackets + floor */
   const bracketGeo = (min, max, l) => {
@@ -156,27 +171,33 @@ export async function mountFlow(container, spec = {}, opts = {}) {
     let slabGeo = null; if (isLayer) { if (v.vertical) { slabGeo = own(roundedSlab(size.x, size.y, SLAB_T, 0.55)); slabGeo.rotateX(Math.PI / 2); slabGeo.translate(0, 0, min.z + SLAB_T / 2 - c.z); } else { slabGeo = own(roundedSlab(size.x, size.z, SLAB_T, 0.55)); slabGeo.translate(0, min.y + SLAB_T / 2 - c.y, 0); } }
     const geo = isLayer ? own(new THREE.EdgesGeometry(slabGeo, 30)) : own(new THREE.EdgesGeometry(new THREE.BoxGeometry(size.x, size.y, size.z)));
     const lk = v.kind === 'layer' ? Number(String(v.id).split(':')[1]) : null, mc = { color: lk !== null ? layerCol(lk) : P.volume, transparent: true, opacity: P.volumeOp, depthWrite: false };
-    const mat = own(v.outside ? new THREE.LineDashedMaterial({ ...mc, dashSize: 0.35, gapSize: 0.22 }) : new THREE.LineBasicMaterial(mc));
-    const line = new THREE.LineSegments(geo, mat); if (v.outside) line.computeLineDistances(); line.position.copy(c); line.renderOrder = 1; world.add(line);
+    const mat = own(new THREE.LineBasicMaterial(mc));
+    const line = new THREE.LineSegments(geo, mat); line.position.copy(c); line.renderOrder = 1; world.add(line);
     let brMat = null;
     let slabMat = null, sm = null; if (isLayer) { slabMat = own(new THREE.MeshBasicMaterial({ color: layerCol(lk), transparent: true, opacity: 0.14, depthWrite: false })); sm = new THREE.Mesh(slabGeo, slabMat); sm.position.copy(c); sm.renderOrder = 0; world.add(sm); }
-    let postMat = null, pl = null; if (isLayer) { postMat = own(new THREE.LineBasicMaterial({ color: layerCol(lk), transparent: true, opacity: 0.12, depthWrite: false })); const pp = []; for (const x of [min.x, max.x]) for (const z of [min.z, max.z]) pp.push(x, min.y, z, x, max.y, z); pp.push(min.x, max.y, min.z, max.x, max.y, min.z, max.x, max.y, min.z, max.x, max.y, max.z, max.x, max.y, max.z, min.x, max.y, max.z, min.x, max.y, max.z, min.x, max.y, min.z); const pg = own(new THREE.BufferGeometry()); pg.setAttribute('position', new THREE.Float32BufferAttribute(pp, 3)); pl = new THREE.LineSegments(pg, postMat); pl.renderOrder = 1; world.add(pl); }
+    const postMat = null, pl = null;
     const el = h('button', 'flow3d__vol flow3d__vol--' + v.kind, v.label || ''); el.type = 'button'; el.tabIndex = -1; if (!v.label) el.hidden = true;
-    el.addEventListener('click', () => focus(v.id)); tagsEl.appendChild(el);
+    el.addEventListener('click', () => flyTo(v.id)); tagsEl.appendChild(el);
     const corners = []; for (const x of [min.x, max.x]) for (const y of [min.y, max.y]) for (const z of [min.z, max.z]) corners.push(new THREE.Vector3(x, y, z));
     return { ...v, z0: c.z, sm, pl, line, mat, brMat, slabMat, postMat, box3: new THREE.Box3(min, max), el, corners, anchor: new THREE.Vector3(min.x, isLayer && !v.outside ? min.y + SLAB_T : max.y, isLayer && !v.outside ? max.z : min.z), vis: 1, tvis: 1, w: 0 };
   });
   const volById = new Map(volumes.map((v) => [v.id, v]));
   const floor = (() => {
-    const b = { x0: L.bounds.min.x - cen.x - 4, x1: L.bounds.max.x - cen.x + 4, z0: L.bounds.min.z - cen.z - 4, z1: L.bounds.max.z - cen.z + 4 }, y = L.bounds.min.y - cen.y - 0.02, pts = [], C = 2;
-    for (let x = Math.ceil(b.x0 / C) * C; x <= b.x1; x += C) pts.push(x, y, b.z0, x, y, b.z1);
-    for (let z = Math.ceil(b.z0 / C) * C; z <= b.z1; z += C) pts.push(b.x0, y, z, b.x1, y, z);
+    const gy = L.bounds.min.y - cen.y - 1.2, pad = 12, x0 = L.bounds.min.x - cen.x - pad, x1 = L.bounds.max.x - cen.x + pad, z0 = L.bounds.min.z - cen.z - pad, z1 = L.bounds.max.z - cen.z + pad, C = 3, pts = [];
+    for (let x = Math.ceil(x0 / C) * C; x <= x1; x += C) pts.push(x, gy, z0, x, gy, z1);
+    for (let z = Math.ceil(z0 / C) * C; z <= z1; z += C) pts.push(x0, gy, z, x1, gy, z);
     const g = own(new THREE.BufferGeometry()); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-    const m = own(new THREE.LineBasicMaterial({ color: P.volume, transparent: true, opacity: P.floorOp, depthWrite: false })); const o = new THREE.LineSegments(g, m); o.renderOrder = 0; world.add(o); return m;
+    const gm = own(new THREE.LineBasicMaterial({ color: P.grid, transparent: true, opacity: P.floorOp, depthWrite: false })), grid = new THREE.LineSegments(g, gm); grid.renderOrder = 0; world.add(grid);
+    const pg = own(new THREE.PlaneGeometry((x1 - x0) * 1.3, (z1 - z0) * 1.3)); pg.rotateX(-Math.PI / 2);
+    const pm = own(new THREE.MeshBasicMaterial({ map: glowTexture(), color: P.ground, transparent: true, opacity: P.groundOp, depthWrite: false })), pool = new THREE.Mesh(pg, pm); pool.position.set((x0 + x1) / 2, gy - 0.02, (z0 + z1) / 2); pool.renderOrder = -1; world.add(pool);
+    const st = L.volumes.filter((v) => v.kind === 'layer' && !v.outside), sx0 = Math.min(...st.map((v) => v.min.x)) - cen.x, sx1 = Math.max(...st.map((v) => v.max.x)) - cen.x, sz0 = Math.min(...st.map((v) => v.min.z)) - cen.z, sz1 = Math.max(...st.map((v) => v.max.z)) - cen.z;
+    const sg = own(new THREE.PlaneGeometry((sx1 - sx0) * 1.5, (sz1 - sz0) * 1.5)); sg.rotateX(-Math.PI / 2);
+    const sm = own(new THREE.MeshBasicMaterial({ map: glowTexture(), color: 0x000000, transparent: true, opacity: P.dark ? 0.35 : 0.14, depthWrite: false })), shade = new THREE.Mesh(sg, sm); shade.position.set((sx0 + sx1) / 2, gy + 0.01, (sz0 + sz1) / 2); shade.renderOrder = 0; world.add(shade);
+    return { grid: gm, ground: pm, shade: sm };
   })();
 
   /* ---------- node factory (boxes and inner parts share one record shape) */
-  const BRAND = { kong: '#1155cb', nginx: '#009639', kubernetes: '#326ce5', docker: '#2496ed', amazonaws: '#ff9900', vmware: '#607078', linux: '#1d1d1f', redis: '#dc382d', istio: '#466bb0', keycloak: '#4d6fa8', grafana: '#f46800', prometheus: '#e6522c', ansible: '#ee0000', jenkins: '#d24939', vault: '#1d1d1f', apachekafka: '#231f20', postgresql: '#336791', python: '#3776ab', elasticsearch: '#00bfb3', nodedotjs: '#5fa04e', minio: '#c72e49', k6: '#7d64ff', haproxy: '#2b7fb8', git: '#f05032', googlechrome: '#4285f4', opentelemetry: '#425cc7', springboot: '#6db33f', windows: '#0078d4', containerd: '#575757', sonarqube: '#4e9bcd', argo: '#ef7b4d', amazonec2: '#ff9900', amazons3: '#3f8624', amazoncloudwatch: '#e7157b', amazonroute53: '#8c4fff', mongodb: '#47a248', react: '#087ea4', apachesuperset: '#20a7c9' };
+  const BRAND = { kong: '#9bd400', nginx: '#009639', kubernetes: '#326ce5', docker: '#2496ed', amazonaws: '#ff9900', vmware: '#607078', linux: '#1d1d1f', redis: '#dc382d', istio: '#466bb0', keycloak: '#4d6fa8', grafana: '#f46800', prometheus: '#e6522c', ansible: '#ee0000', jenkins: '#d24939', vault: '#1d1d1f', apachekafka: '#231f20', postgresql: '#336791', python: '#3776ab', elasticsearch: '#00bfb3', nodedotjs: '#5fa04e', minio: '#c72e49', k6: '#7d64ff', haproxy: '#2b7fb8', git: '#f05032', googlechrome: '#4285f4', opentelemetry: '#425cc7', springboot: '#6db33f', windows: '#0078d4', containerd: '#575757', sonarqube: '#4e9bcd', argo: '#ef7b4d', amazonec2: '#ff9900', amazons3: '#3f8624', amazoncloudwatch: '#e7157b', amazonroute53: '#8c4fff', mongodb: '#47a248', react: '#087ea4', apachesuperset: '#20a7c9', googlecloud: '#4285f4', microsoftazure: '#0078d4', openstack: '#ed1944', envoyproxy: '#ac6199', traefikproxy: '#24a1c1', caddy: '#1f88c0', okta: '#007dc1', auth0: '#eb5424', gitlab: '#fc6d26', githubactions: '#2088ff', flux: '#5468ff', nomad: '#00ca8e', linkerd: '#1da38a', cilium: '#d9a406', rabbitmq: '#ff6600', nats: '#27aae1', memcached: '#2b5fa5', valkey: '#4e6bd4', mysql: '#4479a1', mariadb: '#003545', opensearch: '#005eb8', victoriametrics: '#621773', datadog: '#632ca6', jaeger: '#2fa5b8', kibana: '#005571', apigee: '#4285f4', amazonapigateway: '#ff4f8b', amazoncognito: '#dd344c', awssecretsmanager: '#dd344c', amazonebs: '#ff9900', amazoniam: '#dd344c', amazonvpc: '#8c4fff', cloudflare: '#f38020', opentofu: '#ffda18', loki: '#f5a800', tempo: '#f46800' };
   /* built-in vector glyphs on the white plate: person silhouette; ops adds a gear, dev adds </> (Apple blue) */
   function drawActor(x, kind, blue) {
     x.fillStyle = blue; x.strokeStyle = blue;
@@ -193,20 +214,21 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   }
   const mkIcon = (b, label, circ) => {
     const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'), tex = own(new THREE.CanvasTexture(c)); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    const st = { img: null, canvas: c }, url = iconUrl(b.icon);
+    const cur = { icon: b.icon, label }, st = { img: null, canvas: c, tok: 0 };
     const gc = document.createElement('canvas'); gc.width = gc.height = 128; const gx = gc.getContext('2d');
     st.draw = () => {
       x.clearRect(0, 0, 128, 128);
       const R = 29, plate = x.createLinearGradient(0, 0, 128, 128); plate.addColorStop(0, '#ffffff'); plate.addColorStop(1, P.dark ? '#dfe2e8' : '#eceef3');
       x.fillStyle = plate; x.beginPath(); if (circ) x.arc(64, 64, 64, 0, Math.PI * 2); else { x.moveTo(R, 0); x.arcTo(128, 0, 128, 128, R); x.arcTo(128, 128, 0, 128, R); x.arcTo(0, 128, 0, 0, R); x.arcTo(0, 0, 128, 0, R); x.closePath(); } x.fill();
-      if (isActor(b.icon)) { drawActor(x, b.icon, P.dark ? '#0a84ff' : '#007aff'); tex.needsUpdate = true; dirty = true; return; }
-      const brand = BRAND[b.icon] || '#3a3a3c';
+      if (isActor(cur.icon)) { drawActor(x, cur.icon, P.dark ? '#0a84ff' : '#007aff'); tex.needsUpdate = true; dirty = true; return; }
+      const brand = BRAND[cur.icon] || '#3a3a3c';
       if (st.img) { gx.clearRect(0, 0, 128, 128); gx.globalCompositeOperation = 'source-over'; gx.drawImage(st.img, 22, 22, 84, 84); gx.globalCompositeOperation = 'source-in'; gx.fillStyle = brand; gx.fillRect(0, 0, 128, 128); gx.globalCompositeOperation = 'source-over'; x.drawImage(gc, 0, 0); }
-      else { x.fillStyle = brand; x.font = '700 64px Inter, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(label.replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() || '?', 64, 68); }
+      else { x.fillStyle = brand; x.font = '700 64px Inter, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(cur.label || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() || '?', 64, 68); }
       tex.needsUpdate = true; dirty = true;
     };
-    st.draw();
-    if (url) { const img = new Image(); img.crossOrigin = 'anonymous'; img.onload = () => { if (disposed) return; st.img = img; st.draw(); }; img.src = url; }
+    st.load = () => { const tok = ++st.tok; st.img = null; const url = iconUrl(cur.icon); if (!url) return; const img = new Image(); img.crossOrigin = 'anonymous'; img.onload = () => { if (disposed || tok !== st.tok) return; st.img = img; st.draw(); }; img.src = url; };
+    st.set = (icon, lab) => { cur.icon = icon; cur.label = lab; st.draw(); st.load(); };
+    st.draw(); st.load();
     return { tex, st };
   };
   const U = BOX.w / 1.9; // geometry below was designed for a 1.9 cube; the cube is now BOX.w
@@ -219,7 +241,7 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   const subGeo = own(new THREE.BoxGeometry(SUB.w, SUB.h, SUB.d)), subEdge = own(new THREE.EdgesGeometry(subGeo));
   const techCount = new Map(); boxesSpec.forEach((b) => techCount.set(b.tech, (techCount.get(b.tech) || 0) + 1));
   const pickables = [], boxes = [], subs = [], boxById = new Map(), nodeById = new Map();
-  let hover = null, lf = null; // lf: focused layer key (chip bar) or null = All
+  let hover = null, lf = null, extFocus = null, fx = null; const fxNb = new Set(); // lf: focused layer key (chip bar) or null = All
   function mkNode(o) {
     if (!o.sub) { o.shape = shapeFor(o.spec); Object.assign(o, SHAPE_DIM[o.shape]); o.lift = o.hgt / 2 - BOX.h / 2; o.base = o.pos.clone(); }
     const g = new THREE.Group(); g.position.copy(o.pos); if (!o.sub) g.position.y += o.lift; world.add(g);
@@ -227,11 +249,11 @@ export async function mountFlow(container, spec = {}, opts = {}) {
     const mesh = new THREE.Mesh(o.sub ? subGeo : shapeGeo(o.shape), o.sub ? [sideMat, sideMat, topMat, sideMat, sideMat, sideMat] : sideMat); g.add(mesh);
     if (!o.sub) { const shMat = own(new THREE.MeshBasicMaterial({ map: glowTexture(), color: 0x000000, transparent: true, opacity: P.dark ? 0.5 : 0.2, depthWrite: false })); const shd = new THREE.Mesh(shadowGeo, shMat); shd.rotation.x = -Math.PI / 2; shd.position.y = -o.hgt / 2 + 0.03; shd.scale.set(o.rad / (0.95 * U), 1, o.hd / (0.95 * U)); shd.renderOrder = 0; g.add(shd); o.shMat = shMat; o.shd = shd; }
     const edgeMat = own(new THREE.LineBasicMaterial({ color: P.edge, transparent: true, opacity: P.edgeOp })); g.add(new THREE.LineSegments(o.sub ? subEdge : boxEdge, edgeMat));
-    let hullMat = null; if (!o.sub) { hullMat = own(new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.BackSide, transparent: true, opacity: 0.9, depthWrite: false })); const hull = new THREE.Mesh(shapeGeo(o.shape), hullMat); hull.scale.set(1.06, 1.16, 1.06); hull.renderOrder = 0; g.add(hull); }
-    const glowMat = own(new THREE.SpriteMaterial({ map: glowTexture(), color: P.accent, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+    let hullMat = null; if (!o.sub) { hullMat = own(new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.BackSide, transparent: true, opacity: 0, depthWrite: false })); const hull = new THREE.Mesh(shapeGeo(o.shape), hullMat); hull.scale.set(1.045, 1.045, 1.045); hull.renderOrder = 0; g.add(hull); }
+    const glowMat = own(new THREE.SpriteMaterial({ map: glowTexture(), color: P.accent, transparent: true, opacity: 0, blending: P.dark ? THREE.AdditiveBlending : THREE.NormalBlending, depthWrite: false, fog: false }));
     const glow = new THREE.Sprite(glowMat); glow.renderOrder = 2; g.add(glow);
     let imat = null;
-    if (!o.sub) { const ic = mkIcon(o.spec, o.short, o.shape === 'sphere' || o.shape === 'cone'); imat = own(new THREE.MeshBasicMaterial({ map: ic.tex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); const pl = plateFor(o.shape), icon = new THREE.Mesh(pl.geo, imat); icon.position.copy(pl.front.pos); icon.rotation.x = pl.front.rotX; g.add(icon); o.iconSt = ic.st; o.icon = icon; o.plate = pl; }
+    if (!o.sub) { const ic = mkIcon(o.spec, o.short, o.shape === 'sphere' || o.shape === 'cone'); imat = own(new THREE.MeshBasicMaterial({ map: ic.tex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); const pl = plateFor(o.shape), icon = new THREE.Mesh(pl.geo, imat); icon.position.copy(pl.front.pos); icon.rotation.x = pl.front.rotX; g.add(icon); const icon2 = new THREE.Mesh(pl.geo, imat); icon2.position.copy(pl.top.pos); icon2.rotation.x = pl.top.rotX; g.add(icon2); o.icon2 = icon2; o.iconSt = ic.st; o.icon = icon; o.plate = pl; }
     o.ghosts = [];
     if (!o.sub) ghostOffsets(o.spec.replicas).forEach((gh) => { const gs = own(new THREE.MeshStandardMaterial({ color: P.side, roughness: 0.2, metalness: 0.12, transparent: true })), gt = own(new THREE.MeshStandardMaterial({ color: P.top, roughness: 0.28, metalness: 0.06, transparent: true })), gm = new THREE.Mesh(shapeGeo(o.shape), gs); gm.position.set(0, gh.dy, gh.dz); gm.renderOrder = 0; g.add(gm); o.ghosts.push({ ...gh, mesh: gm, gs, gt }); });
     const lb = h('button', 'flow3d__lbl' + (o.sub ? ' flow3d__lbl--sub' : ''), o.text); lb.type = 'button'; lb.tabIndex = o.sub ? -1 : 0; tagsEl.appendChild(lb);
@@ -257,133 +279,68 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   });
   const nodes = boxes.concat(subs);
 
-  /* ---------- wires (outer + inner) */
+  /* ---------- wires (outer + inner): hair-thin Line2 arcs with tiny glowing spheres travelling along them */
   const wires = [], res = new THREE.Vector2(1, 1);
   const wiresSpec = (spec.wires || []).filter((w) => ids.has(w.from) && ids.has(w.to) && w.from !== w.to);
-  const has = new Set(wiresSpec.map((w) => w.from + '>' + w.to));
-  /* orthogonal (Manhattan) schematic routing with rounded joints */
-  const CORNER_R = 0.25;
-  const stackVols = volumes.filter((v) => v.kind === 'layer' && !v.outside), stackHalfW = stackVols.length ? Math.max(...stackVols.map((v) => v.box3.max.x)) : 0;
-  const layerVol = (k) => volumes.find((v) => v.id === 'layer:' + k);
-  const outsideKeys = new Set(volumes.filter((v) => v.outside).map((v) => Number(String(v.id).split(':')[1])));
-  const lanes = new Map(), lane = (key, id) => { if (!lanes.has(key)) lanes.set(key, []); const l = lanes.get(key); if (!l.includes(id)) l.push(id); return l; };
-  wiresSpec.forEach((w) => { const a = boxById.get(w.from), b = boxById.get(w.to), id = w.from + '>' + w.to; if (Math.abs(a.pos.y - b.pos.y) > 0.01 && !outsideKeys.has(a.layer) && !outsideKeys.has(b.layer)) { const up = b.pos.y > a.pos.y; lane(`${a.id}:${up ? 'u' : 'd'}`, id); lane(`${b.id}:${up ? 'd' : 'u'}`, id); lane(`c:${Math.min(a.layer, b.layer)}:${Math.max(a.layer, b.layer)}`, id); } });
-  const laneOff = (key, id, step, cap) => { const l = lanes.get(key) || [id], n = l.length, st = n > 1 ? Math.min(step, cap / (n - 1)) : 0; return (l.indexOf(id) - (n - 1) / 2) * st; };
-  function polyCurve(P) {
-    const R = CORNER_R, pts = [P[0].clone()];
-    for (let i = 1; i < P.length - 1; i++) {
-      const p0 = P[i - 1], p1 = P[i], p2 = P[i + 1], d1 = p1.clone().sub(p0), d2 = p2.clone().sub(p1), r = Math.min(R, d1.length() / 2, d2.length() / 2);
-      if (r < 1e-4 || d1.clone().normalize().dot(d2.clone().normalize()) > 0.999) { pts.push(p1.clone()); continue; }
-      const A = p1.clone().addScaledVector(d1.normalize(), -r), B = p1.clone().addScaledVector(d2.normalize(), r);
-      for (let k = 0; k <= 6; k++) { const t = k / 6, u = 1 - t; pts.push(A.clone().multiplyScalar(u * u).addScaledVector(p1, 2 * u * t).addScaledVector(B, t * t)); }
-    }
-    pts.push(P[P.length - 1].clone());
-    const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + pts[i].distanceTo(pts[i - 1]));
-    const total = cum[cum.length - 1];
-    return { getLength: () => total, getSpacedPoints(n) { const out = []; let j = 1; for (let i = 0; i <= n; i++) { const d = (i / n) * total; while (j < cum.length - 1 && cum[j] < d) j++; const t = (d - cum[j - 1]) / Math.max(1e-9, cum[j] - cum[j - 1]); out.push(pts[j - 1].clone().lerp(pts[j], clamp(t, 0, 1))); } return out; } };
-  }
-  function routeCurve(a, b) {
-    const V = (x, y, z) => new THREE.Vector3(x, y, z), id = a.id + '>' + b.id, clean = (P) => P.filter((p, i) => !i || p.distanceTo(P[i - 1]) > 1e-4);
-    const base = (n) => n.pos.y - BOX.h / 2, mid = (n) => base(n) + n.hgt / 2, top = (n) => base(n) + n.hgt;
-    const aOut = outsideKeys.has(a.layer), bOut = outsideKeys.has(b.layer), dy = b.pos.y - a.pos.y;
-    const frontZ = (k) => { const lv = layerVol(k); return lv ? lv.box3.max.z - 0.5 : 0; };
-    if (a.layer === b.layer && outsideKeys.has(a.layer)) { // inside one zone
-      if (Math.abs(a.pos.x - b.pos.x) < 0.01 && Math.abs(a.pos.y - b.pos.y) < 0.01) { const sz = Math.sign(b.pos.z - a.pos.z) || 1; return polyCurve([V(a.pos.x, mid(a), a.pos.z + sz * a.hd), V(b.pos.x, mid(b), b.pos.z - sz * b.hd)]); }
-      if (Math.abs(a.pos.x - b.pos.x) < 0.01) { const sg = Math.sign(b.pos.y - a.pos.y) || 1; return polyCurve([V(a.pos.x, sg > 0 ? top(a) : base(a), a.pos.z), V(b.pos.x, sg > 0 ? base(b) : top(b), b.pos.z)]); }
-      const s2 = Math.sign(b.pos.x - a.pos.x) || 1, xm2 = (a.pos.x + b.pos.x) / 2;
-      return polyCurve(clean([V(a.pos.x + s2 * a.rad, mid(a), a.pos.z), V(xm2, mid(a), a.pos.z), V(xm2, mid(b), b.pos.z), V(b.pos.x - s2 * b.rad, mid(b), b.pos.z)]));
-    }
-    if (aOut || bOut) { // between zones: horizontal at the tiles' mid-height, vertical in the gutter next to the source zone
-      const sg = Math.sign(b.pos.x - a.pos.x) || 1, va = layerVol(a.layer), xm = (sg > 0 ? va.box3.max.x : va.box3.min.x) + sg * 2.0;
-      return polyCurve(clean([V(a.pos.x + sg * a.rad, mid(a), a.pos.z), V(xm, mid(a), a.pos.z), V(xm, mid(a), b.pos.z), V(xm, mid(b), b.pos.z), V(b.pos.x - sg * b.rad, mid(b), b.pos.z)]));
-    }
-    if (false) {
-      const o = aOut ? a : b, t = aOut ? b : a, sgn = o.pos.x < 0 ? -1 : 1, xo = sgn * (stackHalfW + 1.6), zf = frontZ(t.layer);
-      const P = clean([V(o.pos.x - sgn * o.rad, mid(o), o.pos.z), V(xo, mid(o), o.pos.z), V(xo, mid(o), zf), V(xo, mid(t), zf), V(t.pos.x, mid(t), zf), V(t.pos.x, mid(t), t.pos.z + t.hd)]);
-      return polyCurve(aOut ? P : P.slice().reverse());
-    }
-    if (Math.abs(dy) > 0.01) {
-      const up = dy > 0;
-      if (Math.abs(layerIndexGap(a, b)) > 1) { // skip wire: front corridor, round the outside of the stack
-        const sgn = (a.pos.x + b.pos.x) >= 0 ? 1 : -1, xo = sgn * (stackHalfW + 1.2 + (hash(id) % 4) * 0.34), za = frontZ(a.layer), zb = frontZ(b.layer);
-        return polyCurve(clean([V(a.pos.x, mid(a), a.pos.z + a.hd), V(a.pos.x, mid(a), za), V(xo, mid(a), za), V(xo, mid(b), zb), V(b.pos.x, mid(b), zb), V(b.pos.x, mid(b), b.pos.z + b.hd)]));
-      }
-      const lo = (n) => (n.shape === 'cone' ? 0 : 1), ax = a.pos.x + lo(a) * laneOff(`${a.id}:${up ? 'u' : 'd'}`, id, 0.4, 1.4), bx = b.pos.x + lo(b) * laneOff(`${b.id}:${up ? 'd' : 'u'}`, id, 0.4, 1.4);
-      const la = layerVol(a.layer), lb = layerVol(b.layer), lowV = up ? la : lb, hiV = up ? lb : la;
-      const yc = (lowV.box3.max.y + hiV.box3.min.y) / 2 + laneOff(`c:${Math.min(a.layer, b.layer)}:${Math.max(a.layer, b.layer)}`, id, 0.3, 1.6);
-      return polyCurve(clean([V(ax, up ? top(a) : base(a), a.pos.z), V(ax, yc, a.pos.z), V(bx, yc, b.pos.z), V(bx, up ? base(b) : top(b), b.pos.z)]));
-    }
-    const sx = Math.sign(b.pos.x - a.pos.x) || 1;
-    if (Math.abs(a.pos.z - b.pos.z) < 0.01) {
-      const between = boxes.some((q) => q !== a && q !== b && q.layer === a.layer && Math.abs(q.pos.z - a.pos.z) < 0.01 && q.pos.x > Math.min(a.pos.x, b.pos.x) + 0.1 && q.pos.x < Math.max(a.pos.x, b.pos.x) - 0.1);
-      if (!between) return polyCurve([V(a.pos.x + sx * a.rad, mid(a), a.pos.z), V(b.pos.x - sx * b.rad, mid(b), b.pos.z)]);
-    }
-    if (Math.abs(a.pos.x - b.pos.x) < 0.01) { const sz = Math.sign(b.pos.z - a.pos.z) || 1; return polyCurve([V(a.pos.x, mid(a), a.pos.z + sz * a.hd), V(b.pos.x, mid(b), b.pos.z - sz * b.hd)]); }
-    const zf = frontZ(a.layer) + (hash(id) % 3) * 0.2; // front corridor
-    return polyCurve(clean([V(a.pos.x, mid(a), a.pos.z + a.hd), V(a.pos.x, mid(a), zf), V(b.pos.x, mid(b), zf), V(b.pos.x, mid(b), b.pos.z + b.hd)]));
-  }
-  const layerIndexGap = (a, b) => { const ks = stackVols.map((v) => Number(String(v.id).split(':')[1])).sort((p, q) => p - q); return ks.indexOf(a.layer) - ks.indexOf(b.layer); };
   const innerCurve = (a, b) => { const sx = Math.sign(b.pos.x - a.pos.x) || 1, S = a.pos.clone().add(new THREE.Vector3(sx * SUB.w / 2, 0, 0)), E = b.pos.clone().add(new THREE.Vector3(-sx * SUB.w / 2, 0, 0)), t = S.distanceTo(E) * 0.35; return new THREE.CubicBezierCurve3(S, S.clone().add(new THREE.Vector3(sx * t, 0.25, 0)), E.clone().add(new THREE.Vector3(-sx * t, 0.25, 0)), E); };
-  const arrowGeo = own(new THREE.ConeGeometry(0.03, 0.1, 8));
   const nodeCol = (n) => (n && n.layer !== undefined && n.layer !== null ? layerCol(n.layer) : P.accent);
   const gradColors = (n, a, b, lt = 0) => { const arr = [], ca = nodeCol(a), cb = nodeCol(b), c = new THREE.Color(); for (let i = 0; i < n; i++) { c.copy(ca).lerp(cb, i / Math.max(1, n - 1)); if (lt) c.lerp(_white, lt); arr.push(c.r, c.g, c.b); } return arr; };
-  function addWire(a, b, curve, spec2, inner) {
-    const pts = curve.getSpacedPoints(64), len = curve.getLength(), dashed = spec2.style === 'dashed', bold = spec2.weight === 'bold';
-    const geo = own(new LineGeometry()); geo.setPositions(pts.flatMap((p) => [p.x, p.y, p.z])); geo.setColors(gradColors(pts.length, a, b));
-    const mat = own(new LineMaterial({ color: 0xffffff, vertexColors: true, linewidth: bold ? WIRE_W_BOLD : WIRE_W, transparent: true, opacity: 1, dashed, dashSize: 0.14, gapSize: 0.1, resolution: res, depthWrite: false, fog: true }));
-    const hlMat = own(new LineMaterial({ color: P.accent.getHex(), linewidth: WIRE_W_HOT, transparent: true, opacity: 0, dashed, dashSize: 0.14, gapSize: 0.1, resolution: res, depthWrite: false, fog: true }));
-    const line = new Line2(geo, mat), hl = new Line2(geo, hlMat); if (dashed) { line.computeLineDistances(); hl.computeLineDistances(); } line.renderOrder = 3; hl.renderOrder = 3; world.add(line, hl);
-    const geoP = own(new LineGeometry()); geoP.setPositions(pts.flatMap((p) => [p.x, p.y, p.z])); geoP.setColors(gradColors(pts.length, a, b, 0.55));
-    const pMat = own(new LineMaterial({ color: 0xffffff, vertexColors: true, linewidth: 1.0, transparent: true, opacity: 1, dashed: true, dashSize: 0.55, gapSize: 1.6, resolution: res, depthWrite: false, fog: true })), pulse = new Line2(geoP, pMat); pulse.computeLineDistances(); pulse.renderOrder = 4; world.add(pulse);
-    const arMat = own(new THREE.MeshBasicMaterial({ color: P.accent, transparent: true, opacity: 0.5, depthWrite: false })), arrow = new THREE.Mesh(arrowGeo, arMat), end = pts[pts.length - 1], pre = pts[pts.length - 3];
-    arrow.position.copy(end).addScaledVector(end.clone().sub(pre).normalize(), -0.06); arrow.quaternion.setFromUnitVectors(Y_AXIS, end.clone().sub(pre).normalize()); if (inner) arrow.scale.setScalar(0.7); arrow.renderOrder = 4; world.add(arrow);
-    const flow = spec2.flow !== false, n = 0, r = rng(hash(a.id + b.id)); // charge pulses replace the bubbles
-    pMat.dashOffset = r() * 2.15; const w = { dashed, geoP, pulse, pMat, speed: 1.4 + r() * 0.8, a, b, pts, len, geo, line, mat, hl, hlMat, arMat, arrow, inner: !!inner, vis: inner ? 0 : 1, tvis: inner ? 0 : 1, act: 0, tact: 0, flow, n, off: r(), speeds: Array.from({ length: n }, () => 0.8 + r() * 0.4) };
-    line.visible = hl.visible = arrow.visible = !inner; pulse.visible = !inner && flow; wires.push(w); a.outs.push(w); return w;
-  }
-  /* AERIAL WIRES (user: 'make the wires fly in the air, curves from one component to another'): every wire is a smooth 3D arc
-     that leaves the TOP of one cube, rises into the air and lands on the TOP of the other. Each wire gets its own arch height
-     (lift) and its own small lateral offset at both ends, so two wires never share a path or touch. Set AERIAL=false to get the old routed wires. */
-  const AERIAL = true;
-  const aerialIdx = new Map(); wiresSpec.forEach((w, i) => aerialIdx.set(w.from + '>' + w.to, i));
-  const outCount = new Map(), inCount = new Map(); wiresSpec.forEach((w) => { outCount.set(w.from, (outCount.get(w.from) || 0) + 1); inCount.set(w.to, (inCount.get(w.to) || 0) + 1); });
-  const outSeen = new Map(), inSeen = new Map();
-  function aerialCurve(a, b, id) {
-    const i = aerialIdx.get(id) || 0, topY = (CARD.h || BOX.w) / 2 + 0.05;
-    const oa = (outSeen.get(a.id) || 0), ob = (inSeen.get(b.id) || 0); outSeen.set(a.id, oa + 1); inSeen.set(b.id, ob + 1);
-    const na = outCount.get(a.id) || 1, nb = inCount.get(b.id) || 1, spread = 0.38;
-    const ax = (oa - (na - 1) / 2) * spread, bx = (ob - (nb - 1) / 2) * spread;
-    const P0 = a.pos.clone().add(new THREE.Vector3(ax, topY, 0)), P3 = b.pos.clone().add(new THREE.Vector3(bx, topY, 0));
-    const d = P3.clone().sub(P0), dist = Math.hypot(d.x, d.z) + Math.abs(d.y) * 0.6;
-    const lift = 1.4 + Math.min(dist * 0.22, 9) + (i % 11) * 0.55 + (hash(id) % 5) * 0.12; // unique height per wire: they never touch
-    const C1 = P0.clone().add(new THREE.Vector3(d.x * 0.22, lift, d.z * 0.22)), C2 = P3.clone().add(new THREE.Vector3(-d.x * 0.22, lift, -d.z * 0.22));
+  /* ports: a wire leaves / lands on the TOP face of a cube, on the side that faces its other end; ports of one cube are spread apart so wires never share a start */
+  const PORT_R = 0.62, portMap = new Map(), portAng = new Map();
+  const addPort = (b, e) => { if (!portMap.has(b.id)) portMap.set(b.id, []); portMap.get(b.id).push(e); };
+  const angTo = (a, b, salt) => { const dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z; return Math.hypot(dx, dz) < 0.05 ? (salt % 7) * 0.9 : Math.atan2(dz, dx); };
+  wiresSpec.forEach((w, i) => { const a = boxById.get(w.from), b = boxById.get(w.to); addPort(a, { i, end: 0, ang: angTo(a, b, i) }); addPort(b, { i, end: 1, ang: angTo(b, a, i + 3) }); });
+  portMap.forEach((list) => {
+    list.sort((p, q) => p.ang - q.ang); const n = list.length, sep = Math.min(0.9, 5 / Math.max(1, n)), m0 = list.reduce((s0, p) => s0 + p.ang, 0) / n;
+    for (let k = 1; k < n; k++) if (list[k].ang - list[k - 1].ang < sep) list[k].ang = list[k - 1].ang + sep;
+    const sh = m0 - list.reduce((s0, p) => s0 + p.ang, 0) / n; list.forEach((p) => portAng.set(p.i + ':' + p.end, p.ang + sh));
+  });
+  const topOf = (n) => n.pos.y - BOX.h / 2 + n.hgt + 0.05;
+  /* gentle cubic Bezier from the top of one cube to the top of the other; lift grows with distance, every wire gets its own height step;
+     floor-to-floor wires rise (or drop) almost vertically through the gap */
+  function aerialCurve(a, b, i) {
+    const a0 = portAng.get(i + ':0') || 0, a1 = portAng.get(i + ':1') || 0, V = (x, y, z) => new THREE.Vector3(x, y, z);
+    const P0 = V(a.pos.x + Math.cos(a0) * PORT_R, topOf(a), a.pos.z + Math.sin(a0) * PORT_R), P3 = V(b.pos.x + Math.cos(a1) * PORT_R, topOf(b), b.pos.z + Math.sin(a1) * PORT_R);
+    const hx = P3.x - P0.x, hz = P3.z - P0.z, hd = Math.hypot(hx, hz), dy = P3.y - P0.y, L2 = 0.55 + Math.min(hd * 0.14, 2.0) + (i % 5) * 0.28;
+    let C1, C2;
+    if (Math.abs(dy) < 0.6) { C1 = V(P0.x + hx * 0.2, P0.y + L2 * 1.3, P0.z + hz * 0.2); C2 = V(P3.x - hx * 0.2, P3.y + L2 * 1.3, P3.z - hz * 0.2); }
+    else if (dy > 0) { C1 = V(P0.x + hx * 0.04, P0.y + dy * 0.55 + L2, P0.z + hz * 0.04); C2 = V(P3.x - hx * 0.3, P3.y + L2 * 0.9, P3.z - hz * 0.3); }
+    else { C1 = V(P0.x + hx * 0.3, P0.y + L2 * 0.9, P0.z + hz * 0.3); C2 = V(P3.x - hx * 0.04, P3.y - dy * 0.55 + L2, P3.z - hz * 0.04); }
     return new THREE.CubicBezierCurve3(P0, C1, C2, P3);
   }
-  wiresSpec.forEach((w) => { const a = boxById.get(w.from), b = boxById.get(w.to), id = w.from + '>' + w.to; addWire(a, b, AERIAL ? aerialCurve(a, b, id) : routeCurve(a, b), w, false); });
+  function addWire(a, b, curve, spec2, inner) {
+    const pts = curve.getSpacedPoints(64), len = curve.getLength(), flat = pts.flatMap((p) => [p.x, p.y, p.z]);
+    const geo = own(new LineGeometry()); geo.setPositions(flat); geo.setColors(gradColors(pts.length, a, b));
+    const mat = own(new LineMaterial({ color: 0xffffff, vertexColors: true, linewidth: WIRE_W, transparent: true, opacity: 0.6, resolution: res, depthWrite: false }));
+    const hlMat = own(new LineMaterial({ color: 0xffffff, vertexColors: true, linewidth: WIRE_W_HOT, transparent: true, opacity: 0, resolution: res, depthWrite: false }));
+    const line = new Line2(geo, mat), hl = new Line2(geo, hlMat); line.renderOrder = 3; hl.renderOrder = 3; world.add(line, hl);
+    const r = rng(hash(a.id + b.id)), n = inner ? 3 : clamp(Math.round(len / 2.4), 3, 6);
+    const w = { a, b, pts, len, geo, line, mat, hl, hlMat, inner: !!inner, vis: inner ? 0 : 1, tvis: inner ? 0 : 1, act: 0, tact: 0, flow: spec2.flow !== false, n, off: r(), ph: 0, speed: 0.9 + r() * 0.5, i: 0 };
+    line.visible = hl.visible = !inner; wires.push(w); a.outs.push(w); return w;
+  }
+  wiresSpec.forEach((w, i) => { const a = boxById.get(w.from), b = boxById.get(w.to); addWire(a, b, aerialCurve(a, b, i), w, false).i = i; });
   boxes.forEach((bx) => { for (let i = 0; i + 1 < bx.subs.length; i++) { const a = bx.subs[i], b = bx.subs[i + 1]; const w = addWire(a, b, innerCurve(a, b), { flow: true }, true); w.owner = bx; } });
-  subs.forEach((s) => { s.owner.subs.forEach(() => {}); });
 
-  const nB = wires.reduce((s, w) => s + w.n, 0), NI = TR + 1;
-  const bubbleMat = own(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true })), bubbleGeo = own(new THREE.SphereGeometry(0.035, 10, 8));
-  const bubbles = new THREE.InstancedMesh(bubbleGeo, bubbleMat, Math.max(1, nB * NI)); bubbles.count = nB * NI; bubbles.frustumCulled = false; bubbles.renderOrder = 5; world.add(bubbles);
-  const paintBubbles = () => { const c = new THREE.Color(); for (let i = 0; i < nB; i++) for (let g = 0; g < NI; g++) { c.set('#ffffff').lerp(P.accent, g === 0 ? 0.05 : 0.3 + 0.15 * g); bubbles.setColorAt(i * NI + g, c); } if (nB) bubbles.instanceColor.needsUpdate = true; };
-  paintBubbles();
-  const tmp = new THREE.Object3D(), _p = new THREE.Vector3();
+  const nB = wires.reduce((s0, w) => s0 + w.n, 0);
+  const bubbleGeo = own(new THREE.SphereGeometry(1, 10, 8)), bubbleMat = own(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95, depthWrite: false })), haloMat = own(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22, depthWrite: false, blending: P.dark ? THREE.AdditiveBlending : THREE.NormalBlending }));
+  const bubbles = new THREE.InstancedMesh(bubbleGeo, bubbleMat, Math.max(1, nB)), halos = new THREE.InstancedMesh(bubbleGeo, haloMat, Math.max(1, nB));
+  for (const m of [bubbles, halos]) { m.count = nB; m.frustumCulled = false; for (let i = 0; i < nB; i++) m.setColorAt(i, _white); }
+  bubbles.renderOrder = 5; halos.renderOrder = 4; world.add(halos, bubbles);
+  const tmp = new THREE.Object3D(), _p = new THREE.Vector3(), _bc = new THREE.Color();
   const ptAt = (w, u, out) => { const f = clamp(u, 0, 1) * (w.pts.length - 1), i = Math.min(w.pts.length - 2, Math.floor(f)); return out.copy(w.pts[i]).lerp(w.pts[i + 1], f - i); };
-  function animateFlow(t) {
-    let bi = 0;
+  function animateFlow(dt) {
+    let bi = 0; const dk = P.dark;
     wires.forEach((w) => {
-      if (!w.flow) return; const show = w.vis > 0.3;
+      const show = w.flow && w.vis > 0.3, ca = nodeCol(w.a), cb = nodeCol(w.b), sc = BUB_R * (1 + 0.5 * w.act) * (w.inner ? 0.8 : 1);
+      if (show && dt) w.ph = (w.ph + (dt * BUBBLE_SPEED * 1.5 * w.speed * (1 + 1.8 * w.act)) / Math.max(1, w.len)) % 1;
       for (let k = 0; k < w.n; k++, bi++) {
-        const u = ((k / w.n + w.off + (t * BUBBLE_SPEED * w.speeds[k]) / w.len) % 1 + 1) % 1;
-        for (let g = 0; g < NI; g++) {
-          const ug = u - (g * 0.11) / w.len, ok = show && ug >= 0 && (g === 0 || !lowQ);
-          if (ok) { ptAt(w, ug, _p); tmp.position.copy(_p); tmp.scale.setScalar(1 - g * 0.16); } else { tmp.position.set(0, -999, 0); tmp.scale.setScalar(0); }
-          tmp.updateMatrix(); bubbles.setMatrixAt(bi * NI + g, tmp.matrix);
-        }
+        if (show) { const u = (((k / w.n + w.off + w.ph) % 1) + 1) % 1; ptAt(w, u, _p); tmp.position.copy(_p); tmp.scale.setScalar(sc); _bc.copy(ca).lerp(cb, u).lerp(_white, dk ? 0.35 : 0.1); }
+        else { tmp.position.set(0, -999, 0); tmp.scale.setScalar(0); }
+        tmp.updateMatrix(); bubbles.setMatrixAt(bi, tmp.matrix); bubbles.setColorAt(bi, _bc);
+        tmp.scale.setScalar(show ? sc * 2.6 : 0); tmp.updateMatrix(); halos.setMatrixAt(bi, tmp.matrix); halos.setColorAt(bi, _bc);
       }
     });
-    bubbles.instanceMatrix.needsUpdate = true;
+    bubbles.instanceMatrix.needsUpdate = halos.instanceMatrix.needsUpdate = true; if (nB) bubbles.instanceColor.needsUpdate = halos.instanceColor.needsUpdate = true;
   }
 
   /* ---------- ambient life (crisp, no blur): ~60 drifting sparkle points + a one-time light sweep around each floor outline, bottom to top */
@@ -398,12 +355,12 @@ export async function mountFlow(container, spec = {}, opts = {}) {
     const n = lowQ ? SPK / 2 : SPK, H = sbox.y1 - sbox.y0; spk.geo.setDrawRange(0, n);
     for (let i = 0; i < n; i++) { const p = spk.p[i], f = ((t * p.speed + p.off) % 1 + 1) % 1, fade = Math.sin(Math.PI * f);
       spk.pos[i * 3] = p.x + Math.sin(t * 0.3 + p.off * 9) * 0.6 + p.dx * f * 4; spk.pos[i * 3 + 1] = sbox.y0 + f * H; spk.pos[i * 3 + 2] = p.z;
-      _sc1.copy(p.accent ? P.accent : _white); _sc2.copy(P.bg).lerp(_sc1, fade); spk.col[i * 3] = _sc2.r; spk.col[i * 3 + 1] = _sc2.g; spk.col[i * 3 + 2] = _sc2.b; }
+      _sc1.copy(p.accent || !P.dark ? P.accent : _white); _sc2.copy(P.bg).lerp(_sc1, fade); spk.col[i * 3] = _sc2.r; spk.col[i * 3 + 1] = _sc2.g; spk.col[i * 3 + 2] = _sc2.b; }
     spk.geo.attributes.position.needsUpdate = true; spk.geo.attributes.color.needsUpdate = true;
   }
   const SWEEP_MS = 900, sweepGeo = own(new THREE.BufferGeometry()), sweepPos = new Float32Array(Math.max(1, stackFloors.length) * 10 * 2 * 3);
   sweepGeo.setAttribute('position', new THREE.BufferAttribute(sweepPos, 3).setUsage(THREE.DynamicDrawUsage)); sweepGeo.setDrawRange(0, 0);
-  const sweepMat = own(new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95, depthWrite: false, fog: false })), sweepObj = new THREE.LineSegments(sweepGeo, sweepMat); sweepObj.frustumCulled = false; sweepObj.renderOrder = 6; sweepObj.visible = !reduced; world.add(sweepObj);
+  const sweepMat = own(new THREE.LineBasicMaterial({ color: P.dark ? 0xffffff : P.accent.getHex(), transparent: true, opacity: 0.95, depthWrite: false, fog: false })), sweepObj = new THREE.LineSegments(sweepGeo, sweepMat); sweepObj.frustumCulled = false; sweepObj.renderOrder = 6; sweepObj.visible = !reduced; world.add(sweepObj);
   const perim = (v, u, out) => { const x0 = v.box3.min.x, x1 = v.box3.max.x, z0 = v.box3.min.z, z1 = v.box3.max.z, W = x1 - x0, D = z1 - z0, per = 2 * (W + D), d = ((u % 1) + 1) % 1 * per, y = v.box3.min.y + SLAB_T + 0.03;
     if (d < W) return out.set(x0 + d, y, z1); if (d < W + D) return out.set(x1, y, z1 - (d - W)); if (d < 2 * W + D) return out.set(x1 - (d - W - D), y, z0); return out.set(x0, y, z0 + (d - 2 * W - D)); };
   const _pa = new THREE.Vector3(), _pb = new THREE.Vector3();
@@ -420,7 +377,7 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   function updateArcs(t, enteredMode) {
     // retire
     for (let i = arcs.length - 1; i >= 0; i--) if (t - arcs[i].t0 > arcs[i].life) { arcs[i].src.arcN = Math.max(0, (arcs[i].src.arcN || 0) - 1); arcs.splice(i, 1); }
-    if (!lowQ) {
+    if (!lowQ && enteredMode) {
       const idleCap = enteredMode ? 4 : 2; let idleN = arcs.filter((a) => !a.strong).length;
       for (const n of nodes) {
         if (n.vis < 0.3 || !n.outs.length || arcs.length >= ARC_MAX - 1) continue;
@@ -472,7 +429,7 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   const cyOf = (v) => (v.box0.min.y + v.box0.max.y) / 2, rotZone = (v, c0, k) => { const f = -k * Math.PI / 2, dy = c0.y - cyOf(v), dz = c0.z - v.z0; return new THREE.Vector3(c0.x, cyOf(v) + dy * Math.cos(f) - dz * Math.sin(f), v.z0 + dy * Math.sin(f) + dz * Math.cos(f)); };
   const cornersTarget = () => volumes.flatMap((v) => v.corners0.map((c) => (!exTarget ? c : v.vertical ? rotZone(v, c, 1) : c.clone().add(new THREE.Vector3(0, 0, offFor(v))))));
   function rebuildWires() {
-    wires.forEach((w) => { if (w.inner) return; const c = routeCurve(w.a, w.b), pts = c.getSpacedPoints(64), flat = pts.flatMap((p) => [p.x, p.y, p.z]); w.pts = pts; w.len = c.getLength(); w.geo.setPositions(flat); w.geo.setColors(gradColors(pts.length, w.a, w.b)); w.geoP.setPositions(flat); w.geoP.setColors(gradColors(pts.length, w.a, w.b, 0.55)); if (w.dashed) { w.line.computeLineDistances(); w.hl.computeLineDistances(); } w.pulse.computeLineDistances(); const end = pts[pts.length - 1], dir = end.clone().sub(pts[pts.length - 3]).normalize(); w.arrow.position.copy(end).addScaledVector(dir, -0.06); w.arrow.quaternion.setFromUnitVectors(Y_AXIS, dir); });
+    wires.forEach((w) => { if (w.inner) return; const c = aerialCurve(w.a, w.b, w.i), pts = c.getSpacedPoints(64); w.pts = pts; w.len = c.getLength(); w.geo.setPositions(pts.flatMap((p) => [p.x, p.y, p.z])); w.geo.setColors(gradColors(pts.length, w.a, w.b)); });
   }
   function applyExplode() {
     const k = exK;
@@ -480,17 +437,17 @@ export async function mountFlow(container, spec = {}, opts = {}) {
     boxes.forEach((b) => { const zv = volById.get('layer:' + b.layer); if (zv && zv.vertical) { const cy = cyOf(zv), ty = cy - (zv.box0.max.z - zv.z0) + SLAB_T + BOX.h / 2; b.pos.z = b.base.z - (b.base.y - cy) * k; b.pos.y = b.base.y + (ty - b.base.y) * k; b.g.position.z = b.pos.z; } else { b.pos.z = b.base.z + (exOff.get('layer:' + b.layer) || 0) * k; b.g.position.z = b.pos.z; } const pl = b.plate; if (pl && b.icon) { b.icon.position.lerpVectors(pl.front.pos, pl.top.pos, k); b.icon.rotation.x = pl.front.rotX + (pl.top.rotX - pl.front.rotX) * k; } });
     rebuildWires(); dirty = true;
   }
-  const MIN_CUBE_PX = 64;
+  const MIN_CUBE_PX = 36;
   // keep a clear margin right of the stack so a right-hand zone is never shown as a cropped half box
   const rightMargin = () => { const st = volumes.filter((v) => v.kind === 'layer' && !v.outside); if (!st.length) return []; const x = Math.max(...st.map((v) => v.max.x)) + BOX.w * 1.4 * 0.9; return st.flatMap((v) => [new THREE.Vector3(x, v.min.y, v.min.z), new THREE.Vector3(x, v.min.y, v.max.z), new THREE.Vector3(x, v.max.y, v.max.z)]); };
   function computeHome() {
     const bird = VIEWS[viewIdx].id === 'bird', pad = bird ? 0.05 : PAD_FIT, all = cornersTarget(), fAll = fitPoints(all, defaultDir, pad), kpx = 2 * Math.tan((FOV * Math.PI) / 360) / Math.max(1, chg);
     // default fit: every zone if the cubes stay >= 64px, otherwise the request path (end users > edge > stack) so cubes stay readable; the rest is reachable by chips and panning
     const fitPts = !bird && BOX.w / (kpx * fAll.dist) < (cw < 640 ? 18 : MIN_CUBE_PX) ? volumes.filter((v) => !(v.outside && v.side === 'right')).flatMap((v) => v.corners0).concat(rightMargin()) : all;
-    home = fitPoints(fitPts, defaultDir, pad); home.allDist = fAll.dist; controls.maxDistance = fAll.dist * 1.8; scene.fog.near = home.dist * 4; scene.fog.far = home.dist * 8; }
+    home = fitPoints(fitPts, defaultDir, pad); home.allDist = fAll.dist; controls.maxDistance = fAll.dist * 1.8; }
   function resize() {
     const w = Math.max(60, container.clientWidth), hgt = Math.max(60, container.clientHeight);
-    cw = w; chg = hgt; if (composer) composer.setSize(w, hgt); renderer.setSize(w, hgt, false); camera.aspect = w / hgt; camera.updateProjectionMatrix(); res.set(w, hgt); wires.forEach((q) => { q.mat.resolution.set(w, hgt); q.pMat.resolution.set(w, hgt); q.hlMat.resolution.set(w, hgt); });
+    cw = w; chg = hgt; if (composer) composer.setSize(w, hgt); renderer.setSize(w, hgt, false); camera.aspect = w / hgt; camera.updateProjectionMatrix(); res.set(w, hgt); wires.forEach((q) => { q.mat.resolution.set(w, hgt); q.hlMat.resolution.set(w, hgt); });
     const had = !!home; computeHome();
     if (!had || (!userMoved && !tween && !entered)) { camera.position.copy(home.pos); controls.target.copy(home.target); controls.update(); }
     dirty = true;
@@ -501,11 +458,22 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   }
   const dirNow = () => camera.position.clone().sub(controls.target).normalize();
   const around = (b, r) => { const pts = []; for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) pts.push(b.pos.clone().add(new THREE.Vector3(r.x * sx, r.y * sy + (b.sub ? 0 : b.lift), r.z * sz))); return pts; };
-  function focus(id) {
+  function flyTo(id) {
     const bx = nodeById.get(id), vol = volById.get(id); userMoved = true; lastActivity = performance.now();
     if (bx) { const f = fitPoints(around(bx, bx.sub ? new THREE.Vector3(1.4, 0.9, 1.4) : new THREE.Vector3(2.0, 1.1, 2.0)), dirNow(), 0.05); tweenTo(f.pos, f.target); }
     else if (vol) { const f = fitPoints(vol.corners, dirNow(), PAD_FIT); tweenTo(f.pos, f.target); }
   }
+  /* contract: focus(id|null) = hover-style highlight (no camera move); swapTech re-skins a cube in place; getBoxes lists the role boxes */
+  function focusBox(id) { extFocus = id ? boxById.get(id) || null : null; dirty = true; }
+  function swapTech(id, o) {
+    const b = boxById.get(id); if (!b || !o) return false;
+    const sp = b.spec, label = o.label || sp.label || b.label, tech = o.tech || o.label || sp.tech || label, icon = o.icon !== undefined ? o.icon : sp.icon;
+    b.spec = { ...sp, label, tech, icon }; b.label = label; b.short = label; b.text = replicaLabel(tech, sp.replicas); b.lbl.textContent = b.text; b.lw = 0; if (b.srBtn) b.srBtn.textContent = label;
+    if (b.iconSt) b.iconSt.set(icon, label);
+    if (paneFor === b) { paneFor = null; if (hover === b) showPane(b); }
+    dirty = true; return true;
+  }
+  const getBoxes = () => boxes.map((b) => ({ id: b.id, label: b.label, tech: b.spec.tech || b.label, icon: b.spec.icon || null, layer: b.layer, zone: layerLabels.get(b.layer) || '', alts: Array.isArray(b.spec.alts) ? b.spec.alts.map((x) => ({ ...x })) : [] }));
   function reset() { if (entered) { exit(); return; } userMoved = false; swayAcc = 0; if (home) tweenTo(home.pos, home.target); }
   function zoomBy(f) {
     userMoved = true; lastActivity = performance.now(); const off = camera.position.clone().sub(controls.target), d = clamp(off.length() * f, controls.minDistance, controls.maxDistance);
@@ -530,7 +498,7 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   const mk = (t, a, f) => { const b = h('button', 'flow3d__cbtn', t); b.type = 'button'; b.setAttribute('aria-label', a); b.title = a; b.addEventListener('click', f); ctl.appendChild(b); return b; };
   mk('+', 'Zoom in', zoomIn); mk('−', 'Zoom out', zoomOut); mk('Reset', 'Reset view', () => { stopWalk(); setTab(null); reset(); }).classList.add('flow3d__cbtn--wide');
   const setView = (i) => { viewIdx = i; defaultDir = dirFor(VIEWS[i]); vbtn.textContent = VIEWS[i].label; bBird.setAttribute('aria-pressed', String(i === BIRD)); exTarget = i === BIRD ? 1 : 0; computeHome(); userMoved = false; tweenTo(home.pos, home.target, 600); dirty = true; };
-  const vbtn = mk('Front', 'Cycle view: Front, Isometric, Bird\'s eye', () => { setView((viewIdx + 1) % VIEWS.length); computeHome(); userMoved = false; tweenTo(home.pos, home.target); }); vbtn.classList.add('flow3d__cbtn--wide');
+  const vbtn = mk(VIEWS[0].label, 'Cycle view: Front, Isometric, Bird\'s eye', () => { setView((viewIdx + 1) % VIEWS.length); computeHome(); userMoved = false; tweenTo(home.pos, home.target); }); vbtn.classList.add('flow3d__cbtn--wide');
   const bBird = mk('\u25A6', "Bird's eye view", () => setView(viewIdx === BIRD ? 0 : BIRD)); bBird.setAttribute('aria-pressed', 'false'); bBird.classList.add('flow3d__bird'); ctl.insertBefore(bBird, vbtn);
   const bExpand = mk('Expand', 'Expand to full screen', () => (full ? collapse() : expand())); bExpand.className = 'flow3d__full'; bExpand.textContent = 'Open full screen \u2197'; root.appendChild(bExpand);
   root.appendChild(ctl);
@@ -539,11 +507,12 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   const hint = h('div', 'flow3d__hint', 'Drag to orbit, scroll to zoom, double-click a box'); hint.hidden = true; root.appendChild(hint);
   let hintTimer = 0; function hideHint() { if (hint.hidden) return; hint.classList.add('is-off'); setTimeout(() => { hint.hidden = true; }, 600); clearTimeout(hintTimer); store.set(); }
   if (!store.get() && !reduced) { hint.hidden = false; hintTimer = setTimeout(hideHint, 4600); }
-  const sr = h('ul', 'flow3d__sr'); boxes.forEach((b) => { const li = h('li'), btn = h('button', '', b.label); btn.type = 'button'; btn.addEventListener('click', () => openBox(b)); li.appendChild(btn); sr.appendChild(li); }); root.appendChild(sr);
+  const sr = h('ul', 'flow3d__sr'); boxes.forEach((b) => { const li = h('li'), btn = h('button', '', b.label); b.srBtn = btn; btn.type = 'button'; btn.addEventListener('click', () => openBox(b)); li.appendChild(btn); sr.appendChild(li); }); root.appendChild(sr);
   const openBox = (b) => container.dispatchEvent(new CustomEvent('flow3d:open', { bubbles: true, detail: { href: b.href, id: b.id } }));
   function boxClick(b) {
     clearTimeout(clickTimer);
-    if (b.sub) { focus(b.id); return; }
+    if (b.sub) { flyTo(b.id); return; }
+    if (b.spec.alts && b.spec.alts.length && !entered) { clearTimeout(clickTimer); container.dispatchEvent(new CustomEvent('flow3d:pick', { bubbles: true, detail: { id: b.id } })); return; }
     if (entered) { if (b === entered) return; return; }
     const own2 = b.href && (() => { try { return b.href === location.hash; } catch { return false; } })();
     clickTimer = setTimeout(() => (own2 ? enter(b.id) : openBox(b)), 240);
@@ -677,13 +646,13 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   const setNdc = (e) => { const r = canvas.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, camera); };
   const pickBox = (e) => { setNdc(e); const hit = ray.intersectObjects(pickables.filter((m) => m.userData.node.vis > 0.5 && m.userData.node.g.visible), false)[0]; return hit ? hit.object.userData.node : null; };
   function pickVolume(e) { setNdc(e); let best = null, bs = Infinity; const p = new THREE.Vector3(); volumes.forEach((v) => { if (v.vis > 0.5 && ray.ray.intersectBox(v.box3, p)) { const s = v.box3.getSize(new THREE.Vector3()).lengthSq(); if (s < bs) { bs = s; best = v; } } }); return best; }
-  function setHover(b) { if (hover !== b) { hover = b; if (b) showPane(b); else if (pyrOnly) { paneFor = null; renderPane(null); } else hidePane(); canvas.style.cursor = b ? 'pointer' : ''; nodes.forEach((q) => q.lbl.classList.toggle('is-hover', q === b)); dirty = true; } }
+  function setHover(b) { if (hover !== b) { hover = b; container.dispatchEvent(new CustomEvent('flow3d:hover', { bubbles: true, detail: { id: b && !b.sub ? b.id : null } })); if (b) showPane(b); else if (pyrOnly) { paneFor = null; renderPane(null); } else hidePane(); canvas.style.cursor = b ? 'pointer' : ''; nodes.forEach((q) => q.lbl.classList.toggle('is-hover', q === b)); dirty = true; } }
   canvas.addEventListener('pointermove', (e) => { lastActivity = performance.now(); if (e.buttons) { setHover(null); return; } setHover(pickBox(e)); });
   canvas.addEventListener('pointerleave', () => setHover(null));
   canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; lastActivity = performance.now(); hideHint(); try { root.focus({ preventScroll: true }); } catch { /* ignore */ } });
   canvas.addEventListener('wheel', () => { lastActivity = performance.now(); hideHint(); }, { passive: true });
   canvas.addEventListener('pointerup', (e) => { if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) { down = null; return; } down = null; const b = pickBox(e); if (b) boxClick(b); });
-  canvas.addEventListener('dblclick', (e) => { clearTimeout(clickTimer); const b = pickBox(e); if (b) { if (b.sub) focus(b.id); else enter(b.id); return; } const v = pickVolume(e); if (v) { focus(v.id); return; } if (!full) expand(); });
+  canvas.addEventListener('dblclick', (e) => { clearTimeout(clickTimer); const b = pickBox(e); if (b) { if (b.sub) flyTo(b.id); else enter(b.id); return; } const v = pickVolume(e); if (v) { flyTo(v.id); return; } if (!full) expand(); });
 
   /* ---------- keyboard: fly controls */
   const keys = new Set(), inside = () => full || container.contains(document.activeElement);
@@ -713,10 +682,10 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   /* ---------- theme */
   function setTheme(t) {
     if (t !== 'light' && t !== 'dark') t = detectTheme(); theme = t; container.dataset.theme = t; P = palette(t, cssVar('--primary', ''), cssVar('--bg', ''));
-    volumes.forEach((v) => { if (v.kind !== 'layer') { v.mat.color.copy(P.volume); if (v.brMat) v.brMat.color.copy(P.volume); } else { const lk2 = Number(String(v.id).split(':')[1]); v.mat.color.copy(layerCol(lk2)); if (v.brMat) v.brMat.color.copy(layerCol(lk2)); } }); floor.color.copy(P.volume); floor.opacity = P.floorOp; scene.fog.color.copy(P.bg);
-    nodes.forEach((b) => { b.glowMat.color.copy(P.accent); if (b.iconSt) b.iconSt.draw(); if (b.shell) b.shell.mat.color.copy(P.volume); });
-    wires.forEach((w) => { w.geo.setColors(gradColors(w.pts.length, w.a, w.b)); w.geoP.setColors(gradColors(w.pts.length, w.a, w.b, 0.55)); w.hlMat.color.copy(P.accent); w.arMat.color.copy(P.accent); });
-    paintBubbles(); setLights(); dirty = true;
+    volumes.forEach((v) => { if (v.kind !== 'layer') { v.mat.color.copy(P.volume); if (v.brMat) v.brMat.color.copy(P.volume); } else { const lk2 = Number(String(v.id).split(':')[1]); v.mat.color.copy(layerCol(lk2)); if (v.brMat) v.brMat.color.copy(layerCol(lk2)); } }); floor.grid.color.set(P.grid); floor.grid.opacity = P.floorOp; floor.ground.color.set(P.ground); floor.ground.opacity = P.groundOp; floor.shade.opacity = P.dark ? 0.35 : 0.14; paintBg(); sweepMat.color.set(P.dark ? 0xffffff : P.accent.getHex()); haloMat.blending = P.dark ? THREE.AdditiveBlending : THREE.NormalBlending; haloMat.needsUpdate = true;
+    nodes.forEach((b) => { b.glowMat.color.copy(P.accent); b.glowMat.blending = P.dark ? THREE.AdditiveBlending : THREE.NormalBlending; b.glowMat.needsUpdate = true; if (b.iconSt) b.iconSt.draw(); if (b.shell) b.shell.mat.color.copy(P.volume); });
+    wires.forEach((w) => { w.geo.setColors(gradColors(w.pts.length, w.a, w.b)); });
+    setLights(); dirty = true;
   }
   let mo = null, mq = null, mqFn = null;
   if (!fixedTheme) { mo = new MutationObserver(() => setTheme(detectTheme())); mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); try { mq = matchMedia('(prefers-color-scheme: light)'); mqFn = () => setTheme(detectTheme()); mq.addEventListener('change', mqFn); } catch { mq = null; } }
@@ -744,7 +713,7 @@ export async function mountFlow(container, spec = {}, opts = {}) {
       const wd = measure(b.lbl, b), op = b === entered ? 1 : 0.2 + 0.8 * clamp((b.vis - DIM) / (1 - DIM), 0, 1) * (entered && !b.sub ? 0.4 : 1);
       // labels stay glued to their tile: only candidates within 1.5 label heights of the anchor; otherwise hidden until the tile is hovered
       const cands = [[x - wd / 2, y + 1], [x - wd / 2, y + 1 + LH], [x - wd / 2, y - 2 * LH - 6]], free = cands.find(([cx, cy]) => !placed.some((p) => overlap({ x: cx, y: cy, w: wd }, p)));
-      const spot = !!tabId || walking, inFocus = lf !== null && b.layer === lf, want = b === hover || b === entered || b.sub || (lf !== null ? inFocus : (spot ? b.tvis >= 1 : true));
+      const spot = !!tabId || walking, inFocus = lf !== null && b.layer === lf, want = b === hover || b === fx || b === entered || b.sub || (lf !== null ? inFocus : (spot ? b.tvis >= 1 : true));
       if (!want) { b.lbl.style.visibility = 'hidden'; b.lbl.style.pointerEvents = 'none'; return; }
       if (!free && !inFocus && b !== hover && b !== entered) { b.lbl.style.visibility = 'hidden'; b.lbl.style.pointerEvents = 'none'; return; }
       const c = free || cands[0], r = { x: c[0], y: c[1], w: wd }; placed.push(r);
@@ -757,6 +726,9 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   function frame(now) {
     raf = requestAnimationFrame(frame); if (disposed) return;
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    const fxNow = hover || extFocus;
+    if (fxNow !== fx) { fx = fxNow; fxNb.clear(); if (fx && !fx.sub) wires.forEach((w) => { if (w.inner) return; if (w.a === fx) fxNb.add(w.b.id); else if (w.b === fx) fxNb.add(w.a.id); }); dirty = true; }
+    const hf = !!fx && !fx.sub && !tabId && !walking && lf === null && !entered; // hover / focus dims everything that is not connected
     if (exK !== exTarget) { exK += (exTarget - exK) * Math.min(1, dt * 7); if (Math.abs(exTarget - exK) < 0.003) exK = exTarget; applyExplode(); }
     if (tween) { const k = clamp((now - tween.t0) / tween.ms, 0, 1), e = ease(k); camera.position.lerpVectors(tween.fp, tween.tp, e); controls.target.lerpVectors(tween.ft, tween.tt, e); if (k >= 1) tween = null; dirty = true; }
     applyKeys(dt);
@@ -772,40 +744,40 @@ export async function mountFlow(container, spec = {}, opts = {}) {
     let moving = false; const ease1 = (c, tg) => { const d = tg - c; if (Math.abs(d) < 0.01) return tg; moving = true; return c + d * 0.18; };
     const nv = (v) => clamp((v - DIM) / (1 - DIM), 0, 1);
     enterK = ease1(enterK, entered ? 1 : 0);
-    boxes.forEach((b) => { b.vis = ease1(b.vis, entered ? FADE_OTHERS : b.tvis); b.act = ease1(b.act, Math.max(b.tact, hover === b ? 1 : 0)); b.hide = ease1(b.hide, entered === b && b.subs.length ? 1 : 0); });
+    boxes.forEach((b) => { b.vis = ease1(b.vis, entered ? FADE_OTHERS : hf ? (b === fx ? 1 : fxNb.has(b.id) ? 0.62 : DIM) : b.tvis); b.act = ease1(b.act, Math.max(b.tact, fx === b ? 1 : 0)); b.hide = ease1(b.hide, entered === b && b.subs.length ? 1 : 0); });
     subs.forEach((s) => { const on = entered === s.owner; s.vis = ease1(s.vis, on ? 1 : 0); s.act = ease1(s.act, Math.max(s.tact, hover === s ? 1 : 0, on && animate ? 0.0 : 0)); if (s.vis < 0.02 && !on) s.g.visible = false; else s.g.visible = true; });
     wires.forEach((w) => {
-      const tg = w.inner ? (entered === w.owner ? 1 : 0) : entered ? FADE_OTHERS : w.tvis; w.vis = ease1(w.vis, tg);
-      const vis2 = !w.inner || w.vis > 0.02; w.line.visible = w.hl.visible = w.arrow.visible = vis2; w.pulse.visible = vis2 && w.flow;
-      w.act = ease1(w.act, Math.max(w.tact, hover && (hover === w.a || hover === w.b) ? 1 : 0)); const f = w.inner || lf !== null ? w.vis : 0.3 + 0.7 * nv(w.vis);
-      w.mat.opacity = f * 0.4; w.hlMat.opacity = w.act * 0.9 * f; w.arMat.opacity = 0.5 * f; w.pMat.opacity = f * (0.8 + 0.2 * w.act); w.pMat.linewidth = 1.0 + 0.5 * w.act; if (animate) w.pMat.dashOffset -= w.speed * (1 + 0.8 * w.act) * dt;
+      const tg = w.inner ? (entered === w.owner ? 1 : 0) : entered ? FADE_OTHERS : hf ? (w.a === fx || w.b === fx ? 1 : DIM) : w.tvis; w.vis = ease1(w.vis, tg);
+      w.line.visible = w.hl.visible = !w.inner || w.vis > 0.02;
+      w.act = ease1(w.act, Math.max(w.tact, fx && (fx === w.a || fx === w.b) ? 1 : 0)); const f = w.inner || lf !== null ? w.vis : 0.3 + 0.7 * nv(w.vis);
+      w.mat.opacity = f * (P.dark ? 0.55 : 0.7); w.hlMat.opacity = w.act * f;
     });
     volumes.forEach((v) => {
-      v.vis = ease1(v.vis, entered ? FADE_OTHERS : v.tvis);
+      v.vis = ease1(v.vis, entered ? FADE_OTHERS : hf ? (v.boxes.includes(fx.id) || v.boxes.some((i) => fxNb.has(i)) ? 1 : 0.4) : v.tvis);
       if (v.kind === 'layer') {
         let hot = 0; for (const id of v.boxes) { const nb = nodeById.get(id); if (nb && nb.act > hot) hot = nb.act; }
         v.hot = ease1(v.hot || 0, hot); const lk3 = Number(String(v.id).split(':')[1]);
-        v.mat.color.copy(P.dark ? _white : _nGrey).lerp(layerCol(lk3), v.hot); v.mat.opacity = ((v.outside ? 0.5 : 0.28) + 0.7 * v.hot) * v.vis; if (v.postMat) { v.postMat.color.copy(layerCol(lk3)); v.postMat.opacity = (0.12 + 0.25 * v.hot) * v.vis; } if (v.slabMat) { v.slabMat.color.copy(layerCol(lk3)); v.slabMat.opacity = (0.14 + 0.1 * v.hot) * v.vis; }
+        v.mat.color.copy(layerCol(lk3)).lerp(_white, 0.25 * v.hot); v.mat.opacity = (0.8 + 0.2 * v.hot) * v.vis; if (v.postMat) { v.postMat.color.copy(layerCol(lk3)); v.postMat.opacity = (0.12 + 0.25 * v.hot) * v.vis; } if (v.slabMat) { v.slabMat.color.copy(neonOf(lk3)); v.slabMat.opacity = ((P.dark ? 0.2 : 0.22) + 0.14 * v.hot) * v.vis; }
         if (v.brMat) { v.brMat.color.copy(v.mat.color); v.brMat.opacity = (0.28 + 0.7 * v.hot) * v.vis; }
       } else { v.mat.opacity = P.volumeOp * v.vis; if (v.brMat) v.brMat.opacity = 0.95 * v.vis; }
     });
     boxes.forEach((b) => { if (b.shell) { const tgt = entered === b ? 1 : 0; b.shell.op = ease1(b.shell.op, tgt); b.shell.mat.opacity = P.volumeOp * 2 * b.shell.op; if (b.shell.op < 0.02 && !entered) { b.shell.obj.visible = false; } } });
-    animateFlow(animate ? t : 0); if (animate) { updateSparkles(t); updateSweep(t); } if (animate) updateArcs(t, !!entered);
+    animateFlow(animate ? dt : 0); if (animate) { updateSparkles(t); updateSweep(t); } if (animate && (entered || arcs.length)) updateArcs(t, !!entered);
     nodes.forEach((b) => {
       const pulse = animate ? 0.5 + 0.5 * Math.sin(t * 1.6 + b.phase * 6.28) : 0.5, since = animate ? t - b.fire : 99, burst = since >= 0 && since < 0.7 ? 1 - since / 0.7 : 0, v = nv(b.sub ? clamp(b.vis, DIM, 1) : b.vis), a = b.act;
       const gs = b.sub ? 0.6 : 1, hid = 1 - b.hide;
-      b.glowMat.opacity = (a * (0.22 + 0.2 * pulse + 0.4 * burst) + (entered && b.sub ? 0.05 * pulse : 0) + 0.06 * burst) * v * hid; b.glow.scale.setScalar(BOX.w * gs * (2.4 + 0.5 * pulse + 0.8 * burst));
-      const o = (b.sub || lf !== null ? clamp(b.vis, 0, 1) : 0.3 + 0.7 * v) * hid; b.sideMat.opacity = b.topMat.opacity = o; if (b.hullMat) b.hullMat.opacity = 0; b.edgeMat.opacity = P.edgeOp * o; b.edgeMat.color.copy(P.edge).lerp(P.accent, a); if (b.imat) b.imat.opacity = (lf !== null ? clamp(b.vis, 0, 1) : v) * hid;
+      b.glowMat.color.copy(b.sub ? P.accent : layerCol(b.layer)); b.glowMat.opacity = (a * (P.dark ? 0.5 : 0.55 + 0.1 * pulse) + (entered && b.sub ? 0.05 * pulse : 0)) * v * hid; b.glow.scale.setScalar(BOX.w * gs * (1.9 + 0.35 * pulse));
+      const o = (b.sub || lf !== null ? clamp(b.vis, 0, 1) : 0.3 + 0.7 * v) * hid; b.sideMat.opacity = b.topMat.opacity = o; if (b.hullMat) b.hullMat.opacity = o * (0.3 + 0.65 * a); b.edgeMat.opacity = P.edgeOp * o; b.edgeMat.color.copy(P.edge).lerp(P.accent, a); if (b.imat) b.imat.opacity = (lf !== null ? clamp(b.vis, 0, 1) : v) * hid;
       b.ghosts.forEach((gh) => { gh.gs.color.copy(b.sideMat.color); gh.gt.color.copy(b.topMat.color); gh.gs.opacity = gh.gt.opacity = o * gh.opacity; gh.mesh.visible = !(b.hide > 0.98); });
       if (b.sub) { b.sideMat.color.set(P.side); b.topMat.color.set(P.top); } else { paintBox(b, (b.bright || 1) * (1 + 0.35 * a)); }
-      if (!b.sub && !entered) { b.g.position.y = b.pos.y + b.lift + a * 0.25 + (animate && hover !== b ? 0.07 * Math.sin((t * 6.2832) / (3.5 + (hash(b.id) % 1500) / 1000) + b.phase * 6.2832) : 0); if (b.shd) b.shd.position.y = -b.hgt / 2 + 0.03 - a * 0.25; }
+      if (!b.sub && !entered) { b.g.position.y = b.pos.y + b.lift + a * 0.4 + (animate && hover !== b ? 0.07 * Math.sin((t * 6.2832) / (3.5 + (hash(b.id) % 1500) / 1000) + b.phase * 6.2832) : 0); if (b.shd) b.shd.position.y = -b.hgt / 2 + 0.03 - a * 0.4; }
       b.g.children.forEach((c) => { if (c.isMesh || c.isLineSegments) c.visible = !(b.hide > 0.98); });
     });
     placeLabels();
     if (BLOOM && P.dark && !lowQ && !reduced) {
       if (!composer) { composer = new EffectComposer(renderer); composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(cw, chg); composer.addPass(new RenderPass(scene, camera)); bloom = new UnrealBloomPass(new THREE.Vector2(cw, chg), 0.28, 0.55, 0.32); composer.addPass(bloom); composer.addPass(new OutputPass()); }
       scene.background = P.bg; composer.render();
-    } else { scene.background = null; renderer.render(scene, camera); }
+    } else { renderer.render(scene, camera); }
     dirty = moving || animate;
   }
   const ro = new ResizeObserver(resize); ro.observe(container);
@@ -815,7 +787,7 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   { let hv = opts.hover; if (hv === undefined) { try { hv = new URLSearchParams(location.search).get('hover'); } catch { hv = null; } } if (hv) setTimeout(() => { const n = nodeById.get(hv); if (n && !disposed) setHover(n); }, 900); } // ?hover=<boxId> for tests
   { let q = null; try { q = new URLSearchParams(location.search); } catch { q = null; } // test hooks: ?view=front|iso|bird, ?walk=<step>
     const vw = opts.view !== undefined ? opts.view : q && q.get('view'), vi = VIEWS.findIndex((v) => v.id === vw), wk = opts.walk !== undefined ? opts.walk : q && q.get('walk');
-    if (vi > 0) setTimeout(() => { if (!disposed) setView(vi); }, 300);
+    if (vi >= 0 && vi !== viewIdx) setTimeout(() => { if (!disposed) setView(vi); }, 300);
     if (wk) setTimeout(() => { if (disposed) return; startWalk(); const n = Number(wk); if (n > 1) showStep(Math.min(steps.length, n) - 1); paused = true; clearTimeout(walkTimer); }, 600);
   }
   if (opts.tab) setTab(opts.tab);
@@ -824,7 +796,7 @@ export async function mountFlow(container, spec = {}, opts = {}) {
 
   return {
     mode: 'webgl', camera, controls, renderer, layout: L, getDistance: () => camera.position.distanceTo(controls.target), get homeDistance() { return home.dist; }, get entered() { return entered ? entered.id : null; },
-    zoomIn, zoomOut, reset, focus, setLayerFocus, layerList: () => layerList.map((l) => ({ ...l })), get layerFocus() { return lf; }, enter, exit, setTab, startWalk, stopWalk, setTheme, setHeight, expand, collapse,
+    zoomIn, zoomOut, reset, focus: focusBox, flyTo, swapTech, getBoxes, setLayerFocus, layerList: () => layerList.map((l) => ({ ...l })), get layerFocus() { return lf; }, enter, exit, setTab, startWalk, stopWalk, setTheme, setHeight, expand, collapse,
     /* client-space centre of a box's top face (for tests and host overlays) */
     project(id) { const b = nodeById.get(id); if (!b) return null; const r = canvas.getBoundingClientRect(), p = b.pos.clone().add(new THREE.Vector3(0, BOX.h / 2, 0)).project(camera); return { x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height }; },
     unmount() {

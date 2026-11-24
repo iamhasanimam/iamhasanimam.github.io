@@ -1,5 +1,5 @@
 {
- "title": "OpenBao",
+ "title": "Vault",
  "subtitle": "Identity-based secrets with Raft HA",
  "layers": [
   {
@@ -77,13 +77,13 @@
    "col": 0,
    "row": 0,
    "says": "The workload reads a file.",
-   "detail": "The application never calls OpenBao. It reads secrets the agent rendered."
+   "detail": "The application never calls Vault. It reads secrets the agent rendered."
   },
   {
    "id": "agent",
    "label": "Agent",
-   "tech": "OpenBao Agent",
-   "icon": "openbao",
+   "tech": "Vault Agent",
+   "icon": "vault",
    "layer": 2,
    "col": 1,
    "row": 0,
@@ -160,13 +160,13 @@
   {
    "id": "leader",
    "label": "Leader",
-   "tech": "OpenBao",
-   "icon": "openbao",
+   "tech": "Vault",
+   "icon": "vault",
    "layer": 0,
    "col": 0,
    "row": 0,
    "says": "The leader commits writes.",
-   "detail": "One active node handles writes and replicates to followers. Alternatives: Vault, cloud secret managers, SOPS.",
+   "detail": "One active node handles writes and replicates to followers. Alternatives: OpenBao, cloud secret managers, SOPS.",
    "inner": [
     {
      "id": "barrier",
@@ -186,7 +186,7 @@
    "id": "node2",
    "label": "Follower",
    "tech": "Raft node",
-   "icon": "openbao",
+   "icon": "vault",
    "layer": 0,
    "col": 1,
    "row": 0,
@@ -197,7 +197,7 @@
    "id": "node3",
    "label": "Follower",
    "tech": "Raft node",
-   "icon": "openbao",
+   "icon": "vault",
    "layer": 0,
    "col": 2,
    "row": 0,
@@ -213,7 +213,7 @@
    "col": 3,
    "row": 0,
    "says": "Snapshots restore the cluster.",
-   "detail": "bao operator raft snapshot save, run from cron, copied off-host."
+   "detail": "vault operator raft snapshot save, run from cron, copied off-host."
   }
  ],
  "wires": [
@@ -426,15 +426,15 @@
   }
  ],
  "declarations": [
-  "OpenBao encrypts at rest.",
+  "Vault encrypts at rest.",
   "Policies deny by default.",
   "Dynamic secrets expire.",
   "Raft replicates by quorum."
  ],
  "run": {
-  "cmd": "bao operator raft snapshot save b.snap",
+  "cmd": "vault operator raft snapshot save b.snap",
   "lines": [
-   "Raft peers: bao-1 leader, bao-2, bao-3",
+   "Raft peers: vault-1 leader, vault-2, vault-3",
    "Snapshot saved: b.snap"
   ]
  }

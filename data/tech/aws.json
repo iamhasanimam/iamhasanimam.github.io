@@ -45,7 +45,7 @@
   },
   {
    "title": "Alternatives",
-   "body": "Load balancing: NGINX, HAProxy, Envoy, Traefik or Caddy on EC2 when you need custom routing.\nCompute and network: Azure, Google Cloud, or on-premises KVM, ESXi and OpenStack.\nIdentity and secrets: Keycloak or Okta; Vault, OpenBao or SOPS beside Secrets Manager.\nMetrics: Prometheus and Grafana or Datadog instead of CloudWatch.\nInfrastructure as code: Terraform, OpenTofu, CloudFormation or Pulumi."
+   "body": "Load balancing: NGINX, HAProxy, Envoy, Traefik or Caddy on EC2 when you need custom routing.\nCompute and network: Azure, Google Cloud, or on-premises KVM, ESXi and OpenStack.\nIdentity and secrets: Keycloak or Okta; Vault or SOPS beside Secrets Manager.\nMetrics: Prometheus and Grafana or Datadog instead of CloudWatch.\nInfrastructure as code: Terraform, OpenTofu, CloudFormation or Pulumi."
   }
  ],
  "flow": [

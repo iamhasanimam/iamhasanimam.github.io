@@ -161,7 +161,7 @@ export function mountTechGraph(container, opts = {}) {
   }
   function brandFor(hex) {
     const c = new THREE.Color(hex), hsl = {}; c.getHSL(hsl);
-    if (theme === 'dark') hsl.l = Math.max(hsl.l, 0.6); else hsl.l = Math.min(hsl.l, 0.45);
+    if (theme === 'dark') { if (hsl.l < 0.35) hsl.l = hsl.s < 0.15 ? 0.82 : 0.55; } else hsl.l = Math.min(hsl.l, 0.45); // keep true brand colours; only near-black brands are lifted so they stay visible on the dark tile
     return new THREE.Color().setHSL(hsl.h, hsl.s, hsl.l);
   }
   const C = { tile: new THREE.Color(), bg: new THREE.Color(), text: new THREE.Color(), edge: new THREE.Color(), accent: new THREE.Color() };

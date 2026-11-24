@@ -1,7 +1,7 @@
 {
   "_doc": "dir = bubble flow relative to the owning node: out = owner -> to, in = to -> owner, both = two-way. verb reads 'owner <verb> to'. Only own links are drawn when a node is hovered.",
   "nodes": {
-    "kong": { "name": "Kong", "brand": "#1155cb", "icon": "kong", "route": "kong", "links": [
+    "kong": { "name": "Kong", "brand": "#d4ff2a", "icon": "kong", "route": "kong", "links": [
       { "to": "kubernetes", "verb": "routes to", "dir": "out" },
       { "to": "keycloak", "verb": "verifies via", "dir": "out" },
       { "to": "nginx", "verb": "built on", "dir": "in" },
@@ -87,7 +87,7 @@
       { "to": "ansible", "verb": "runs", "dir": "out" },
       { "to": "keycloak", "verb": "SSO via", "dir": "in" },
       { "to": "python", "verb": "runs", "dir": "out" } ] },
-    "openbao": { "name": "OpenBao", "brand": "#ffd814", "icon": "vault", "route": "openbao", "links": [
+    "openbao": { "name": "Vault", "brand": "#ffd814", "icon": "vault", "route": "openbao", "links": [
       { "to": "kubernetes", "verb": "secrets to", "dir": "out" },
       { "to": "jenkins", "verb": "secrets to", "dir": "out" },
       { "to": "postgresql", "verb": "dynamic creds", "dir": "out" },
