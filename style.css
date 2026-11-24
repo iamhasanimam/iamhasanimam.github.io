@@ -216,7 +216,7 @@ main > div > section:first-child, main > div > .hero { margin-top: 0; }
 
 /* KPI and key-point cards share one accent: 3px top edge */
 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); margin-top: var(--s6); }
-.kpi, .kpt { border-top: 3px solid var(--k, var(--blue)); }
+.kpi, .kpt { border-left: 4px solid var(--k, var(--blue)); }
 .kpi:nth-child(1), .kp .kpt:nth-child(1) { --k: var(--blue); } .kpi:nth-child(2), .kp .kpt:nth-child(2) { --k: var(--red); } .kpi:nth-child(3), .kp .kpt:nth-child(3) { --k: var(--yellow); } .kpi:nth-child(4), .kp .kpt:nth-child(4) { --k: var(--green); }
 .kpi { display: flex; flex-direction: column; gap: var(--s1); }
 .kpi .v { font-size: var(--t-2xl); font-weight: 600; line-height: 1.15; white-space: nowrap; letter-spacing: -.02em; }

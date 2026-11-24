@@ -1,5 +1,5 @@
 /* Portfolio SPA: hash routing, static JSON data, no build. All data text is inserted with textContent (no innerHTML on data). */
-import { parseRoute, nextRoute } from './route.js?v=20261124q';
+import { parseRoute, nextRoute } from './route.js?v=20261124r';
 (() => {
   'use strict';
 
@@ -8,7 +8,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124q';
   const LINKEDIN_URL = 'https://www.linkedin.com/in/iamhasanimam';
   const TYPE_CODE_MS = 22; // code typing speed in the hero editor, git log and code blocks (ms per character)
   const PAUSE_MS = 1800;   // pause after a snippet is typed, before the next tab
-  const ASSET_V = '20261124q'; // cache-busting for dynamic imports; keep in sync with index.html
+  const ASSET_V = '20261124r'; // cache-busting for dynamic imports; keep in sync with index.html
 
   // Brand colours (tuned for the dark banner). Slugs missing from simple-icons get a monogram.
   const COLORS = {
@@ -623,10 +623,6 @@ import { parseRoute, nextRoute } from './route.js?v=20261124q';
     const kseg = seg(kind, (v) => { kind = v; paint(); }, [['all', 'All'], ['personal', 'Personal'], ['production', 'Production']]);
     kseg.setAttribute('aria-label', 'Kind');
     root.append(h('div', { class: 'toolbar' }, chipsEl, kseg), gridEl);
-    if (studied.length) {
-      root.append(h('section', { class: 'studied', 'aria-label': 'Studied and forked for learning' }, h('div', { class: 'wk-meta' }, 'Studied and forked for learning'),
-        h('div', { class: 'chips' }, studied.filter((x) => safeUrl(x.repo)).map((x) => h('a', { class: 'chip studied-l', href: x.repo, target: '_blank', rel: 'noopener noreferrer', title: x.note || '' }, x.title)))));
-    }
     paint();
   }
 
