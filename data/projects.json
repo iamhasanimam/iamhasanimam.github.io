@@ -101,7 +101,7 @@
   },
   {
    "slug": "platform-engineering-portfolio",
-   "title": "Platform Engineering Portfolio Site",
+   "title": "DevOps Portfolio Site",
    "summary": "This site: technology guides with reproducible deployment steps, alongside projects and career history.",
    "stack": [
     "HTML",

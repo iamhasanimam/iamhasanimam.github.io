@@ -16,7 +16,7 @@
       "focus": "L2 diagnostics and integration troubleshooting; turned recurring incidents into runbooks, reduced escalations and mentored a small L2 team."
     },
     {
-      "stage": "Platform and DevOps engineering",
+      "stage": "DevOps engineering",
       "years": "2025 - present",
       "focus": "Built the infrastructure and monitoring that production systems run on: OpenShift 4.x, API gateway, identity, GitOps delivery, observability and reliability documentation."
     }
@@ -24,11 +24,11 @@
   "roles": [
     {
       "company": "CIPL",
-      "title": "Platform Engineer & DevOps Engineer",
+      "title": "DevOps Engineer",
       "location": "Noida, India",
       "start": "Nov 2025",
       "end": "Present",
-      "summary": "Platform engineering on Kubernetes: infrastructure and monitoring that production systems run on, serving about 400 req/s at p95 under 50 ms.",
+      "summary": "DevOps on Kubernetes: infrastructure and monitoring that production systems run on, serving about 400 req/s at p95 under 50 ms.",
       "highlights": [
         "Build and run the OpenShift 4.x infrastructure, from gateway and identity to CI/CD and GitOps delivery",
         "Build the monitoring: OpenTelemetry, Prometheus, Loki, Tempo and Grafana"
