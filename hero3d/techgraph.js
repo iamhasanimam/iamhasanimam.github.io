@@ -118,7 +118,7 @@ export function mountTechGraph(container, opts = {}) {
   function loadIcon(tile) {
     const slug = tile.icon;
     if (texCache.has(slug)) return texCache.get(slug);
-    if (COLOR_ICONS.has(slug)) { const pc = loadColorIcon(slug); texCache.set(slug, pc); return pc; }
+    if (COLOR_ICONS.has(slug)) { const pc = loadColorIcon(slug).then((t) => t || new Promise((r) => setTimeout(r, 500)).then(() => loadColorIcon(slug))).then((t) => t || null); texCache.set(slug, pc); return pc; } // retry once if the local SVG did not load
     const p = fetch(ICON_CDN + slug + '.svg').then((r) => { if (!r.ok) throw 0; return r.text(); }).then((svg) => new Promise((res, rej) => {
       const s = svg.replace('<svg', '<svg width="192" height="192" fill="#fff"');
       const img = new Image();
