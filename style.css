@@ -461,7 +461,7 @@ details.more > summary { padding: 2px 0 6px var(--s4); list-style: none; cursor:
 
 /* career trajectory (home): five equal cards, rows aligned across them (subgrid), theme-coloured dots and line */
 .trail { padding-top: 40px; gap: var(--s6); grid-template-rows: auto; }
-.tn { position: relative; display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: 8px; padding: 18px; background: var(--surface); border-radius: 18px; text-align: left; }
+.tn { position: relative; display: grid; grid-row: span 5; grid-template-rows: subgrid; row-gap: 8px; padding: 18px; background: var(--surface); border-radius: 18px; text-align: left; }
 .tn::after { top: -25px; left: 37px; right: calc(-1 * (var(--s6) + 18px)); height: 3px; border-radius: 2px; background: var(--primary); opacity: .85; }
 .tn .dot { position: absolute; top: -34px; left: 18px; margin: 0; border-color: var(--primary); background: var(--bg); }
 .tn.now .dot { border-color: #30d158; box-shadow: 0 0 0 4px rgba(48,209,88,.25); }
@@ -479,3 +479,10 @@ details.more > summary { padding: 2px 0 6px var(--s4); list-style: none; cursor:
 }
 
 @media (min-width: 1001px) { .flow-side { height: clamp(620px, calc(100vh - 110px), 1100px); height: clamp(620px, calc(100svh - 110px), 1100px); max-height: none; } }
+
+/* industry type: plain text, no pill; its own row so it lines up across the five cards */
+.ind, .ind.prod, .ind.svc, :root[data-theme="light"] .ind.prod, :root[data-theme="light"] .ind.svc { display: inline; height: auto; padding: 0; border-radius: 0; background: none; color: var(--muted); font-size: var(--t-sm); font-weight: 500; letter-spacing: 0; }
+.tn .co { display: block; align-self: start; justify-content: flex-start; }
+.tn .ind-row { align-self: start; color: var(--muted); }
+.cat.co .ind::before, .q-company .ind::before { content: " b7"; margin: 0 6px; }
+@media (max-width: 860px) { .tn { grid-row: auto; } }

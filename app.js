@@ -1,5 +1,5 @@
 /* Portfolio SPA: hash routing, static JSON data, no build. All data text is inserted with textContent (no innerHTML on data). */
-import { parseRoute, nextRoute } from './route.js?v=20261126r';
+import { parseRoute, nextRoute } from './route.js?v=20261126t';
 (() => {
   'use strict';
 
@@ -8,7 +8,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261126r';
   const LINKEDIN_URL = 'https://www.linkedin.com/in/iamhasanimam';
   const TYPE_CODE_MS = 22; // code typing speed in the hero editor, git log and code blocks (ms per character)
   const PAUSE_MS = 1800;   // pause after a snippet is typed, before the next tab
-  const ASSET_V = '20261126r'; // cache-busting for dynamic imports; keep in sync with index.html
+  const ASSET_V = '20261126t'; // cache-busting for dynamic imports; keep in sync with index.html
 
   // Brand colours (tuned for the dark banner). Slugs missing from simple-icons get a monogram.
   const COLORS = {
@@ -466,7 +466,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261126r';
     const body = h('ol', { class: 'trail' }, orderedRoles(c, false).map((r) => {
       const p = roleParts(r);
       return h('li', { class: 'tn rv' + (p.current ? ' now' : '') }, h('span', { class: 'dot', 'aria-hidden': 'true' }), h('div', { class: 'yr' }, p.years),
-        h('h3', null, r.title), h('div', { class: 'co' }, h('span', null, r.company), coTag(r)), h('p', null, words(p.headline, 14)));
+        h('h3', null, r.title), h('div', { class: 'co' }, r.company), h('div', { class: 'ind-row' }, coTag(r)), h('p', null, words(p.headline, 14)));
     }));
     return h('section', { 'aria-labelledby': 'tr-h', id: 'trajectory' },
       h('div', { class: 'sec' }, eb('// career', h('h2', { id: 'tr-h' }, 'Career trajectory')),
