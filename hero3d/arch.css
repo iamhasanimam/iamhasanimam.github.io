@@ -1,0 +1,50 @@
+/* arch3d - scoped styles. Container height comes from the host; default below. */
+.arch3d{position:relative;width:100%;height:clamp(420px,64vh,680px);min-height:420px;overflow:hidden;color:#eef;font-family:Inter,"Segoe UI",system-ui,sans-serif;background:transparent;border-radius:18px;isolation:isolate}
+.arch3d *{box-sizing:border-box}
+.arch3d .arch3d__root{position:absolute;inset:0}
+.arch3d .arch3d__canvas{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none;cursor:grab}
+.arch3d .arch3d__canvas:active{cursor:grabbing}
+.arch3d .arch3d__poster{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:opacity .6s ease;pointer-events:none}
+.arch3d .arch3d__loading{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#c4c2ff;background:rgba(10,8,60,.55);border:1px solid rgba(160,156,255,.25);padding:6px 12px;border-radius:99px;backdrop-filter:blur(8px);animation:arch3d-pulse 1.4s ease-in-out infinite}
+@keyframes arch3d-pulse{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.arch3d .arch3d__loading{animation:none}.arch3d *{transition:none!important}}
+.arch3d .arch3d__head{position:absolute;top:14px;left:16px;max-width:min(46%,420px);display:flex;flex-direction:column;gap:2px;pointer-events:none;text-shadow:0 1px 12px rgba(0,0,0,.6)}
+.arch3d .arch3d__head strong{font-size:15px;letter-spacing:.02em}
+.arch3d .arch3d__head span{font-size:12px;color:#b9b7f5;line-height:1.35}
+.arch3d .arch3d__bar{position:absolute;top:12px;right:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;padding:6px;border-radius:14px;background:rgba(18,16,90,.38);border:1px solid rgba(160,156,255,.22);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:4}
+.arch3d .arch3d__btn{font-weight:600;font-size:12.5px;line-height:1;font-family:inherit;color:#e9e8ff;background:rgba(58,53,208,.28);border:1px solid rgba(160,156,255,.3);border-radius:10px;padding:9px 13px;min-height:36px;cursor:pointer;transition:background .15s,border-color .15s,transform .1s}
+.arch3d .arch3d__btn:hover{background:rgba(58,53,208,.55);border-color:rgba(190,186,255,.6)}
+.arch3d .arch3d__btn:active{transform:scale(.97)}
+.arch3d .arch3d__btn:focus-visible,.arch3d .arch3d__x:focus-visible{outline:2px solid #ff9f1c;outline-offset:2px}
+.arch3d .arch3d__btn--primary{background:linear-gradient(135deg,#ff9f1c,#ff7a1c);color:#1a1000;border-color:transparent}
+.arch3d .arch3d__btn--primary:hover{background:linear-gradient(135deg,#ffb347,#ff8a2c)}
+.arch3d .arch3d__tip{position:absolute;left:0;top:0;z-index:5;pointer-events:none;display:flex;flex-direction:column;gap:1px;padding:7px 11px;border-radius:10px;background:rgba(14,12,70,.78);border:1px solid rgba(160,156,255,.35);backdrop-filter:blur(10px);font-size:12px;box-shadow:0 6px 24px rgba(0,0,0,.4);max-width:240px}
+.arch3d .arch3d__tip[hidden],.arch3d .arch3d__card[hidden],.arch3d .arch3d__caption[hidden]{display:none}
+.arch3d .arch3d__tip b{font-size:13px}
+.arch3d .arch3d__tip span{color:#bdbbff}
+.arch3d .arch3d__card{position:absolute;top:64px;right:12px;width:min(320px,calc(100% - 24px));padding:16px 16px 14px;border-radius:16px;background:linear-gradient(160deg,rgba(40,36,150,.55),rgba(10,8,60,.6));border:1px solid rgba(170,166,255,.3);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 10px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.1);z-index:4}
+.arch3d .arch3d__card h3{margin:4px 0 2px;font-size:18px}
+.arch3d .arch3d__sub{margin:0 0 8px;font-size:12.5px;color:#bdbbff}
+.arch3d .arch3d__detail{margin:0;font-size:13.5px;line-height:1.5;color:#eef}
+.arch3d .arch3d__conn{margin:10px 0 0;font-size:11.5px;color:#ff9f1c;line-height:1.4}
+.arch3d .arch3d__conn:empty{display:none}
+.arch3d .arch3d__kind{--c:#8f7cff;display:inline-block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--c);border:1px solid var(--c);border-radius:99px;padding:2px 8px}
+.arch3d .arch3d__x{position:absolute;top:8px;right:8px;width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:#cfcdff;font-size:20px;cursor:pointer}
+.arch3d .arch3d__x:hover{background:rgba(255,255,255,.1)}
+.arch3d .arch3d__caption{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:min(640px,calc(100% - 24px));padding:12px 16px 14px;border-radius:16px;background:linear-gradient(160deg,rgba(40,36,150,.58),rgba(8,6,50,.7));border:1px solid rgba(170,166,255,.32);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 10px 40px rgba(0,0,0,.45);z-index:4;overflow:hidden}
+.arch3d .arch3d__cap-top{display:flex;align-items:center;gap:10px}
+.arch3d .arch3d__count{font-weight:700;font-size:11px;line-height:1;font-family:inherit;color:#1a1000;background:#ff9f1c;border-radius:99px;padding:4px 9px}
+.arch3d .arch3d__cap-title{font-size:15.5px}
+.arch3d .arch3d__cap-text{margin:6px 0 10px;font-size:13.5px;line-height:1.5;color:#e4e3ff}
+.arch3d .arch3d__cap-ctl{display:flex;gap:8px;flex-wrap:wrap}
+.arch3d .arch3d__progress{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.08)}
+.arch3d .arch3d__progress i{display:block;height:100%;width:0;background:#ff9f1c;box-shadow:0 0 10px #ff9f1c}
+.arch3d .arch3d__sr{position:absolute;width:1px;height:1px;margin:0;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;list-style:none}
+.arch3d .arch3d__fallback{position:absolute;inset:0;overflow:auto;padding:24px;background:rgba(14,12,70,.5)}
+.arch3d .arch3d__fallback li{margin:0 0 10px;line-height:1.5}
+@media (max-width:640px){
+  .arch3d .arch3d__head span{display:none}
+  .arch3d .arch3d__head{max-width:40%}
+  .arch3d .arch3d__card{top:auto;bottom:150px;left:12px;right:12px;width:auto}
+  .arch3d .arch3d__btn{padding:9px 10px;font-size:12px}
+}

@@ -1,0 +1,400 @@
+{
+ "title": "Python",
+ "subtitle": "Collect, store, report: operations as tested code.",
+ "layers": [
+  {
+   "layer": 3,
+   "label": "Run"
+  },
+  {
+   "layer": 2,
+   "label": "Collect"
+  },
+  {
+   "layer": 1,
+   "label": "Store"
+  },
+  {
+   "layer": 0,
+   "label": "Report"
+  }
+ ],
+ "groups": [
+  {
+   "id": "clients",
+   "label": "Clients",
+   "boxes": [
+    "vcs",
+    "pm",
+    "boto",
+    "docker"
+   ]
+  }
+ ],
+ "tabs": [
+  {
+   "id": "collect",
+   "label": "Collect",
+   "focus": [
+    "script",
+    "vcs",
+    "pm",
+    "boto",
+    "docker"
+   ]
+  },
+  {
+   "id": "run",
+   "label": "Schedule",
+   "focus": [
+    "timer",
+    "script",
+    "ci"
+   ]
+  },
+  {
+   "id": "report",
+   "label": "Report",
+   "focus": [
+    "pg",
+    "report",
+    "superset"
+   ]
+  }
+ ],
+ "boxes": [
+  {
+   "id": "timer",
+   "label": "systemd timer",
+   "tech": "systemd",
+   "icon": null,
+   "layer": 3,
+   "col": 0,
+   "row": 0,
+   "says": "systemd timers start the job.",
+   "detail": "A oneshot service runs on OnCalendar with Persistent=true and exits with a status code."
+  },
+  {
+   "id": "script",
+   "label": "Collector",
+   "tech": "Python",
+   "icon": "python",
+   "layer": 3,
+   "col": 1,
+   "row": 0,
+   "says": "Python orchestrates every collector.",
+   "detail": "One venv, pinned requirements, argparse options and exit codes that alerting can read.",
+   "inner": [
+    {
+     "id": "arg",
+     "label": "argparse"
+    },
+    {
+     "id": "req",
+     "label": "requests"
+    },
+    {
+     "id": "retry",
+     "label": "retry"
+    },
+    {
+     "id": "test",
+     "label": "pytest"
+    }
+   ]
+  },
+  {
+   "id": "ci",
+   "label": "CI checks",
+   "tech": "Jenkins",
+   "icon": "jenkins",
+   "layer": 3,
+   "col": 2,
+   "row": 0,
+   "says": "CI gates every change.",
+   "detail": "Pipeline stages run ruff and pytest before merge.",
+   "href": "#/tech/jenkins"
+  },
+  {
+   "id": "vcs",
+   "label": "VCS API",
+   "tech": "REST API",
+   "icon": null,
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "requests pages the VCS API.",
+   "detail": "Pulls commits, merge requests and pipelines with timeouts and bounded retries."
+  },
+  {
+   "id": "pm",
+   "label": "Tracker API",
+   "tech": "REST API",
+   "icon": null,
+   "layer": 2,
+   "col": 1,
+   "row": 0,
+   "says": "requests pages the tracker API.",
+   "detail": "Pulls issues and states for delivery and ticket-flow metrics."
+  },
+  {
+   "id": "boto",
+   "label": "boto3",
+   "tech": "boto3",
+   "icon": "amazonaws",
+   "layer": 2,
+   "col": 2,
+   "row": 0,
+   "says": "boto3 lists cloud resources.",
+   "detail": "Paginators report volumes, snapshots and tags read-only.",
+   "href": "#/tech/aws"
+  },
+  {
+   "id": "docker",
+   "label": "Docker SDK",
+   "tech": "docker-py",
+   "icon": "docker",
+   "layer": 2,
+   "col": 3,
+   "row": 0,
+   "says": "The Docker SDK tidies hosts.",
+   "detail": "Lists exited containers and dangling images; prunes only with --apply.",
+   "href": "#/tech/docker"
+  },
+  {
+   "id": "pg",
+   "label": "PostgreSQL",
+   "tech": "PostgreSQL",
+   "icon": "postgresql",
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "PostgreSQL keeps the history.",
+   "detail": "psycopg upserts rows in one transaction, so reruns are safe.",
+   "href": "#/tech/postgresql"
+  },
+  {
+   "id": "report",
+   "label": "Reports",
+   "tech": "SQL",
+   "icon": null,
+   "layer": 0,
+   "col": 0,
+   "row": 0,
+   "says": "SQL views feed reports.",
+   "detail": "Scheduled queries produce summaries without asking an engineer."
+  },
+  {
+   "id": "superset",
+   "label": "Superset",
+   "tech": "Apache Superset",
+   "icon": "apachesuperset",
+   "layer": 0,
+   "col": 2,
+   "row": 0,
+   "says": "Superset charts the data.",
+   "detail": "Runs on Kubernetes, queries PostgreSQL and serves the DevOps Intelligence Dashboard."
+  }
+ ],
+ "wires": [
+  {
+   "from": "timer",
+   "to": "script",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "runs"
+  },
+  {
+   "from": "ci",
+   "to": "script",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "checks"
+  },
+  {
+   "from": "script",
+   "to": "vcs",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "script",
+   "to": "pm",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "script",
+   "to": "boto",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "script",
+   "to": "docker",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "vcs",
+   "to": "pg",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "pm",
+   "to": "pg",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "boto",
+   "to": "pg",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "docker",
+   "to": "pg",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "pg",
+   "to": "report",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "query"
+  },
+  {
+   "from": "pg",
+   "to": "superset",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "SQL"
+  }
+ ],
+ "steps": [
+  {
+   "title": "Start",
+   "text": "A timer or CI job starts the collector.",
+   "boxes": [
+    "timer",
+    "ci",
+    "script"
+   ],
+   "wires": [
+    [
+     "timer",
+     "script"
+    ],
+    [
+     "ci",
+     "script"
+    ]
+   ]
+  },
+  {
+   "title": "Call",
+   "text": "Clients call APIs, AWS and Docker.",
+   "boxes": [
+    "script",
+    "vcs",
+    "pm",
+    "boto",
+    "docker"
+   ],
+   "wires": [
+    [
+     "script",
+     "vcs"
+    ],
+    [
+     "script",
+     "pm"
+    ],
+    [
+     "script",
+     "boto"
+    ],
+    [
+     "script",
+     "docker"
+    ]
+   ]
+  },
+  {
+   "title": "Store",
+   "text": "Rows are upserted into PostgreSQL.",
+   "boxes": [
+    "vcs",
+    "pm",
+    "boto",
+    "docker",
+    "pg"
+   ],
+   "wires": [
+    [
+     "vcs",
+     "pg"
+    ],
+    [
+     "pm",
+     "pg"
+    ],
+    [
+     "boto",
+     "pg"
+    ],
+    [
+     "docker",
+     "pg"
+    ]
+   ]
+  },
+  {
+   "title": "Report",
+   "text": "SQL feeds reports and Superset.",
+   "boxes": [
+    "pg",
+    "report",
+    "superset"
+   ],
+   "wires": [
+    [
+     "pg",
+     "report"
+    ],
+    [
+     "pg",
+     "superset"
+    ]
+   ]
+  }
+ ],
+ "run": {
+  "cmd": "systemctl start ops-collect.service",
+  "lines": [
+   "collect.py: upserted rows into work_items",
+   "ops-collect.service: Succeeded."
+  ]
+ },
+ "declarations": [
+  "Python calls APIs and SDKs.",
+  "Timers schedule; exit codes alert.",
+  "PostgreSQL keeps the history.",
+  "Superset turns rows into decisions."
+ ]
+}

@@ -1,0 +1,368 @@
+{
+ "title": "Ansible",
+ "subtitle": "Agentless, idempotent on-prem bring-up",
+ "layers": [
+  {
+   "layer": 2,
+   "label": "Control node"
+  },
+  {
+   "layer": 1,
+   "label": "Transport"
+  },
+  {
+   "layer": 0,
+   "label": "Managed hosts"
+  }
+ ],
+ "groups": [
+  {
+   "id": "hosts",
+   "label": "Baseline on each host",
+   "boxes": [
+    "sshd",
+    "chrony",
+    "ufw",
+    "cron"
+   ]
+  }
+ ],
+ "tabs": [
+  {
+   "id": "model",
+   "label": "Control model",
+   "focus": [
+    "jenkins",
+    "control",
+    "inventory",
+    "playbook"
+   ]
+  },
+  {
+   "id": "exec",
+   "label": "Execution",
+   "focus": [
+    "playbook",
+    "modules",
+    "ssh",
+    "sshd"
+   ]
+  },
+  {
+   "id": "bringup",
+   "label": "Bring-up",
+   "focus": [
+    "sshd",
+    "chrony",
+    "ufw",
+    "cron"
+   ]
+  }
+ ],
+ "boxes": [
+  {
+   "id": "jenkins",
+   "label": "CI",
+   "tech": "Jenkins",
+   "icon": "jenkins",
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "CI gates playbooks with --check.",
+   "detail": "Runs check and diff on every change, then applies after review.",
+   "href": "#/tech/jenkins"
+  },
+  {
+   "id": "control",
+   "label": "Control",
+   "tech": "ansible-playbook",
+   "icon": "ansible",
+   "layer": 2,
+   "col": 1,
+   "row": 0,
+   "says": "The control node runs ansible-playbook.",
+   "detail": "Holds playbooks, inventory and vault. No agent on targets.",
+   "inner": [
+    {
+     "id": "ad-hoc",
+     "label": "Ad-hoc"
+    },
+    {
+     "id": "playbook",
+     "label": "Playbook"
+    },
+    {
+     "id": "vault",
+     "label": "Vault"
+    }
+   ]
+  },
+  {
+   "id": "inventory",
+   "label": "Inventory",
+   "tech": "INI inventory",
+   "icon": null,
+   "layer": 2,
+   "col": 2,
+   "row": 0,
+   "says": "Inventory groups the hosts.",
+   "detail": "Groups and group_vars select targets and set per-group values."
+  },
+  {
+   "id": "playbook",
+   "label": "Roles",
+   "tech": "Roles",
+   "icon": null,
+   "layer": 2,
+   "col": 3,
+   "row": 0,
+   "says": "Roles package the baseline.",
+   "detail": "Tasks, handlers, templates and defaults reused across hosts."
+  },
+  {
+   "id": "modules",
+   "label": "Modules",
+   "tech": "Ansible modules",
+   "icon": null,
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "Modules compare state and act.",
+   "detail": "user, lineinfile, ufw and cron change only what differs."
+  },
+  {
+   "id": "ssh",
+   "label": "SSH",
+   "tech": "OpenSSH",
+   "icon": null,
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "SSH carries every task.",
+   "detail": "Key-based login on TCP 22, parallel across forks."
+  },
+  {
+   "id": "sshd",
+   "label": "sshd",
+   "tech": "OpenSSH",
+   "icon": null,
+   "layer": 0,
+   "col": 0,
+   "row": 0,
+   "says": "sshd is hardened and validated.",
+   "detail": "PasswordAuthentication no, PermitRootLogin no, AllowUsers, checked with sshd -t."
+  },
+  {
+   "id": "chrony",
+   "label": "Chrony",
+   "tech": "chrony",
+   "icon": null,
+   "layer": 0,
+   "col": 1,
+   "row": 0,
+   "says": "Chrony syncs time.",
+   "detail": "Points hosts at an internal NTP source for consistent logs and TLS."
+  },
+  {
+   "id": "ufw",
+   "label": "Firewall",
+   "tech": "ufw",
+   "icon": null,
+   "layer": 0,
+   "col": 2,
+   "row": 0,
+   "says": "Default deny, SSH allowed first.",
+   "detail": "Allow rule for the LAN, then enable the firewall."
+  },
+  {
+   "id": "cron",
+   "label": "Cron",
+   "tech": "cron",
+   "icon": null,
+   "layer": 0,
+   "col": 3,
+   "row": 0,
+   "says": "Cron runs the scheduled jobs.",
+   "detail": "Idempotent cron entries for reports and baseline re-runs."
+  }
+ ],
+ "wires": [
+  {
+   "from": "jenkins",
+   "to": "control",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "triggers"
+  },
+  {
+   "from": "control",
+   "to": "inventory",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "reads"
+  },
+  {
+   "from": "control",
+   "to": "playbook",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "runs"
+  },
+  {
+   "from": "playbook",
+   "to": "modules",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "calls"
+  },
+  {
+   "from": "modules",
+   "to": "ssh",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "over"
+  },
+  {
+   "from": "ssh",
+   "to": "sshd",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "key login"
+  },
+  {
+   "from": "ssh",
+   "to": "chrony",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "configures"
+  },
+  {
+   "from": "ssh",
+   "to": "ufw",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "configures"
+  },
+  {
+   "from": "ssh",
+   "to": "cron",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "configures"
+  }
+ ],
+ "steps": [
+  {
+   "title": "Trigger",
+   "text": "CI or an operator starts the playbook.",
+   "boxes": [
+    "jenkins",
+    "control"
+   ],
+   "wires": [
+    [
+     "jenkins",
+     "control"
+    ]
+   ]
+  },
+  {
+   "title": "Select",
+   "text": "Inventory picks the target hosts.",
+   "boxes": [
+    "control",
+    "inventory"
+   ],
+   "wires": [
+    [
+     "control",
+     "inventory"
+    ]
+   ]
+  },
+  {
+   "title": "Execute",
+   "text": "Roles call modules over parallel SSH.",
+   "boxes": [
+    "control",
+    "playbook",
+    "modules",
+    "ssh"
+   ],
+   "wires": [
+    [
+     "control",
+     "playbook"
+    ],
+    [
+     "playbook",
+     "modules"
+    ],
+    [
+     "modules",
+     "ssh"
+    ]
+   ]
+  },
+  {
+   "title": "Harden",
+   "text": "sshd is validated and restarted by a handler.",
+   "boxes": [
+    "ssh",
+    "sshd"
+   ],
+   "wires": [
+    [
+     "ssh",
+     "sshd"
+    ]
+   ]
+  },
+  {
+   "title": "Baseline",
+   "text": "Chrony, firewall and cron converge.",
+   "boxes": [
+    "ssh",
+    "chrony",
+    "ufw",
+    "cron"
+   ],
+   "wires": [
+    [
+     "ssh",
+     "chrony"
+    ],
+    [
+     "ssh",
+     "ufw"
+    ],
+    [
+     "ssh",
+     "cron"
+    ]
+   ]
+  }
+ ],
+ "declarations": [
+  "Ansible pushes over SSH.",
+  "Modules are idempotent.",
+  "Handlers run once.",
+  "Check mode predicts changes."
+ ],
+ "run": {
+  "cmd": "ansible-playbook site.yml --check --diff",
+  "lines": [
+   "TASK [baseline : sshd_config] changed=1",
+   "PLAY RECAP web01 ok=12 changed=1 failed=0"
+  ]
+ }
+}

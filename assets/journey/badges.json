@@ -1,0 +1,46 @@
+[
+ {
+  "id": "aws",
+  "name": "badge_aws",
+  "position": [
+   120.105,
+   31.906,
+   8.586
+  ],
+  "levelId": "level_4_wingify",
+  "label": "AWS Certified Cloud Practitioner"
+ },
+ {
+  "id": "throughput",
+  "name": "badge_throughput",
+  "position": [
+   138.456,
+   36.437,
+   -2.785
+  ],
+  "levelId": "level_5_platform",
+  "label": "400 req/s at p95 under 50 ms"
+ },
+ {
+  "id": "runbook",
+  "name": "badge_runbook",
+  "position": [
+   147.656,
+   34.037,
+   -2.785
+  ],
+  "levelId": "level_5_platform",
+  "label": "44-page production runbook"
+ },
+ {
+  "id": "mentor",
+  "name": "badge_mentor",
+  "position": [
+   78.91,
+   16.358,
+   -12.244
+  ],
+  "levelId": "level_3_support",
+  "label": "Mentored a team of 4"
+ }
+]

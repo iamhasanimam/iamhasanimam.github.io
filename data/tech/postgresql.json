@@ -1,0 +1,159 @@
+{
+ "slug": "postgresql",
+ "name": "PostgreSQL",
+ "category": "Data",
+ "icon": "postgresql",
+ "level": "hands-on",
+ "tagline": "Durable SQL storage: WAL, streaming replicas, point-in-time backups, pooled connections.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "WAL and checkpoints",
+   "body": "Changes are appended to the WAL and fsynced at commit.\nData files are written lazily; a checkpoint flushes dirty pages.\nCrash recovery replays WAL from the last checkpoint.\nwal_level, max_wal_size and synchronous_commit tune durability against I/O."
+  },
+  {
+   "title": "Streaming replication",
+   "body": "A standby pulls WAL from the primary's walsender.\nNeeds a REPLICATION role, max_wal_senders and a pg_hba replication rule.\npg_basebackup -R seeds the standby and writes standby.signal.\nReplication slots retain WAL for a standby; a dead standby fills the disk."
+  },
+  {
+   "title": "Promotion",
+   "body": "pg_promote() ends recovery and starts a new timeline.\nThe old primary must be rewound with pg_rewind or rebuilt.\nPlain Postgres does not fence it; Patroni or repmgr automates this.\nCheck pg_stat_replication replay lag before switching."
+  },
+  {
+   "title": "Backups and PITR",
+   "body": "pg_basebackup takes the physical base.\narchive_command ships each WAL segment to S3-compatible storage.\nrestore_command plus recovery_target_time replays to a chosen moment.\nAn unrestored backup is not a backup; rehearse it."
+  },
+  {
+   "title": "Pooling and hardening",
+   "body": "PgBouncer transaction mode multiplexes clients onto few backends.\nlisten_addresses names the interfaces Postgres binds.\npg_hba.conf is first-match: type, database, user, CIDR, method.\nssl = on with scram-sha-256 protects credentials and data in transit."
+  }
+ ],
+ "flow": [
+  "The app connects to PgBouncer, which holds a few server connections.",
+  "The backend process parses and executes the transaction.",
+  "Changes are appended to the WAL and fsynced at commit.",
+  "The walsender streams WAL to the standby, which replays it.",
+  "archive_command copies each finished segment to S3-compatible storage.",
+  "Checkpoints flush dirty pages to the data files.",
+  "On primary failure, promote the standby to a new timeline.",
+  "Restore: base backup plus archived WAL to a target time."
+ ],
+ "deploy": {
+  "summary": "PostgreSQL 16 primary and standby on Ubuntu 22.04: hardened, TLS, WAL archiving to MinIO, PgBouncer.",
+  "prerequisites": [
+   "Two Ubuntu 22.04 VMs: pg1 10.0.0.11, pg2 10.0.0.12",
+   "An S3-compatible endpoint (MinIO) and bucket pg-wal",
+   "AWS CLI configured for the postgres user",
+   "SSH and network steps on both VMs"
+  ],
+  "steps": [
+   {
+    "title": "SSH key login and sshd hardening",
+    "lang": "bash",
+    "code": "ssh-keygen -t ed25519 -C ops@workstation\nssh-copy-id ops@10.0.0.11\nssh ops@10.0.0.11 'sudo tee /etc/ssh/sshd_config.d/10-harden.conf' <<'EOF'\nPasswordAuthentication no\nPermitRootLogin no\nKbdInteractiveAuthentication no\nAllowUsers ops\nEOF\nssh ops@10.0.0.11 'sudo sshd -t && sudo systemctl reload ssh'",
+    "note": "Test a second session before closing the first. 10.0.0.x is a placeholder."
+   },
+   {
+    "title": "Static address and firewall",
+    "lang": "bash",
+    "code": "sudo tee /etc/netplan/60-static.yaml <<'EOF'\nnetwork:\n  version: 2\n  ethernets:\n    ens18:\n      dhcp4: false\n      addresses: [10.0.0.11/24]\n      routes:\n        - to: default\n          via: 10.0.0.1\n      nameservers:\n        addresses: [10.0.0.2]\nEOF\nsudo chmod 600 /etc/netplan/60-static.yaml\nsudo netplan apply\nsudo ufw allow from 10.0.0.0/24 to any port 22,5432,6432 proto tcp\nsudo ufw --force enable",
+    "note": "Placeholders: interface, addresses, DNS. Add A records pg1.lab.local and pg2.lab.local."
+   },
+   {
+    "title": "Install PostgreSQL 16",
+    "lang": "bash",
+    "code": "sudo apt-get install -y postgresql-common awscli\nsudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y\nsudo apt-get install -y postgresql-16\npg_lsclusters",
+    "note": "Uses the official PGDG repository. Pin the minor version in production."
+   },
+   {
+    "title": "Primary: listen, WAL, archive, TLS",
+    "lang": "bash",
+    "code": "sudo openssl req -new -x509 -days 365 -nodes -subj '/CN=pg1.lab.local' \\\n  -out /var/lib/postgresql/server.crt -keyout /var/lib/postgresql/server.key\nsudo chown postgres: /var/lib/postgresql/server.* && sudo chmod 600 /var/lib/postgresql/server.key\nsudo tee /etc/postgresql/16/main/conf.d/10-prod.conf <<'EOF'\nlisten_addresses = '10.0.0.11'\nwal_level = replica\nmax_wal_senders = 5\nmax_replication_slots = 5\narchive_mode = on\narchive_command = 'aws s3 cp %p s3://pg-wal/pg1/%f --endpoint-url http://minio.lab.local:9000'\nssl = on\nssl_cert_file = '/var/lib/postgresql/server.crt'\nssl_key_file = '/var/lib/postgresql/server.key'\nEOF",
+    "note": "Self-signed cert is for the lab; use your CA in production. Credentials live in ~postgres/.aws."
+   },
+   {
+    "title": "Roles and pg_hba.conf",
+    "lang": "bash",
+    "code": "sudo systemctl restart postgresql@16-main\nsudo -u postgres psql -c \"CREATE ROLE replicator REPLICATION LOGIN PASSWORD 'CHANGE_ME'\"\nsudo -u postgres psql -c \"CREATE ROLE app LOGIN PASSWORD 'CHANGE_ME'\"\nsudo -u postgres createdb -O app appdb\necho 'hostssl replication replicator 10.0.0.0/24 scram-sha-256' | sudo tee -a /etc/postgresql/16/main/pg_hba.conf\necho 'hostssl all app 10.0.0.0/24 scram-sha-256' | sudo tee -a /etc/postgresql/16/main/pg_hba.conf\nsudo systemctl reload postgresql@16-main",
+    "note": "pg_hba.conf is first-match; keep specific CIDRs, never 0.0.0.0/0 with trust."
+   },
+   {
+    "title": "Seed the standby and take a base backup",
+    "lang": "bash",
+    "code": "# on pg2: sudo systemctl stop postgresql@16-main && sudo rm -rf /var/lib/postgresql/16/main/*\nsudo -u postgres PGPASSWORD=CHANGE_ME pg_basebackup -h 10.0.0.11 -U replicator \\\n  -D /var/lib/postgresql/16/main -R -X stream -C -S standby1 -P\nsudo systemctl start postgresql@16-main\n# on pg1: physical base backup to storage\nsudo -u postgres pg_basebackup -D /tmp/base -Ft -z -X fetch && aws s3 cp /tmp/base s3://pg-wal/pg1/base --recursive --endpoint-url http://minio.lab.local:9000",
+    "note": "Set listen_addresses and ssl on pg2 too. Adapt the primary's conf.d file."
+   },
+   {
+    "title": "Promote the standby",
+    "lang": "bash",
+    "code": "sudo -u postgres psql -h 10.0.0.12 -c 'SELECT pg_promote()'\nsudo -u postgres psql -h 10.0.0.12 -c 'SELECT pg_is_in_recovery()'\n# old primary: rejoin with pg_rewind or rebuild from a new base backup",
+    "note": "Fence the old primary first. Patroni or repmgr automates detection and fencing."
+   },
+   {
+    "title": "PgBouncer",
+    "lang": "bash",
+    "code": "sudo apt-get install -y pgbouncer\nsudo tee /etc/pgbouncer/pgbouncer.ini <<'EOF'\n[databases]\nappdb = host=10.0.0.11 port=5432 dbname=appdb\n[pgbouncer]\nlisten_addr = 10.0.0.11\nlisten_port = 6432\nauth_type = scram-sha-256\nauth_file = /etc/pgbouncer/userlist.txt\npool_mode = transaction\nmax_client_conn = 500\ndefault_pool_size = 20\nEOF\nsudo -u postgres psql -Atc \"select format('\\\"%s\\\" \\\"%s\\\"', rolname, rolpassword) from pg_authid where rolname='app'\" | sudo tee /etc/pgbouncer/userlist.txt\nsudo systemctl restart pgbouncer",
+    "note": "Transaction mode breaks advisory locks and session-level SET."
+   }
+  ]
+ },
+ "verify": [
+  "sudo -u postgres psql -c 'SELECT client_addr,state,replay_lag FROM pg_stat_replication'",
+  "sudo -u postgres psql -c 'SELECT pg_is_in_recovery()'   # t on the standby",
+  "sudo -u postgres psql -c 'SELECT archived_count,failed_count FROM pg_stat_archiver'",
+  "psql 'host=10.0.0.11 sslmode=require user=app dbname=appdb' -c 'SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()'",
+  "psql -h 10.0.0.11 -p 6432 -U app pgbouncer -c 'SHOW POOLS'"
+ ],
+ "pitfalls": [
+  "A dead standby with a replication slot fills the primary's pg_wal.",
+  "A failing archive_command piles up WAL; watch pg_stat_archiver failed_count.",
+  "The old primary cannot rejoin without pg_rewind or a rebuild.",
+  "Transaction pooling breaks advisory locks, SET and session prepared statements.",
+  "The TLS key must be mode 0600 and owned by postgres.",
+  "trust or 0.0.0.0/0 in pg_hba.conf exposes the database.",
+  "Backups never restored are untested; rehearse PITR."
+ ],
+ "labVideos": [],
+ "furtherReading": [
+  {
+   "label": "WAL introduction",
+   "url": "https://www.postgresql.org/docs/16/wal-intro.html"
+  },
+  {
+   "label": "Continuous archiving and PITR",
+   "url": "https://www.postgresql.org/docs/16/continuous-archiving.html"
+  },
+  {
+   "label": "pg_basebackup",
+   "url": "https://www.postgresql.org/docs/16/app-pgbasebackup.html"
+  },
+  {
+   "label": "pg_hba.conf",
+   "url": "https://www.postgresql.org/docs/16/auth-pg-hba-conf.html"
+  }
+ ],
+ "keyPoints": [
+  "Every change hits the WAL before the data files.",
+  "Standbys replay streamed WAL and can be promoted to primary.",
+  "Base backup plus archived WAL gives point-in-time recovery.",
+  "A pooler caps backends so connection storms stay harmless."
+ ],
+ "quickDeploy": [
+  "Harden SSH, set static addresses, open the firewall",
+  "Install PostgreSQL 16 and enable WAL archiving",
+  "Lock pg_hba.conf to hostssl and scram",
+  "Seed a standby, then promote it"
+ ],
+ "osi": [
+  "L4",
+  "L7"
+ ],
+ "osiNote": "Wire protocol over TCP 5432, with TLS and scram authentication.",
+ "production": [
+  "Size shared_buffers near 25% of RAM; keep max_connections low behind a pooler.",
+  "Run a streaming standby; fail over with Patroni or repmgr.",
+  "Archive WAL to S3-compatible storage; restore-test backups monthly.",
+  "Allow hostssl and scram only; bind listen_addresses to one interface.",
+  "Alert on replication lag, WAL disk usage and long transactions."
+ ]
+}

@@ -1,0 +1,317 @@
+{
+ "title": "PostgreSQL",
+ "subtitle": "WAL, streaming replication, archived backups, pooled connections.",
+ "layers": [
+  {
+   "layer": 2,
+   "label": "Access"
+  },
+  {
+   "layer": 1,
+   "label": "Database"
+  },
+  {
+   "layer": 0,
+   "label": "Storage"
+  }
+ ],
+ "tabs": [
+  {
+   "id": "write",
+   "label": "Write path",
+   "focus": [
+    "app",
+    "pooler",
+    "primary",
+    "wal",
+    "data"
+   ]
+  },
+  {
+   "id": "ha",
+   "label": "Replication",
+   "focus": [
+    "primary",
+    "replica",
+    "patroni",
+    "wal"
+   ]
+  },
+  {
+   "id": "backup",
+   "label": "Backups",
+   "focus": [
+    "primary",
+    "wal",
+    "s3"
+   ]
+  }
+ ],
+ "boxes": [
+  {
+   "id": "app",
+   "label": "Application",
+   "tech": "Application",
+   "icon": null,
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "Apps open many short connections.",
+   "detail": "Each direct connection costs a backend process. Route through a pooler."
+  },
+  {
+   "id": "pooler",
+   "label": "Pooler",
+   "tech": "PgBouncer",
+   "icon": null,
+   "layer": 2,
+   "col": 1,
+   "row": 0,
+   "says": "PgBouncer caps server connections.",
+   "detail": "Transaction mode multiplexes many clients onto a small pool."
+  },
+  {
+   "id": "primary",
+   "label": "Primary",
+   "tech": "PostgreSQL 16",
+   "icon": "postgresql",
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "The primary takes writes.",
+   "detail": "One backend per connection. Commit fsyncs WAL before data files.",
+   "href": "#/tech/postgresql",
+   "inner": [
+    {
+     "id": "backend",
+     "label": "Backend"
+    },
+    {
+     "id": "sbuf",
+     "label": "Shared buffers"
+    },
+    {
+     "id": "walw",
+     "label": "WAL writer"
+    },
+    {
+     "id": "ckpt",
+     "label": "Checkpointer"
+    },
+    {
+     "id": "sender",
+     "label": "Walsender"
+    }
+   ]
+  },
+  {
+   "id": "replica",
+   "label": "Standby",
+   "tech": "PostgreSQL 16",
+   "icon": "postgresql",
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "The standby replays WAL.",
+   "detail": "Hot standby serves read-only queries and promotes with pg_promote()."
+  },
+  {
+   "id": "patroni",
+   "label": "Failover",
+   "tech": "Patroni",
+   "icon": null,
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "Patroni promotes and fences.",
+   "detail": "Plain Postgres does not detect failure. Patroni or repmgr automates it."
+  },
+  {
+   "id": "wal",
+   "label": "WAL",
+   "tech": "pg_wal",
+   "icon": null,
+   "layer": 0,
+   "col": 0,
+   "row": 0,
+   "says": "WAL records every change first.",
+   "detail": "16 MB segments. Crash recovery replays from the last checkpoint."
+  },
+  {
+   "id": "data",
+   "label": "Data Files",
+   "tech": "base/",
+   "icon": null,
+   "layer": 0,
+   "col": 1,
+   "row": 0,
+   "says": "Checkpoints write data files.",
+   "detail": "Dirty pages flush lazily. WAL guarantees nothing is lost."
+  },
+  {
+   "id": "s3",
+   "label": "Object Store",
+   "tech": "MinIO",
+   "icon": "minio",
+   "layer": 0,
+   "col": 2,
+   "row": 0,
+   "says": "archive_command ships WAL to S3.",
+   "detail": "Base backup plus archived WAL gives point-in-time recovery."
+  }
+ ],
+ "wires": [
+  {
+   "from": "app",
+   "to": "pooler",
+   "label": "SQL",
+   "style": "solid",
+   "flow": true
+  },
+  {
+   "from": "pooler",
+   "to": "primary",
+   "label": "pooled",
+   "style": "solid",
+   "flow": true
+  },
+  {
+   "from": "primary",
+   "to": "wal",
+   "label": "append",
+   "style": "solid",
+   "flow": true
+  },
+  {
+   "from": "primary",
+   "to": "data",
+   "label": "checkpoint",
+   "style": "dashed",
+   "flow": true
+  },
+  {
+   "from": "primary",
+   "to": "replica",
+   "label": "streams WAL",
+   "style": "dashed",
+   "flow": true
+  },
+  {
+   "from": "patroni",
+   "to": "replica",
+   "label": "promote",
+   "style": "solid",
+   "flow": true
+  },
+  {
+   "from": "wal",
+   "to": "s3",
+   "label": "archive",
+   "style": "dashed",
+   "flow": true
+  }
+ ],
+ "steps": [
+  {
+   "title": "Connect",
+   "text": "The pooler shares few backends.",
+   "boxes": [
+    "app",
+    "pooler",
+    "primary"
+   ],
+   "wires": [
+    [
+     "app",
+     "pooler"
+    ],
+    [
+     "pooler",
+     "primary"
+    ]
+   ]
+  },
+  {
+   "title": "Log first",
+   "text": "Commit appends and fsyncs WAL.",
+   "boxes": [
+    "primary",
+    "wal"
+   ],
+   "wires": [
+    [
+     "primary",
+     "wal"
+    ]
+   ]
+  },
+  {
+   "title": "Checkpoint",
+   "text": "Dirty pages reach data files.",
+   "boxes": [
+    "primary",
+    "data"
+   ],
+   "wires": [
+    [
+     "primary",
+     "data"
+    ]
+   ]
+  },
+  {
+   "title": "Replicate",
+   "text": "The walsender streams WAL to the standby.",
+   "boxes": [
+    "primary",
+    "replica"
+   ],
+   "wires": [
+    [
+     "primary",
+     "replica"
+    ]
+   ]
+  },
+  {
+   "title": "Promote",
+   "text": "Patroni promotes the standby.",
+   "boxes": [
+    "patroni",
+    "replica"
+   ],
+   "wires": [
+    [
+     "patroni",
+     "replica"
+    ]
+   ]
+  },
+  {
+   "title": "Archive",
+   "text": "WAL segments ship to object storage.",
+   "boxes": [
+    "wal",
+    "s3"
+   ],
+   "wires": [
+    [
+     "wal",
+     "s3"
+    ]
+   ]
+  }
+ ],
+ "run": {
+  "cmd": "psql -c 'table pg_stat_replication'",
+  "lines": [
+   "streaming"
+  ]
+ },
+ "declarations": [
+  "WAL comes first.",
+  "Standbys replay and promote.",
+  "Archived WAL enables recovery.",
+  "Poolers protect the backends."
+ ]
+}

@@ -1,0 +1,159 @@
+{
+ "slug": "redis",
+ "name": "Redis Cluster",
+ "category": "Data",
+ "icon": "redis",
+ "level": "hands-on",
+ "tagline": "Shards keys across masters with replicas and automatic failover; serves sessions and cache.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Hash slots",
+   "body": "Slot = CRC16(key) mod 16384; each master owns a slot range.\nA wrong node answers MOVED; clients cache the slot map.\nMulti-key commands need one slot; force it with {hash tags}.\nA hot tag creates a hot slot; use tags sparingly."
+  },
+  {
+   "title": "Masters and replicas",
+   "body": "Replication is asynchronous; a failover can lose the last writes.\nGossip runs on the cluster bus, client port plus 10000.\nA node unanswered past cluster-node-timeout becomes PFAIL, then FAIL by majority.\nThe replica with the best offset wins the election and takes the slots.\nKeep three masters so a majority survives one loss."
+  },
+  {
+   "title": "Client topology refresh",
+   "body": "Lettuce does not refresh the topology after failover by default.\nEnable periodic refresh and all adaptive refresh triggers.\nMOVED, ASK and persistent reconnects then reload the slot map.\nWithout it, the app errors until restart."
+  },
+  {
+   "title": "Memory and eviction",
+   "body": "maxmemory caps RAM; maxmemory-policy acts at the cap.\nnoeviction rejects writes; allkeys-lru evicts any key, volatile-lru only keys with a TTL.\nWatch evicted_keys and used_memory against maxmemory.\nKeep the host limit well above maxmemory for fork copy-on-write."
+  },
+  {
+   "title": "Persistence and sessions",
+   "body": "RDB forks and snapshots; fast restore, loses writes since the last dump.\nAOF logs every write; everysec bounds loss to about one second.\nA frontend session cache: TTL on every key, allkeys-lru or volatile-lru.\nPure cache loss is tolerable; session loss logs users out."
+  }
+ ],
+ "flow": [
+  "Client hashes the key: CRC16 mod 16384 gives the slot.",
+  "The command goes to the master that owns the slot.",
+  "A wrong guess returns MOVED; the client updates its slot map.",
+  "The master writes to memory, appends to AOF, streams to replicas.",
+  "At maxmemory the eviction policy drops keys or rejects the write.",
+  "Peers mark an unresponsive master PFAIL, then FAIL by majority.",
+  "A replica wins the election and takes over the slots.",
+  "Lettuce adaptive refresh reloads the topology; traffic resumes."
+ ],
+ "deploy": {
+  "summary": "Six Redis 7.2.5 nodes on three Ubuntu 22.04 VMs: two ports each, systemd-managed, hardened.",
+  "prerequisites": [
+   "Three Ubuntu 22.04 VMs on one subnet",
+   "A sudo user and your SSH public key",
+   "DNS or hosts entries for redis1..3",
+   "Repeat steps 1 to 5 on every VM"
+  ],
+  "steps": [
+   {
+    "title": "SSH key login and sshd hardening",
+    "lang": "bash",
+    "code": "ssh-keygen -t ed25519 -C ops@workstation\nssh-copy-id ops@10.0.0.11\nssh ops@10.0.0.11 'sudo tee /etc/ssh/sshd_config.d/10-harden.conf' <<'EOF'\nPasswordAuthentication no\nPermitRootLogin no\nKbdInteractiveAuthentication no\nAllowUsers ops\nEOF\nssh ops@10.0.0.11 'sudo sshd -t && sudo systemctl reload ssh'",
+    "note": "Test a second session before closing the first. 10.0.0.x is a placeholder."
+   },
+   {
+    "title": "Static address",
+    "lang": "bash",
+    "code": "sudo tee /etc/netplan/60-static.yaml <<'EOF'\nnetwork:\n  version: 2\n  ethernets:\n    ens18:\n      dhcp4: false\n      addresses: [10.0.0.11/24]\n      routes:\n        - to: default\n          via: 10.0.0.1\n      nameservers:\n        addresses: [10.0.0.2]\nEOF\nsudo chmod 600 /etc/netplan/60-static.yaml\nsudo netplan apply",
+    "note": "Placeholders: interface, addresses, DNS. Add A records redis1..3.lab.local on your DNS server."
+   },
+   {
+    "title": "Firewall",
+    "lang": "bash",
+    "code": "sudo ufw allow from 10.0.0.0/24 to any port 22 proto tcp\nsudo ufw allow from 10.0.0.0/24 to any port 7000:7001 proto tcp\nsudo ufw allow from 10.0.0.0/24 to any port 17000:17001 proto tcp\nsudo ufw --force enable",
+    "note": "17000:17001 is the cluster bus (port plus 10000). Subnet is a placeholder."
+   },
+   {
+    "title": "Build Redis",
+    "lang": "bash",
+    "code": "sudo apt-get update && sudo apt-get install -y build-essential curl\ncurl -fsSLO https://download.redis.io/releases/redis-7.2.5.tar.gz\ntar xzf redis-7.2.5.tar.gz\nmake -C redis-7.2.5 -j2\nsudo make -C redis-7.2.5 install\nsudo useradd --system --home /var/lib/redis --shell /usr/sbin/nologin redis",
+    "note": "Installs redis-server and redis-cli to /usr/local/bin."
+   },
+   {
+    "title": "Config and systemd unit",
+    "lang": "bash",
+    "code": "sudo mkdir -p /etc/redis && sudo tee /etc/redis/template.conf <<'EOF'\nbind NODEIP\nport PORT\nprotected-mode yes\ndir /var/lib/redis/PORT\ncluster-enabled yes\ncluster-config-file nodes.conf\ncluster-node-timeout 5000\nappendonly yes\nappendfsync everysec\nmaxmemory 512mb\nmaxmemory-policy volatile-lru\nrequirepass CHANGE_ME\nmasterauth CHANGE_ME\nEOF\nfor p in 7000 7001; do\n  sudo install -d -o redis -g redis /var/lib/redis/$p\n  sed \"s/PORT/$p/g; s/NODEIP/10.0.0.11/\" /etc/redis/template.conf | sudo tee /etc/redis/$p.conf >/dev/null\ndone\nsudo chown redis: /etc/redis/*.conf && sudo chmod 640 /etc/redis/*.conf\nsudo tee /etc/systemd/system/redis@.service <<'EOF'\n[Unit]\nDescription=Redis %i\nAfter=network-online.target\n[Service]\nUser=redis\nExecStart=/usr/local/bin/redis-server /etc/redis/%i.conf\nLimitNOFILE=65535\nRestart=on-failure\n[Install]\nWantedBy=multi-user.target\nEOF\nsudo systemctl daemon-reload && sudo systemctl enable --now redis@7000 redis@7001",
+    "note": "Replace CHANGE_ME and NODEIP per VM. Use volatile-lru for sessions with TTLs."
+   },
+   {
+    "title": "Create the cluster",
+    "lang": "bash",
+    "code": "export REDISCLI_AUTH=CHANGE_ME\nredis-cli --cluster create \\\n  10.0.0.11:7000 10.0.0.12:7000 10.0.0.13:7000 \\\n  10.0.0.11:7001 10.0.0.12:7001 10.0.0.13:7001 \\\n  --cluster-replicas 1 --cluster-yes",
+    "note": "Run once, from any VM. redis-cli keeps each replica off its master's host where it can."
+   },
+   {
+    "title": "Test failover",
+    "lang": "bash",
+    "code": "redis-cli -h 10.0.0.12 -p 7000 cluster nodes | grep master\nssh ops@10.0.0.11 sudo systemctl stop redis@7000\nsleep 8\nredis-cli -h 10.0.0.12 -p 7000 cluster nodes\nssh ops@10.0.0.11 sudo systemctl start redis@7000",
+    "note": "The replica of the stopped master is promoted; the old master returns as a replica."
+   },
+   {
+    "title": "Lettuce topology refresh",
+    "lang": "yaml",
+    "code": "spring:\n  data:\n    redis:\n      password: ${REDIS_PASSWORD}\n      cluster:\n        nodes: redis1.lab.local:7000,redis2.lab.local:7000,redis3.lab.local:7000\n        max-redirects: 3\n      lettuce:\n        cluster:\n          refresh:\n            adaptive: true\n            period: 30s",
+    "note": "Spring Boot 3.x property names. Boot 2.x uses spring.redis."
+   }
+  ]
+ },
+ "verify": [
+  "redis-cli --cluster check 10.0.0.11:7000   # all 16384 slots covered",
+  "redis-cli -p 7000 cluster info | grep cluster_state   # ok",
+  "redis-cli -p 7000 cluster nodes   # 3 master, 3 slave",
+  "redis-cli -p 7000 info memory | grep -E 'used_memory_human|maxmemory_human'",
+  "redis-cli -p 7000 cluster keyslot 'user:{42}:cart'   # equals the :profile key"
+ ],
+ "pitfalls": [
+  "Cluster bus port (client plus 10000) blocked by a firewall splits the cluster.",
+  "Lettuce without adaptive refresh keeps hitting the dead master after failover.",
+  "Multi-key commands across slots fail with CROSSSLOT.",
+  "maxmemory equal to host RAM invites the OOM killer during fork.",
+  "noeviction on a cache turns memory pressure into application errors.",
+  "Asynchronous replication drops recent writes on failover; Redis is not the source of truth.",
+  "KEYS and huge values block the single event loop; use SCAN."
+ ],
+ "labVideos": [],
+ "furtherReading": [
+  {
+   "label": "Cluster specification",
+   "url": "https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/"
+  },
+  {
+   "label": "Scale with Redis Cluster",
+   "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/scaling/"
+  },
+  {
+   "label": "Persistence",
+   "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/"
+  },
+  {
+   "label": "Key eviction",
+   "url": "https://redis.io/docs/latest/develop/reference/eviction/"
+  }
+ ],
+ "keyPoints": [
+  "CRC16(key) mod 16384 maps every key to one hash slot.",
+  "Each master owns slots; replicas promote when a majority marks it FAIL.",
+  "maxmemory plus an eviction policy decides what happens at the cap.",
+  "Lettuce adaptive refresh moves clients to the new master without a restart."
+ ],
+ "quickDeploy": [
+  "Harden SSH and set static addresses",
+  "Build Redis 7.2.5 and run it under systemd",
+  "Create the cluster with one replica per master",
+  "Stop a master and watch the failover"
+ ],
+ "osi": [
+  "L4",
+  "L7"
+ ],
+ "osiNote": "RESP over TCP; the cluster bus gossips on client port plus 10000.",
+ "production": [
+  "Size maxmemory at 60% of RAM; leave room for fork and buffers.",
+  "Place each replica on a different host than its master.",
+  "Persist with AOF everysec; run RDB snapshots from a replica.",
+  "Require ACL users and a firewall limited to the cluster subnet.",
+  "Alert on evicted_keys, used_memory ratio and cluster_state not ok."
+ ]
+}

@@ -1,0 +1,333 @@
+{
+ "title": "k6",
+ "subtitle": "Load tests that gate the release on p95.",
+ "layers": [
+  {
+   "layer": 0,
+   "label": "Observe"
+  },
+  {
+   "layer": 1,
+   "label": "Target"
+  },
+  {
+   "layer": 2,
+   "label": "Load"
+  }
+ ],
+ "groups": [
+  {
+   "id": "gen",
+   "label": "k6",
+   "boxes": [
+    "script",
+    "scenario",
+    "vus"
+   ]
+  }
+ ],
+ "tabs": [
+  {
+   "id": "load",
+   "label": "Generate load",
+   "focus": [
+    "jenkins",
+    "script",
+    "scenario",
+    "vus"
+   ]
+  },
+  {
+   "id": "target",
+   "label": "Hit target",
+   "focus": [
+    "vus",
+    "kong",
+    "app"
+   ]
+  },
+  {
+   "id": "observe",
+   "label": "Observe",
+   "focus": [
+    "prom",
+    "grafana",
+    "jenkins"
+   ]
+  }
+ ],
+ "boxes": [
+  {
+   "id": "jenkins",
+   "label": "Jenkins",
+   "tech": "Jenkins",
+   "icon": "jenkins",
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "Jenkins runs k6 before release.",
+   "detail": "The pipeline starts the test and fails the stage on exit code 99.",
+   "href": "#/tech/jenkins"
+  },
+  {
+   "id": "script",
+   "label": "Script",
+   "tech": "k6",
+   "icon": "k6",
+   "layer": 2,
+   "col": 1,
+   "row": 0,
+   "says": "The script sets options.",
+   "detail": "Scenarios, thresholds and checks live in one JavaScript file.",
+   "href": "#/tech/k6",
+   "inner": [
+    {
+     "id": "opts",
+     "label": "Options"
+    },
+    {
+     "id": "thr",
+     "label": "Thresholds"
+    },
+    {
+     "id": "chk",
+     "label": "Checks"
+    },
+    {
+     "id": "def",
+     "label": "Default fn"
+    }
+   ]
+  },
+  {
+   "id": "scenario",
+   "label": "Scenario",
+   "tech": "k6",
+   "icon": "k6",
+   "layer": 2,
+   "col": 2,
+   "row": 0,
+   "says": "Scenarios shape the load.",
+   "detail": "ramping-vus or constant-arrival-rate decides how requests arrive."
+  },
+  {
+   "id": "vus",
+   "label": "VUs",
+   "tech": "k6",
+   "icon": "k6",
+   "layer": 2,
+   "col": 3,
+   "row": 0,
+   "says": "VUs send the requests.",
+   "detail": "Virtual users run the default function in parallel, each with its own state."
+  },
+  {
+   "id": "kong",
+   "label": "Gateway",
+   "tech": "Kong Gateway",
+   "icon": "kong",
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "The gateway takes the load.",
+   "detail": "Routes, plugins and rate limits are exercised exactly as in production.",
+   "href": "#/tech/kong"
+  },
+  {
+   "id": "app",
+   "label": "Service",
+   "tech": "Application",
+   "icon": null,
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "The service answers.",
+   "detail": "The upstream under test, running on staging sized like production."
+  },
+  {
+   "id": "prom",
+   "label": "Prometheus",
+   "tech": "Prometheus",
+   "icon": "prometheus",
+   "layer": 0,
+   "col": 1,
+   "row": 0,
+   "says": "Prometheus receives remote write.",
+   "detail": "Stores k6_http_req_duration_p95 and request rates per testid.",
+   "href": "#/tech/prometheus"
+  },
+  {
+   "id": "grafana",
+   "label": "Grafana",
+   "tech": "Grafana",
+   "icon": "grafana",
+   "layer": 0,
+   "col": 2,
+   "row": 0,
+   "says": "Grafana charts p95.",
+   "detail": "The dashboard plots latency, throughput and errors for each run.",
+   "href": "#/tech/grafana"
+  }
+ ],
+ "wires": [
+  {
+   "from": "jenkins",
+   "to": "script",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "run"
+  },
+  {
+   "from": "script",
+   "to": "scenario",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "executor"
+  },
+  {
+   "from": "scenario",
+   "to": "vus",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "spawn"
+  },
+  {
+   "from": "vus",
+   "to": "kong",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "HTTP"
+  },
+  {
+   "from": "kong",
+   "to": "app",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "proxy"
+  },
+  {
+   "from": "vus",
+   "to": "prom",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal",
+   "label": "remote write"
+  },
+  {
+   "from": "prom",
+   "to": "grafana",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "query"
+  },
+  {
+   "from": "grafana",
+   "to": "jenkins",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal",
+   "label": "compare"
+  }
+ ],
+ "steps": [
+  {
+   "title": "Start",
+   "text": "Jenkins runs the script with a testid.",
+   "boxes": [
+    "jenkins",
+    "script"
+   ],
+   "wires": [
+    [
+     "jenkins",
+     "script"
+    ]
+   ]
+  },
+  {
+   "title": "Shape",
+   "text": "The scenario ramps VUs or sets an arrival rate.",
+   "boxes": [
+    "script",
+    "scenario",
+    "vus"
+   ],
+   "wires": [
+    [
+     "script",
+     "scenario"
+    ],
+    [
+     "scenario",
+     "vus"
+    ]
+   ]
+  },
+  {
+   "title": "Load",
+   "text": "VUs hit the gateway and the service.",
+   "boxes": [
+    "vus",
+    "kong",
+    "app"
+   ],
+   "wires": [
+    [
+     "vus",
+     "kong"
+    ],
+    [
+     "kong",
+     "app"
+    ]
+   ]
+  },
+  {
+   "title": "Record",
+   "text": "Metrics are pushed to Prometheus.",
+   "boxes": [
+    "vus",
+    "prom"
+   ],
+   "wires": [
+    [
+     "vus",
+     "prom"
+    ]
+   ]
+  },
+  {
+   "title": "Chart",
+   "text": "Grafana plots p95 per run.",
+   "boxes": [
+    "prom",
+    "grafana"
+   ],
+   "wires": [
+    [
+     "prom",
+     "grafana"
+    ]
+   ]
+  }
+ ],
+ "declarations": [
+  "Scenarios shape the load.",
+  "Thresholds decide pass or fail.",
+  "Remote write feeds Prometheus.",
+  "Failed p95 blocks the release."
+ ],
+ "run": {
+  "cmd": "k6 run -o experimental-prometheus-rw script.js",
+  "lines": [
+   "http_req_duration p(95)=212ms  OK",
+   "http_req_failed rate=0.00%  OK"
+  ]
+ }
+}

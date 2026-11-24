@@ -1,0 +1,154 @@
+{
+ "slug": "haproxy",
+ "name": "HAProxy",
+ "category": "Load Balancer",
+ "icon": "haproxy",
+ "level": "hands-on",
+ "tagline": "Load balances TCP and HTTP with health checks, SNI routing and a floating IP.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Frontend and backend",
+   "body": "A frontend binds ports and applies rules.\nA backend holds servers and a balance algorithm.\nmode tcp relays bytes; mode http parses requests.\nThe first matching use_backend wins, else default_backend."
+  },
+  {
+   "title": "Upstreams and health checks",
+   "body": "roundrobin spreads evenly; leastconn suits long-lived connections; source pins clients.\ncheck probes a TCP connect; option httpchk GET /healthz tests the app.\ninter, fall and rise set probe speed and flap tolerance.\nbackup servers take traffic only when all primaries are down."
+  },
+  {
+   "title": "L4 versus L7",
+   "body": "L4 forwards TLS untouched: no certificates on the balancer.\nL7 terminates TLS and routes by Host header, path or method.\nSNI routing at L4 needs tcp-request inspect-delay to read the ClientHello.\nUse L4 for databases and Kubernetes API; L7 for web and APIs."
+  },
+  {
+   "title": "PROXY protocol",
+   "body": "At L4 the backend sees HAProxy as the client.\nsend-proxy-v2 on the server line prepends the real source address.\nThe receiver must expect it: NGINX proxy_protocol, another HAProxy accept-proxy.\nEnable both ends in one change window."
+  },
+  {
+   "title": "Floating IP with keepalived",
+   "body": "Two nodes share one VIP through VRRP, protocol 112.\nHighest priority holds the VIP and sends advertisements.\nA track_script lowers priority when haproxy dies.\nThe BACKUP claims the VIP and sends gratuitous ARP."
+  }
+ ],
+ "flow": [
+  "Client connects to the VIP held by the MASTER node.",
+  "Kernel hands the connection to an HAProxy worker thread.",
+  "tcp-request inspect-delay waits for the TLS ClientHello and reads the SNI.",
+  "ACLs run in order; use_backend or default_backend picks the pool.",
+  "Balance algorithm chooses a healthy server below maxconn.",
+  "HAProxy connects upstream and sends the PROXY header first.",
+  "Bytes relay both ways under timeout client and timeout server.",
+  "Counters and logs update; health checks run in the background."
+ ],
+ "deploy": {
+  "summary": "Run HAProxy in Docker, then add keepalived on two hosts for a floating IP.",
+  "prerequisites": [
+   "Two Linux hosts on one L2 subnet, one free VIP",
+   "Docker Engine and the keepalived package",
+   "Backends reachable from both hosts",
+   "Firewall allowing VRRP (IP protocol 112)"
+  ],
+  "steps": [
+   {
+    "title": "Write haproxy.cfg",
+    "lang": "haproxy",
+    "code": "global\n    log stdout format raw local0\n    maxconn 20000\n    stats socket /tmp/haproxy.sock mode 660 level admin expose-fd listeners\n\ndefaults\n    mode tcp\n    log global\n    option tcplog\n    timeout connect 3s\n    timeout client  1m\n    timeout server  1m\n    timeout check   2s\n\nfrontend stats\n    mode http\n    bind :8404\n    stats enable\n    stats uri /stats\n    stats refresh 5s\n    http-request use-service prometheus-exporter if { path /metrics }\n\nfrontend fe_https\n    bind :443\n    tcp-request inspect-delay 5s\n    tcp-request content accept if { req_ssl_hello_type 1 }\n    use_backend be_app_a if { req_ssl_sni -i a.example.test }\n    use_backend be_app_b if { req_ssl_sni -i b.example.test }\n    default_backend be_app_a\n\nbackend be_app_a\n    balance roundrobin\n    default-server inter 2s fall 3 rise 2\n    server a1 10.0.1.11:443 check send-proxy-v2\n    server a2 10.0.1.12:443 check send-proxy-v2\n\nbackend be_app_b\n    balance leastconn\n    default-server inter 2s fall 3 rise 2\n    server b1 10.0.2.11:443 check send-proxy-v2\n    server b2 10.0.2.12:443 check send-proxy-v2 backup\n\nfrontend fe_http\n    mode http\n    bind :80\n    option httplog\n    acl is_api path_beg /api\n    acl is_admin path_beg /admin\n    acl internal src 10.0.0.0/8\n    http-request deny if is_admin !internal\n    use_backend be_api if is_api\n    default_backend be_web\n\nbackend be_api\n    mode http\n    balance uri\n    option httpchk GET /healthz\n    http-check expect status 200\n    server api1 10.0.3.11:8080 check\n    server api2 10.0.3.12:8080 check\n\nbackend be_web\n    mode http\n    balance roundrobin\n    option forwardfor\n    server web1 10.0.4.11:8080 check\n    server web2 10.0.4.12:8080 check\n",
+    "note": "Replace every address with your own. Prometheus exporter needs HAProxy 2.4 or newer."
+   },
+   {
+    "title": "Validate the configuration",
+    "lang": "bash",
+    "code": "docker run --rm -v \"$PWD/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro\" haproxy:3.0.31 haproxy -c -f /usr/local/etc/haproxy/haproxy.cfg",
+    "note": "Require exit code 0 before every reload."
+   },
+   {
+    "title": "Run HAProxy in Docker",
+    "lang": "bash",
+    "code": "docker run -d --name haproxy --restart unless-stopped \\\n  --sysctl net.ipv4.ip_unprivileged_port_start=0 \\\n  -p 80:80 -p 443:443 -p 127.0.0.1:8404:8404 \\\n  -v \"$PWD/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro\" \\\n  haproxy:3.0.31\ndocker logs haproxy --tail 20",
+    "note": "The image runs unprivileged, so the sysctl frees ports below 1024. Pin the minor tag you tested."
+   },
+   {
+    "title": "Reload gracefully",
+    "lang": "bash",
+    "code": "docker kill -s USR2 haproxy\n# package install:\n# sudo haproxy -c -f /etc/haproxy/haproxy.cfg && sudo systemctl reload haproxy",
+    "note": "The image runs master-worker mode; SIGUSR2 starts a new worker and drains the old one."
+   },
+   {
+    "title": "Prepare both nodes for keepalived",
+    "lang": "bash",
+    "code": "sudo apt-get install -y keepalived\necho 'net.ipv4.ip_nonlocal_bind = 1' | sudo tee /etc/sysctl.d/90-haproxy.conf\nsudo sysctl --system\nsudo iptables -I INPUT -p 112 -d 224.0.0.18 -j ACCEPT",
+    "note": "Run on both nodes; keepalived stays on the host, not in the container. Persist the firewall rule with your normal tooling."
+   },
+   {
+    "title": "keepalived.conf on the MASTER",
+    "lang": "conf",
+    "code": "vrrp_script chk_haproxy {\n    script \"/usr/bin/pgrep -x haproxy\"\n    interval 2\n    timeout 2\n    fall 2\n    rise 2\n}\n\nvrrp_instance VI_1 {\n    state MASTER\n    interface eth0              # replace with your NIC\n    virtual_router_id 51\n    priority 150\n    advert_int 1\n    authentication {\n        auth_type PASS\n        auth_pass changeme1     # max 8 chars\n    }\n    virtual_ipaddress {\n        192.0.2.100/24          # replace with a free IP\n    }\n    track_script {\n        chk_haproxy\n    }\n}",
+    "note": "Put this in /etc/keepalived/keepalived.conf. On the BACKUP change only state BACKUP and priority 100."
+   },
+   {
+    "title": "Start keepalived",
+    "lang": "bash",
+    "code": "sudo systemctl enable --now keepalived\nip -4 addr show eth0 | grep 192.0.2.100",
+    "note": "The VIP appears on the MASTER only. Both nodes need the same virtual_router_id, password and haproxy.cfg."
+   },
+   {
+    "title": "Test failover",
+    "lang": "bash",
+    "code": "ping -c 20 192.0.2.100 &\nsudo systemctl stop keepalived   # on the MASTER\nip -4 addr show eth0 | grep 192.0.2.100   # on the BACKUP",
+    "note": "The VIP should move within a few seconds. Decide between preempt (default) and nopreempt."
+   }
+  ]
+ },
+ "verify": [
+  "Config: haproxy -c -f haproxy.cfg exits 0 and prints 'Configuration file is valid'.",
+  "Stats: curl -s 'http://127.0.0.1:8404/stats;csv' | cut -d, -f1,2,18 shows UP servers.",
+  "Metrics: curl -s http://127.0.0.1:8404/metrics returns Prometheus text.",
+  "SNI: openssl s_client -connect VIP:443 -servername a.example.test </dev/null reaches backend A.",
+  "HA: ip addr shows the VIP on the MASTER, then on the BACKUP after the stop."
+ ],
+ "pitfalls": [
+  "Missing inspect-delay: SNI ACLs see an empty buffer and everything hits default_backend.",
+  "send-proxy to a backend without PROXY support gives instant protocol errors.",
+  "Absent timeouts leak idle connections; set connect, client and server.",
+  "Idle database or WebSocket sessions die at timeout server; raise timeout tunnel.",
+  "Different virtual_router_id or two MASTERs causes split brain, with the VIP on both.",
+  "Clouds and filtered VLANs drop VRRP and gratuitous ARP; failover silently never happens.",
+  "Unresolvable DNS names fail the reload; use resolvers with init-addr none."
+ ],
+ "furtherReading": [
+  {
+   "label": "HAProxy configuration manual (3.0)",
+   "url": "https://docs.haproxy.org/3.0/configuration.html"
+  },
+  {
+   "label": "PROXY protocol specification",
+   "url": "https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt"
+  },
+  {
+   "label": "keepalived documentation",
+   "url": "https://keepalived.readthedocs.io/en/latest/"
+  }
+ ],
+ "keyPoints": [
+  "Frontends match traffic; backends balance it across health-checked upstream servers.",
+  "L4 passes TLS untouched and routes by SNI; L7 routes by Host and path.",
+  "send-proxy-v2 carries the client IP; the backend must accept PROXY protocol.",
+  "keepalived VRRP floats one IP between two HAProxy nodes."
+ ],
+ "quickDeploy": [
+  "Write haproxy.cfg and validate it with haproxy -c.",
+  "Run the pinned HAProxy image in Docker.",
+  "Reload gracefully with SIGUSR2.",
+  "Add keepalived on two nodes; stop the MASTER to test."
+ ],
+ "osi": [
+  "L4",
+  "L7"
+ ],
+ "osiNote": "Balances TCP at L4 and routes HTTP by host and path at L7.",
+ "production": [
+  "Set maxconn and timeouts; load test at twice peak.",
+  "Run two nodes with keepalived; kill the MASTER to prove failover.",
+  "Keep haproxy.cfg in Git; validate with haproxy -c, then reload.",
+  "Restrict stats and admin sockets; deny /admin outside internal subnets.",
+  "Scrape /metrics; alert on 5xx rate, queue depth and servers down."
+ ]
+}

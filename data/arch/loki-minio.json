@@ -1,0 +1,233 @@
+{
+  "title": "Loki Log Pipeline with MinIO",
+  "summary": "Agents ship labelled log streams to Loki's distributor and ingesters, which flush chunks and index to MinIO; queriers serve LogQL to Grafana.",
+  "nodes": [
+    {
+      "id": "agent",
+      "label": "Alloy / Promtail",
+      "sub": "Log collection agent",
+      "kind": "process",
+      "icon": "grafana",
+      "detail": "Tails container and file logs, attaches labels like namespace and app, and pushes streams to Loki."
+    },
+    {
+      "id": "dist",
+      "label": "Distributor",
+      "sub": "Validates and shards",
+      "kind": "proxy",
+      "icon": "grafana",
+      "detail": "Receives pushes, validates labels and limits, and uses consistent hashing to pick ingesters, replicating for durability.",
+      "group": "Loki write path"
+    },
+    {
+      "id": "ing",
+      "label": "Ingester",
+      "sub": "In-memory buffers",
+      "kind": "process",
+      "icon": "grafana",
+      "detail": "Builds compressed chunks per stream in memory, backed by a write-ahead log, and flushes them when full or old.",
+      "group": "Loki write path"
+    },
+    {
+      "id": "minio_chunks",
+      "label": "MinIO Chunks",
+      "sub": "Object storage bucket",
+      "kind": "store",
+      "icon": "minio",
+      "detail": "S3-compatible object store holding compressed log chunks. Cheap and durable compared with indexing full text.",
+      "group": "Storage"
+    },
+    {
+      "id": "index",
+      "label": "Index",
+      "sub": "TSDB label index",
+      "kind": "store",
+      "icon": null,
+      "detail": "Index of label sets to chunk references, stored with chunks in object storage and cached locally.",
+      "group": "Storage"
+    },
+    {
+      "id": "querier",
+      "label": "Querier",
+      "sub": "Reads chunks and index",
+      "kind": "process",
+      "icon": "grafana",
+      "detail": "Fetches data from ingesters for recent logs and from object storage for older logs, then filters lines.",
+      "group": "Loki read path"
+    },
+    {
+      "id": "qfe",
+      "label": "Query Frontend",
+      "sub": "Splits and caches",
+      "kind": "proxy",
+      "icon": "grafana",
+      "detail": "Splits large time ranges into smaller queries, caches results and queues work for queriers.",
+      "group": "Loki read path"
+    },
+    {
+      "id": "grafana",
+      "label": "Grafana",
+      "sub": "LogQL queries",
+      "kind": "observe",
+      "icon": "grafana",
+      "detail": "Sends LogQL such as label selectors and line filters, and shows log lines or metrics derived from logs."
+    }
+  ],
+  "links": [
+    {
+      "from": "agent",
+      "to": "dist",
+      "label": "push streams",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "dist",
+      "to": "ing",
+      "label": "hash ring",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "ing",
+      "to": "minio_chunks",
+      "label": "flush chunks",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "ing",
+      "to": "index",
+      "label": "write index",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "grafana",
+      "to": "qfe",
+      "label": "LogQL",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "qfe",
+      "to": "querier",
+      "label": "sub-queries",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "querier",
+      "to": "ing",
+      "label": "recent data",
+      "style": "dashed",
+      "flow": true
+    },
+    {
+      "from": "querier",
+      "to": "minio_chunks",
+      "label": "old chunks",
+      "style": "dashed",
+      "flow": true
+    },
+    {
+      "from": "querier",
+      "to": "index",
+      "label": "lookup",
+      "style": "dashed",
+      "flow": true
+    }
+  ],
+  "steps": [
+    {
+      "title": "Agent ships logs",
+      "text": "Alloy or Promtail tails logs, adds labels and pushes streams over HTTP.",
+      "nodes": [
+        "agent",
+        "dist"
+      ],
+      "links": [
+        [
+          "agent",
+          "dist"
+        ]
+      ]
+    },
+    {
+      "title": "Distributor routes",
+      "text": "The distributor validates streams and hashes them to ingesters, replicating writes.",
+      "nodes": [
+        "dist",
+        "ing"
+      ],
+      "links": [
+        [
+          "dist",
+          "ing"
+        ]
+      ]
+    },
+    {
+      "title": "Ingester builds chunks",
+      "text": "Logs accumulate in memory chunks protected by a WAL until flush conditions are met.",
+      "nodes": [
+        "ing",
+        "minio_chunks",
+        "index"
+      ],
+      "links": [
+        [
+          "ing",
+          "minio_chunks"
+        ],
+        [
+          "ing",
+          "index"
+        ]
+      ]
+    },
+    {
+      "title": "Grafana asks with LogQL",
+      "text": "A label selector query goes to the query frontend, which splits it by time.",
+      "nodes": [
+        "grafana",
+        "qfe",
+        "querier"
+      ],
+      "links": [
+        [
+          "grafana",
+          "qfe"
+        ],
+        [
+          "qfe",
+          "querier"
+        ]
+      ]
+    },
+    {
+      "title": "Querier merges sources",
+      "text": "It finds chunks via the index, reads MinIO and ingesters, filters lines and returns results.",
+      "nodes": [
+        "querier",
+        "ing",
+        "minio_chunks",
+        "index"
+      ],
+      "links": [
+        [
+          "querier",
+          "ing"
+        ],
+        [
+          "querier",
+          "minio_chunks"
+        ],
+        [
+          "querier",
+          "index"
+        ]
+      ]
+    }
+  ]
+}

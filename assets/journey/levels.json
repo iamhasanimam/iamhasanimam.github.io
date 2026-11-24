@@ -1,0 +1,134 @@
+[
+ {
+  "id": "level_1_cloud",
+  "name": "level_1_cloud",
+  "order": 1,
+  "year": "2020",
+  "label": "Cloud Service Engineer",
+  "position": [
+   13.255,
+   14.741,
+   -25.72
+  ],
+  "cameraOffset": [
+   4.468,
+   -5.012,
+   22.41
+  ],
+  "lookAtOffset": [
+   0.0,
+   -4.4,
+   -0.0
+  ]
+ },
+ {
+  "id": "level_2_sysadmin",
+  "name": "level_2_sysadmin",
+  "order": 2,
+  "year": "2022",
+  "label": "Senior System Administrator",
+  "position": [
+   40.684,
+   16.92,
+   24.34
+  ],
+  "cameraOffset": [
+   4.151,
+   -8.557,
+   -23.382
+  ],
+  "lookAtOffset": [
+   0.0,
+   -4.95,
+   -0.0
+  ]
+ },
+ {
+  "id": "level_3_support",
+  "name": "level_3_support",
+  "order": 3,
+  "year": "2023",
+  "label": "Senior Product Support Engineer",
+  "position": [
+   78.91,
+   20.358,
+   -16.444
+  ],
+  "cameraOffset": [
+   16.005,
+   -1.684,
+   16.401
+  ],
+  "lookAtOffset": [
+   0.0,
+   -4.4,
+   -0.0
+  ]
+ },
+ {
+  "id": "level_4_wingify",
+  "name": "level_4_wingify",
+  "order": 4,
+  "year": "2025",
+  "label": "Technical Support Engineer",
+  "position": [
+   120.105,
+   35.706,
+   13.586
+  ],
+  "cameraOffset": [
+   7.225,
+   -2.182,
+   -21.769
+  ],
+  "lookAtOffset": [
+   0.0,
+   -4.4,
+   -0.0
+  ]
+ },
+ {
+  "id": "level_5_platform",
+  "name": "level_5_platform",
+  "order": 5,
+  "year": "2025-now",
+  "label": "Platform & DevOps Engineer",
+  "position": [
+   143.056,
+   45.437,
+   -2.785
+  ],
+  "cameraOffset": [
+   17.412,
+   -12.921,
+   26.553
+  ],
+  "lookAtOffset": [
+   0.0,
+   -8.25,
+   -0.0
+  ]
+ },
+ {
+  "id": "goal_summit",
+  "name": "goal_summit",
+  "order": 6,
+  "year": "Next",
+  "label": "The next role",
+  "position": [
+   170.0,
+   51.255,
+   -24.727
+  ],
+  "cameraOffset": [
+   -14.0,
+   -2.0,
+   16.0
+  ],
+  "lookAtOffset": [
+   0.0,
+   -3.0,
+   -0.0
+  ]
+ }
+]

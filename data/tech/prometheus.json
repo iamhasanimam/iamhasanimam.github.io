@@ -1,0 +1,156 @@
+{
+  "slug": "prometheus",
+  "name": "Prometheus",
+  "category": "Observability",
+  "icon": "prometheus",
+  "level": "hands-on",
+  "tagline": "Pulls metrics on an interval, stores them, answers PromQL, fires alerts.",
+  "whatItIs": "",
+  "howItWorks": [
+    {
+      "title": "Pull scraping",
+      "body": "Every scrape_interval, an HTTP GET fetches /metrics from each target.\nTargets come from static lists, DNS, file or Kubernetes service discovery.\nA failed scrape sets up to 0: free health checking.\nrelabel_configs picks targets; metric_relabel_configs drops series."
+    },
+    {
+      "title": "node_exporter and Actuator",
+      "body": "node_exporter reads /proc and /sys: CPU, memory, disk, network per host.\nSpring Boot Actuator serves JVM and HTTP metrics at /actuator/prometheus.\nMicrometer publishes http_server_requests_seconds histograms per URI and status.\nSaturation comes from nodes; latency and errors come from the app."
+    },
+    {
+      "title": "ServiceMonitor and OTel push",
+      "body": "A ServiceMonitor selects Services by label and sets port, path, interval.\nThe Operator turns it into scrape config; teams ship it with their app.\nWhere pull is impossible, the OTel Collector pushes via remote_write.\nThe receiver needs --web.enable-remote-write-receiver."
+    },
+    {
+      "title": "Histograms and p95",
+      "body": "Histograms expose cumulative _bucket{le} counters plus _sum and _count.\np95: histogram_quantile(0.95, sum by (le) (rate(x_bucket[5m]))).\nAggregate buckets with sum by (le) first, then take the quantile.\nSummaries cannot be aggregated across pods; prefer histograms.\nBucket edges must bracket the SLO threshold, or p95 is guesswork."
+    },
+    {
+      "title": "Alerts and long-term storage",
+      "body": "Alert rules hold a PromQL condition for a duration, then fire.\nAlertmanager groups, deduplicates, silences, inhibits and routes by label.\nRecording rules precompute expensive queries for fast dashboards.\nThanos sidecar uploads sealed 2h blocks to object storage.\nThanos Query merges live and stored data; local retention stays short."
+    }
+  ],
+  "flow": [
+    "node_exporter and Actuator expose /metrics over HTTP.",
+    "ServiceMonitor tells the Operator which Services to scrape.",
+    "Prometheus scrapes each target and appends samples to the WAL.",
+    "Two-hour blocks compact to disk; the Thanos sidecar uploads them.",
+    "Recording rules precompute; alert rules evaluate each interval.",
+    "Firing alerts go to Alertmanager, then Slack, email or pager.",
+    "Grafana runs PromQL; histogram_quantile returns p95."
+  ],
+  "deploy": {
+    "summary": "Prometheus, Alertmanager and node_exporter on a Linux host, pinned, with rules and a ServiceMonitor.",
+    "prerequisites": [
+      "Linux host with Docker 24+ and Compose v2",
+      "sudo access; app serving /actuator/prometheus",
+      "Ports 9090, 9093, 9100 planned and firewalled"
+    ],
+    "steps": [
+      {
+        "title": "node_exporter under systemd",
+        "lang": "bash",
+        "code": "curl -fsSLO https://github.com/prometheus/node_exporter/releases/download/v1.8.1/node_exporter-1.8.1.linux-amd64.tar.gz\ntar xzf node_exporter-1.8.1.linux-amd64.tar.gz\nsudo install -m 0755 node_exporter-1.8.1.linux-amd64/node_exporter /usr/local/bin/\nsudo useradd --system --no-create-home --shell /usr/sbin/nologin node_exporter\nsudo tee /etc/systemd/system/node_exporter.service >/dev/null <<'EOF'\n[Unit]\nDescription=Prometheus node_exporter\nAfter=network-online.target\n[Service]\nUser=node_exporter\nExecStart=/usr/local/bin/node_exporter --web.listen-address=:9100\nRestart=on-failure\n[Install]\nWantedBy=multi-user.target\nEOF\nsudo systemctl daemon-reload && sudo systemctl enable --now node_exporter",
+        "note": "Runs unprivileged on every host. Use the arm64 tarball on ARM."
+      },
+      {
+        "title": "Firewall: scrape from Prometheus only",
+        "lang": "bash",
+        "code": "# 10.0.0.5 = Prometheus host (placeholder)\nsudo ufw allow from 10.0.0.5 to any port 9100 proto tcp\nsudo ufw status numbered",
+        "note": "Replace 10.0.0.5 with your Prometheus address. On that host, allow 9090 and 9093 only from admin subnets."
+      },
+      {
+        "title": "Compose: Prometheus and Alertmanager",
+        "lang": "yaml",
+        "code": "services:\n  prometheus:\n    image: prom/prometheus:v2.53.0\n    command:\n      - --config.file=/etc/prometheus/prometheus.yml\n      - --storage.tsdb.retention.time=15d\n      - --web.enable-lifecycle\n      - --web.enable-remote-write-receiver\n    volumes:\n      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro\n      - ./rules.yml:/etc/prometheus/rules.yml:ro\n      - prom-data:/prometheus\n    ports: [\"9090:9090\"]\n  alertmanager:\n    image: prom/alertmanager:v0.27.0\n    command: [\"--config.file=/etc/alertmanager/alertmanager.yml\"]\n    volumes:\n      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro\n    ports: [\"9093:9093\"]\nnetworks:\n  default:\n    name: monitoring\nvolumes:\n  prom-data: {}",
+        "note": "Save as docker-compose.yml; drop the remote-write flag if nothing pushes. Grafana joins the same network."
+      },
+      {
+        "title": "prometheus.yml",
+        "lang": "yaml",
+        "code": "global:\n  scrape_interval: 15s\n  evaluation_interval: 15s\nrule_files:\n  - /etc/prometheus/rules.yml\nalerting:\n  alertmanagers:\n    - static_configs:\n        - targets: [\"alertmanager:9093\"]\nscrape_configs:\n  - job_name: prometheus\n    static_configs:\n      - targets: [\"localhost:9090\"]\n  - job_name: node\n    static_configs:\n      - targets: [\"<NODE_IP>:9100\"]\n  - job_name: spring-app\n    metrics_path: /actuator/prometheus\n    static_configs:\n      - targets: [\"<APP_IP>:8080\"]",
+        "note": "Replace <NODE_IP> and <APP_IP>. Static targets here; use file or Kubernetes discovery at scale."
+      },
+      {
+        "title": "Recording and alert rules",
+        "lang": "yaml",
+        "code": "groups:\n  - name: http\n    rules:\n      - record: job:http_requests:rate5m\n        expr: sum by (job) (rate(http_server_requests_seconds_count[5m]))\n      - record: job:http_request_duration_seconds:p95\n        expr: histogram_quantile(0.95, sum by (job, le) (rate(http_server_requests_seconds_bucket[5m])))\n      - alert: HighP95Latency\n        expr: job:http_request_duration_seconds:p95 > 0.5\n        for: 10m\n        labels: {severity: warning}\n        annotations:\n          summary: \"p95 latency above 500ms for {{ $labels.job }}\"\n  - name: availability\n    rules:\n      - alert: TargetDown\n        expr: up == 0\n        for: 2m\n        labels: {severity: critical}\n        annotations:\n          summary: \"{{ $labels.job }}/{{ $labels.instance }} is down\"",
+        "note": "p95 is precomputed per job. The 10 minute hold avoids flapping."
+      },
+      {
+        "title": "Alertmanager routing",
+        "lang": "yaml",
+        "code": "route:\n  receiver: default\n  group_by: [alertname, job]\n  group_wait: 30s\n  group_interval: 5m\n  repeat_interval: 4h\n  routes:\n    - matchers: [severity=\"critical\"]\n      receiver: oncall\nreceivers:\n  - name: default\n  - name: oncall\n    webhook_configs:\n      - url: http://host.docker.internal:5001/alerts\ninhibit_rules:\n  - source_matchers: [severity=\"critical\"]\n    target_matchers: [severity=\"warning\"]\n    equal: [job]",
+        "note": "Critical pages on-call and inhibits the matching warning. Webhook URL is a placeholder."
+      },
+      {
+        "title": "Validate, start, reload",
+        "lang": "bash",
+        "code": "docker run --rm --entrypoint promtool -v \"$PWD\":/w prom/prometheus:v2.53.0 check config /w/prometheus.yml\ndocker run --rm --entrypoint promtool -v \"$PWD\":/w prom/prometheus:v2.53.0 check rules /w/rules.yml\ndocker compose up -d\ncurl -X POST http://localhost:9090/-/reload",
+        "note": "promtool fails the pipeline before a bad rule ships. Reload needs --web.enable-lifecycle."
+      },
+      {
+        "title": "ServiceMonitor on Kubernetes",
+        "lang": "yaml",
+        "code": "apiVersion: monitoring.coreos.com/v1\nkind: ServiceMonitor\nmetadata:\n  name: spring-app\n  labels:\n    release: prometheus\nspec:\n  selector:\n    matchLabels:\n      app: spring-app\n  endpoints:\n    - port: http\n      path: /actuator/prometheus\n      interval: 15s",
+        "note": "The release label must match the Operator's selector. Port names the Service port."
+      }
+    ]
+  },
+  "verify": [
+    "Targets healthy: curl -s localhost:9090/api/v1/targets | jq '.data.activeTargets[].health'",
+    "Targets up: curl -s 'localhost:9090/api/v1/query?query=up' | jq '.data.result[].value[1]'",
+    "p95: histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket[5m])))",
+    "Rules load: docker run --rm --entrypoint promtool -v \"$PWD\":/w prom/prometheus:v2.53.0 check rules /w/rules.yml",
+    "Alertmanager up: curl -s localhost:9093/-/healthy"
+  ],
+  "pitfalls": [
+    "Averaging quantiles across pods is wrong; sum buckets by le first.",
+    "High-cardinality labels (user id, URL with IDs) explode memory.",
+    "rate() window under 4x the scrape interval returns gaps.",
+    "Pushgateway keeps stale series forever; delete them or avoid it.",
+    "No for: duration on alerts causes flapping pages.",
+    "ServiceMonitor ignored when its labels miss the Operator's selector.",
+    "Local TSDB is not durable storage: add Thanos or remote_write."
+  ],
+  "furtherReading": [
+    {
+      "label": "Prometheus overview",
+      "url": "https://prometheus.io/docs/introduction/overview/"
+    },
+    {
+      "label": "Histograms and summaries",
+      "url": "https://prometheus.io/docs/practices/histograms/"
+    },
+    {
+      "label": "Alertmanager configuration",
+      "url": "https://prometheus.io/docs/alerting/latest/configuration/"
+    },
+    {
+      "label": "Thanos",
+      "url": "https://thanos.io/"
+    }
+  ],
+  "keyPoints": [
+    "Pull model: scrape /metrics every interval; up==0 means dead.",
+    "Histograms plus histogram_quantile give p95 across all pods.",
+    "Cardinality, not sample rate, drives memory and cost.",
+    "Prometheus fires, Alertmanager groups, silences and routes."
+  ],
+  "quickDeploy": [
+    "Run node_exporter under systemd.",
+    "Compose Prometheus and Alertmanager, pinned.",
+    "Validate config with promtool.",
+    "Query histogram_quantile in the UI."
+  ],
+  "osi": [
+    "L4",
+    "L7"
+  ],
+  "osiNote": "Scrapes over HTTP on TCP; reads kernel network counters.",
+  "production": [
+    "Size memory by active series; cap with sample_limit.",
+    "Run HA pairs with identical config; Thanos sidecar uploads blocks.",
+    "Keep rules and config in Git; gate reloads on promtool checks.",
+    "Restrict /metrics by firewall or mTLS; never expose Prometheus publicly.",
+    "Alert on up==0, rule failures, scrape duration and WAL errors."
+  ]
+}

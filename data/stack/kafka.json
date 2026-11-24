@@ -1,0 +1,169 @@
+{
+  "title": "Apache Kafka",
+  "subtitle": "A distributed, replicated commit log for durable event streaming.",
+  "tabs": [
+    {
+      "id": "overview",
+      "label": "Overview",
+      "layers": [
+        "produce",
+        "log",
+        "consume"
+      ]
+    },
+    {
+      "id": "write",
+      "label": "Write side",
+      "layers": [
+        "produce",
+        "log"
+      ]
+    },
+    {
+      "id": "read",
+      "label": "Read side",
+      "layers": [
+        "log",
+        "consume"
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "id": "produce",
+      "label": "Producers",
+      "tone": "indigo",
+      "tiles": [
+        {
+          "id": "producer",
+          "label": "Producers",
+          "icon": "apachekafka",
+          "says": "Producers append records to topics in batches.",
+          "detail": "Keys choose partitions, preserving order per key. Batching and compression raise throughput."
+        },
+        {
+          "id": "acks",
+          "label": "Delivery acks",
+          "icon": "apachekafka",
+          "says": "acks=all waits for in-sync replicas.",
+          "detail": "Idempotent producers and acknowledgements trade latency for durability explicitly."
+        },
+        {
+          "id": "schema",
+          "label": "Schemas",
+          "icon": "apachekafka",
+          "says": "Schemas keep event contracts compatible.",
+          "detail": "Versioned formats let producers and consumers evolve independently."
+        }
+      ]
+    },
+    {
+      "id": "log",
+      "label": "Brokers & log",
+      "tone": "violet",
+      "tiles": [
+        {
+          "id": "topic",
+          "label": "Topics & partitions",
+          "icon": "apachekafka",
+          "says": "Topics split into ordered, append-only partitions.",
+          "detail": "Partitions scale throughput and define the ordering guarantee."
+        },
+        {
+          "id": "replicas",
+          "label": "Replication",
+          "icon": "apachekafka",
+          "says": "Each partition has a leader and in-sync followers.",
+          "detail": "Losing a broker elects a new leader, so streams survive hardware failure."
+        },
+        {
+          "id": "kraft",
+          "label": "KRaft quorum",
+          "icon": "apachekafka",
+          "says": "KRaft controllers manage metadata with Raft.",
+          "detail": "Removing ZooKeeper simplifies operations and speeds up recovery."
+        }
+      ]
+    },
+    {
+      "id": "consume",
+      "label": "Consumers",
+      "tone": "orange",
+      "tiles": [
+        {
+          "id": "group",
+          "label": "Consumer groups",
+          "icon": "apachekafka",
+          "says": "Groups divide partitions among members.",
+          "detail": "Adding consumers scales reads horizontally, and each partition has one reader per group."
+        },
+        {
+          "id": "offsets",
+          "label": "Offsets",
+          "icon": "apachekafka",
+          "says": "Committed offsets record each group's position.",
+          "detail": "Consumers resume after failure and can replay history to rebuild state."
+        },
+        {
+          "id": "retention",
+          "label": "Retention",
+          "icon": "apachekafka",
+          "says": "Retention keeps data by time, size or compaction.",
+          "detail": "Replay windows support recovery and new consumers, and compaction keeps the latest value per key."
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "from": "producer",
+      "to": "topic"
+    },
+    {
+      "from": "acks",
+      "to": "replicas"
+    },
+    {
+      "from": "schema",
+      "to": "producer"
+    },
+    {
+      "from": "topic",
+      "to": "replicas"
+    },
+    {
+      "from": "kraft",
+      "to": "replicas"
+    },
+    {
+      "from": "topic",
+      "to": "group"
+    },
+    {
+      "from": "group",
+      "to": "offsets"
+    },
+    {
+      "from": "topic",
+      "to": "retention"
+    },
+    {
+      "from": "replicas",
+      "to": "group"
+    }
+  ],
+  "run": {
+    "cmd": "$ kafka-topics.sh --describe --topic orders",
+    "lines": [
+      "Topic: orders  PartitionCount: 6  ReplicationFactor: 3",
+      "Partition: 0  Leader: 1  Isr: 1,2,3",
+      "Partition: 1  Leader: 2  Isr: 2,3,1"
+    ]
+  },
+  "declarations": [
+    "Order is guaranteed per partition, never per topic.",
+    "Consumers pull; offsets belong to the group.",
+    "Replication makes brokers disposable.",
+    "The log is the source of truth."
+  ]
+}

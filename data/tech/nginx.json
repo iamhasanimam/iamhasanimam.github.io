@@ -1,0 +1,158 @@
+{
+ "slug": "nginx",
+ "name": "NGINX",
+ "category": "Web Server / Reverse Proxy",
+ "icon": "nginx",
+ "level": "hands-on",
+ "tagline": "Event-driven edge proxy: terminates TLS, routes HTTP and balances raw TCP and UDP.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Processes",
+   "body": "The master reads config and binds ports.\nWorkers run a non-blocking event loop.\nReload starts new workers and drains the old ones.\nNo connection drops during a reload."
+  },
+  {
+   "title": "HTTP at L7",
+   "body": "server blocks match listen port and server_name.\nlocation blocks match the URI.\nproxy_pass sends to an upstream pool.\nkeepalive reuses upstream connections."
+  },
+  {
+   "title": "TLS termination",
+   "body": "ssl_certificate and ssl_certificate_key load the cert.\nssl_protocols limits to TLSv1.2 and TLSv1.3.\nA shared session cache resumes handshakes cheaply.\nBackends receive plain HTTP, or re-encrypt with proxy_ssl."
+  },
+  {
+   "title": "Client IP preservation",
+   "body": "A balancer in front sends the PROXY protocol header.\nlisten ... proxy_protocol accepts it.\nset_real_ip_from trusts the balancer address only.\nreal_ip_header proxy_protocol sets $remote_addr to the client."
+  },
+  {
+   "title": "Stream at L4",
+   "body": "The stream block proxies TCP and UDP without parsing them.\nlisten and proxy_pass pick the port and upstream.\nproxy_protocol on forwards the client address to the backend.\nUse it for PostgreSQL, SMTP or DNS."
+  }
+ ],
+ "flow": [
+  "Client resolves the name and connects to the VIP.",
+  "keepalived places the VIP on the active node.",
+  "NGINX accepts the connection and reads the PROXY header.",
+  "realip restores the client address from the trusted source.",
+  "TLS terminates; server_name and location select the route.",
+  "proxy_pass picks an upstream peer and reuses keepalive.",
+  "The stream block forwards raw TCP to non-HTTP backends.",
+  "access_log and stub_status expose the result."
+ ],
+ "deploy": {
+  "summary": "On-prem edge VM: hardened host, static address, firewall, NGINX with TLS, PROXY protocol and stream.",
+  "prerequisites": [
+   "Debian or Ubuntu VM with sudo",
+   "A DNS name and a static address",
+   "Upstream app on 127.0.0.1:9000",
+   "Optional PostgreSQL on 127.0.0.1:5432"
+  ],
+  "steps": [
+   {
+    "title": "SSH key and sshd hardening",
+    "lang": "bash",
+    "code": "ssh-keygen -t ed25519 -C \"ops@edge\"\nssh-copy-id -i ~/.ssh/id_ed25519.pub ops@EDGE_HOST\nsudo tee /etc/ssh/sshd_config.d/10-hardening.conf <<'EOF'\nPermitRootLogin no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nAllowUsers ops\nEOF\nsudo sshd -t && sudo systemctl reload ssh",
+    "note": "Replace ops and EDGE_HOST. Keep a second session open until key login works."
+   },
+   {
+    "title": "Static address and DNS",
+    "lang": "yaml",
+    "code": "# /etc/netplan/01-edge.yaml\nnetwork:\n  version: 2\n  ethernets:\n    ens18:\n      addresses: [10.0.10.11/24]\n      routes:\n        - to: default\n          via: 10.0.10.1\n      nameservers:\n        addresses: [10.0.10.2]",
+    "note": "Replace the interface and addresses, then run sudo netplan apply. Add the A record for example.test."
+   },
+   {
+    "title": "Firewall rules",
+    "lang": "bash",
+    "code": "sudo ufw default deny incoming\nsudo ufw allow from ADMIN_CIDR to any port 22 proto tcp\nsudo ufw allow 443/tcp\nsudo ufw allow from LB_ADDR to any port 8080,15432 proto tcp\nsudo ufw enable",
+    "note": "Replace ADMIN_CIDR and LB_ADDR. Backends never face the internet."
+   },
+   {
+    "title": "Install NGINX and the stream module",
+    "lang": "bash",
+    "code": "sudo apt-get update && sudo apt-get install -y nginx libnginx-mod-stream\nsudo mkdir -p /etc/nginx/certs /etc/nginx/stream.d",
+    "note": "On RHEL-family use dnf install nginx. Check nginx -V for stream support."
+   },
+   {
+    "title": "Create a lab certificate",
+    "lang": "bash",
+    "code": "sudo openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj \"/CN=example.test\" \\\n  -keyout /etc/nginx/certs/tls.key -out /etc/nginx/certs/tls.crt",
+    "note": "Lab only. Use a real CA or ACME in production."
+   },
+   {
+    "title": "Write nginx.conf",
+    "lang": "nginx",
+    "code": "# /etc/nginx/nginx.conf\nworker_processes auto;\nworker_rlimit_nofile 65535;\nevents { worker_connections 8192; }\n\nhttp {\n    upstream app {\n        zone app 64k;\n        server 127.0.0.1:9000 max_fails=3 fail_timeout=10s;\n        keepalive 32;\n    }\n    set_real_ip_from 10.0.0.0/8;\n    real_ip_header proxy_protocol;\n\n    server {\n        listen 8080 proxy_protocol;\n        server_name _;\n        location / {\n            proxy_pass http://app;\n            proxy_http_version 1.1;\n            proxy_set_header Connection \"\";\n            proxy_set_header Host $host;\n            proxy_set_header X-Real-IP $remote_addr;\n            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n            proxy_connect_timeout 3s;\n            proxy_read_timeout 30s;\n        }\n        location /nginx-health { access_log off; return 200 \"ok\\n\"; }\n    }\n    include /etc/nginx/conf.d/*.conf;\n}\n\ninclude /etc/nginx/stream.d/*.conf;\n",
+    "note": "Needs the http block in place before the TLS file below."
+   },
+   {
+    "title": "Add the TLS server",
+    "lang": "nginx",
+    "code": "# /etc/nginx/conf.d/tls.conf\nserver {\n    listen 443 ssl;\n    http2 on;\n    server_name example.test;\n    ssl_certificate     /etc/nginx/certs/tls.crt;\n    ssl_certificate_key /etc/nginx/certs/tls.key;\n    ssl_protocols TLSv1.2 TLSv1.3;\n    ssl_session_cache shared:SSL:10m;\n    location / { proxy_pass http://app; }\n}",
+    "note": "http2 on needs NGINX 1.25.1 or newer; older versions use listen 443 ssl http2."
+   },
+   {
+    "title": "Add the stream L4 proxy and start",
+    "lang": "bash",
+    "code": "sudo tee /etc/nginx/stream.d/pg.conf <<'EOF'\nstream {\n    upstream pg { server 127.0.0.1:5432; }\n    server {\n        listen 15432;\n        proxy_pass pg;\n        proxy_connect_timeout 3s;\n        proxy_timeout 1h;\n    }\n}\nEOF\nsudo mkdir -p /etc/systemd/system/nginx.service.d\nprintf '[Service]\\nLimitNOFILE=65535\\n' | sudo tee /etc/systemd/system/nginx.service.d/limits.conf\nsudo nginx -t && sudo systemctl daemon-reload && sudo systemctl enable nginx && sudo systemctl restart nginx\nsudo nginx -t && sudo systemctl reload nginx",
+    "note": "Add proxy_protocol on; only if the backend expects it. Reload drains old workers."
+   }
+  ]
+ },
+ "verify": [
+  "nginx -t reports syntax is ok and test is successful",
+  "curl -k https://example.test/nginx-health returns ok",
+  "ss -ltnp | grep nginx lists 443, 8080 and 15432",
+  "tail /var/log/nginx/access.log shows the real client IP",
+  "psql -h EDGE_HOST -p 15432 connects through the stream proxy"
+ ],
+ "pitfalls": [
+  "No proxy_http_version 1.1 and empty Connection means no upstream keepalive.",
+  "proxy_set_header in a location replaces every inherited header from the server.",
+  "proxy_pass http://app/ versus http://app rewrites the URI differently.",
+  "listen proxy_protocol without set_real_ip_from shows the balancer, not the client.",
+  "A hostname in proxy_pass resolves once at startup; use a resolver and variable.",
+  "Open source NGINX has no active health checks; failed requests mark peers down.",
+  "Low worker_connections or file limits log 'Too many open files' under load."
+ ],
+ "furtherReading": [
+  {
+   "label": "NGINX documentation",
+   "url": "https://nginx.org/en/docs/"
+  },
+  {
+   "label": "ngx_http_realip_module",
+   "url": "https://nginx.org/en/docs/http/ngx_http_realip_module.html"
+  },
+  {
+   "label": "ngx_stream_core_module",
+   "url": "https://nginx.org/en/docs/stream/ngx_stream_core_module.html"
+  },
+  {
+   "label": "ngx_http_upstream_module",
+   "url": "https://nginx.org/en/docs/http/ngx_http_upstream_module.html"
+  }
+ ],
+ "keyPoints": [
+  "NGINX listens on HTTP and stream; one master supervises event-loop workers.",
+  "The http block routes by Host and path; the stream block proxies TCP and UDP.",
+  "TLS terminates at NGINX; proxy_protocol and realip keep the client IP.",
+  "nginx -t, then reload: new workers start, old ones drain."
+ ],
+ "quickDeploy": [
+  "Harden SSH, set a static address and open ports.",
+  "Write nginx.conf with http, TLS and stream blocks.",
+  "Run nginx -t, then start under systemd.",
+  "Reload gracefully and watch stub_status and logs."
+ ],
+ "osi": [
+  "L4",
+  "L7"
+ ],
+ "osiNote": "Terminates TLS and routes by Host and path; stream proxies TCP.",
+ "production": [
+  "Set worker_rlimit_nofile and LimitNOFILE; size worker_connections for peak sockets.",
+  "Pair two nodes with keepalived VRRP for a floating VIP.",
+  "Keep configs in Git; roll back by restoring the file and reloading.",
+  "Allow TLSv1.2 and 1.3 only; protect keys with mode 600.",
+  "Scrape stub_status and alert on 5xx rate and upstream response time p95."
+ ]
+}

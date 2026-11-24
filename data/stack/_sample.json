@@ -1,0 +1,32 @@
+{
+  "title": "Observability stack",
+  "subtitle": "Signals flow from workloads through collectors into one correlated view.",
+  "tabs": [
+    {"id": "overview", "label": "Overview", "layers": []},
+    {"id": "collection", "label": "Collection layer", "layers": ["sources", "collect"]},
+    {"id": "correlation", "label": "Correlation layer", "layers": ["collect", "correlate"]}
+  ],
+  "layers": [
+    {"id": "sources", "label": "Workloads", "tone": "slate", "tiles": [
+      {"id": "k8s", "label": "Kubernetes", "icon": "kubernetes", "says": "Pods emit metrics, logs and traces", "detail": "Application and platform pods are the source of every signal; sidecars and node agents expose them."},
+      {"id": "nginx", "label": "NGINX", "icon": "nginx", "says": "Access and error logs at the edge", "detail": "The ingress tier writes structured access logs and exposes status metrics."},
+      {"id": "pg", "label": "PostgreSQL", "icon": "postgresql", "says": "Query and replication metrics", "detail": "Exporters surface connections, locks and replication lag."}
+    ]},
+    {"id": "collect", "label": "Collection layer", "tone": "orange", "tiles": [
+      {"id": "otel", "label": "OpenTelemetry", "icon": "opentelemetry", "says": "One vendor-neutral pipeline", "detail": "Collectors receive OTLP, batch, enrich and forward traces, metrics and logs."},
+      {"id": "prom", "label": "Prometheus", "icon": "prometheus", "says": "Scrapes and stores metrics", "detail": "Pull-based scraping with service discovery; rules turn raw series into alerts."},
+      {"id": "fb", "label": "Log shipper", "icon": "no-such-icon-slug", "says": "Tails container logs", "detail": "A node-level agent tails log files and forwards lines with Kubernetes metadata."}
+    ]},
+    {"id": "correlate", "label": "Correlation layer", "tone": "indigo", "tiles": [
+      {"id": "tempo", "label": "Traces", "icon": "opentelemetry", "says": "Follow one request across services", "detail": "Trace IDs link spans so latency can be pinned to a single hop."},
+      {"id": "loki", "label": "Logs", "icon": null, "says": "Search by labels, jump from a trace", "detail": "Labelled log streams are queried alongside traces using the shared trace ID."},
+      {"id": "graf", "label": "Grafana", "icon": "grafana", "says": "Dashboards and alerts in one place", "detail": "Panels from metrics, logs and traces share time ranges and variables for fast root-cause."}
+    ]}
+  ],
+  "links": [
+    {"from": "k8s", "to": "otel"}, {"from": "nginx", "to": "fb"}, {"from": "pg", "to": "prom"},
+    {"from": "otel", "to": "tempo"}, {"from": "fb", "to": "loki"}, {"from": "prom", "to": "graf"}
+  ],
+  "run": {"cmd": "npm run dev", "lines": ["> stack@1.0.0 dev", "collector listening on :4317", "scraping 42 targets", "dashboards ready on :3000"]},
+  "declarations": ["Illustrative architecture"]
+}

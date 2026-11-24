@@ -1,0 +1,419 @@
+{
+ "title": "AWS",
+ "subtitle": "Private VPC behind TLS, reached by SSM, watched by CloudWatch.",
+ "layers": [
+  {
+   "layer": 2,
+   "label": "Edge"
+  },
+  {
+   "layer": 1,
+   "label": "VPC"
+  },
+  {
+   "layer": 0,
+   "label": "Operate"
+  }
+ ],
+ "groups": [
+  {
+   "id": "pub",
+   "label": "Public subnet",
+   "boxes": [
+    "igw",
+    "nat"
+   ]
+  }
+ ],
+ "tabs": [
+  {
+   "id": "edge",
+   "label": "Edge",
+   "focus": [
+    "dns",
+    "cdn",
+    "s3",
+    "alb"
+   ]
+  },
+  {
+   "id": "net",
+   "label": "Private network",
+   "focus": [
+    "igw",
+    "nat",
+    "ec2",
+    "atlas"
+   ]
+  },
+  {
+   "id": "ops",
+   "label": "Operations",
+   "focus": [
+    "ssm",
+    "ps",
+    "cw",
+    "sns"
+   ]
+  }
+ ],
+ "boxes": [
+  {
+   "id": "dns",
+   "label": "Route 53",
+   "tech": "Amazon Route 53",
+   "icon": "amazonroute53",
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "Route 53 resolves the domain.",
+   "detail": "Alias records point the domain at CloudFront and the ALB."
+  },
+  {
+   "id": "cdn",
+   "label": "CloudFront",
+   "tech": "Amazon CloudFront",
+   "icon": "amazoncloudfront",
+   "layer": 2,
+   "col": 1,
+   "row": 0,
+   "says": "CloudFront caches at the edge.",
+   "detail": "Serves the React build over HTTPS and fetches from S3 using OAC."
+  },
+  {
+   "id": "s3",
+   "label": "S3 Bucket",
+   "tech": "Amazon S3",
+   "icon": "amazons3",
+   "layer": 2,
+   "col": 2,
+   "row": 0,
+   "says": "S3 stays private behind OAC.",
+   "detail": "Block Public Access is on; the bucket policy admits one distribution."
+  },
+  {
+   "id": "alb",
+   "label": "ALB/ACM",
+   "tech": "Application Load Balancer",
+   "icon": "amazonaws",
+   "layer": 2,
+   "col": 3,
+   "row": 0,
+   "says": "The ALB terminates TLS.",
+   "detail": "Holds the ACM certificate and forwards HTTP to healthy private targets."
+  },
+  {
+   "id": "igw",
+   "label": "IGW",
+   "tech": "Internet Gateway",
+   "icon": null,
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "The IGW opens the public subnet.",
+   "detail": "Public subnets route 0.0.0.0/0 here; only ALB and NAT live there."
+  },
+  {
+   "id": "nat",
+   "label": "NAT Gateway",
+   "tech": "NAT Gateway",
+   "icon": null,
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "NAT gives one fixed egress IP.",
+   "detail": "Private hosts reach out through it; Atlas allow-lists this address."
+  },
+  {
+   "id": "ec2",
+   "label": "Private EC2",
+   "tech": "Amazon EC2 + Docker",
+   "icon": "amazonec2",
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "EC2 runs Nginx and the app.",
+   "detail": "No public IP, no port 22. Docker Compose on bridge networks.",
+   "inner": [
+    {
+     "id": "docker",
+     "label": "Docker"
+    },
+    {
+     "id": "nginx",
+     "label": "Nginx"
+    },
+    {
+     "id": "app",
+     "label": "App"
+    },
+    {
+     "id": "ssma",
+     "label": "SSM agent"
+    }
+   ]
+  },
+  {
+   "id": "atlas",
+   "label": "MongoDB Atlas",
+   "tech": "MongoDB Atlas",
+   "icon": "mongodb",
+   "layer": 1,
+   "col": 3,
+   "row": 0,
+   "says": "Atlas trusts only the NAT IP.",
+   "detail": "The app connects over TLS from the allow-listed egress address."
+  },
+  {
+   "id": "ssm",
+   "label": "SSM Session",
+   "tech": "Systems Manager",
+   "icon": null,
+   "layer": 0,
+   "col": 0,
+   "row": 0,
+   "says": "SSM replaces SSH.",
+   "detail": "IAM-authenticated, logged shell through the agent; no inbound port."
+  },
+  {
+   "id": "ps",
+   "label": "Parameter Store",
+   "tech": "SSM Parameter Store",
+   "icon": null,
+   "layer": 0,
+   "col": 1,
+   "row": 0,
+   "says": "Parameter Store holds secrets.",
+   "detail": "SecureString values are fetched at start by the instance role."
+  },
+  {
+   "id": "cw",
+   "label": "CloudWatch",
+   "tech": "Amazon CloudWatch",
+   "icon": "amazoncloudwatch",
+   "layer": 0,
+   "col": 2,
+   "row": 0,
+   "says": "CloudWatch evaluates alarms.",
+   "detail": "Watches UnHealthyHostCount, 5XX and latency."
+  },
+  {
+   "id": "sns",
+   "label": "SNS",
+   "tech": "Amazon SNS",
+   "icon": null,
+   "layer": 0,
+   "col": 3,
+   "row": 0,
+   "says": "SNS notifies the operator.",
+   "detail": "Alarm state changes publish to a topic that emails on-call."
+  }
+ ],
+ "wires": [
+  {
+   "from": "dns",
+   "to": "cdn",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "alias"
+  },
+  {
+   "from": "dns",
+   "to": "alb",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "alias"
+  },
+  {
+   "from": "cdn",
+   "to": "s3",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "OAC"
+  },
+  {
+   "from": "alb",
+   "to": "ec2",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "HTTP"
+  },
+  {
+   "from": "igw",
+   "to": "alb",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "ec2",
+   "to": "nat",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "egress"
+  },
+  {
+   "from": "nat",
+   "to": "igw",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "outbound"
+  },
+  {
+   "from": "nat",
+   "to": "atlas",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal",
+   "label": "fixed IP"
+  },
+  {
+   "from": "ssm",
+   "to": "ec2",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal",
+   "label": "session"
+  },
+  {
+   "from": "ps",
+   "to": "ec2",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal",
+   "label": "secret"
+  },
+  {
+   "from": "ec2",
+   "to": "cw",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "metrics"
+  },
+  {
+   "from": "cw",
+   "to": "sns",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "alarm"
+  }
+ ],
+ "steps": [
+  {
+   "title": "Resolve",
+   "text": "Route 53 points the domain at CloudFront and the ALB.",
+   "boxes": [
+    "dns",
+    "cdn",
+    "alb"
+   ],
+   "wires": [
+    [
+     "dns",
+     "cdn"
+    ],
+    [
+     "dns",
+     "alb"
+    ]
+   ]
+  },
+  {
+   "title": "Serve static",
+   "text": "CloudFront reads private S3 through OAC.",
+   "boxes": [
+    "cdn",
+    "s3"
+   ],
+   "wires": [
+    [
+     "cdn",
+     "s3"
+    ]
+   ]
+  },
+  {
+   "title": "Terminate TLS",
+   "text": "The ALB decrypts with ACM and forwards to EC2.",
+   "boxes": [
+    "alb",
+    "ec2"
+   ],
+   "wires": [
+    [
+     "alb",
+     "ec2"
+    ]
+   ]
+  },
+  {
+   "title": "Egress",
+   "text": "EC2 leaves through NAT; Atlas allows only that IP.",
+   "boxes": [
+    "ec2",
+    "nat",
+    "igw",
+    "atlas"
+   ],
+   "wires": [
+    [
+     "ec2",
+     "nat"
+    ],
+    [
+     "nat",
+     "igw"
+    ],
+    [
+     "nat",
+     "atlas"
+    ]
+   ]
+  },
+  {
+   "title": "Operate",
+   "text": "SSM gives access; CloudWatch alarms reach SNS.",
+   "boxes": [
+    "ssm",
+    "ps",
+    "cw",
+    "sns"
+   ],
+   "wires": [
+    [
+     "ssm",
+     "ec2"
+    ],
+    [
+     "ps",
+     "ec2"
+    ],
+    [
+     "cw",
+     "sns"
+    ]
+   ]
+  }
+ ],
+ "declarations": [
+  "Private subnets hide servers.",
+  "NAT presents one egress IP.",
+  "Session Manager replaces SSH.",
+  "Alarms page before users notice."
+ ],
+ "run": {
+  "cmd": "aws ssm start-session --target i-0abc123",
+  "lines": [
+   "Starting session with SessionId: ops-0f3a9c",
+   "sh-5.2$ docker ps --format '{{.Names}}'"
+  ]
+ }
+}

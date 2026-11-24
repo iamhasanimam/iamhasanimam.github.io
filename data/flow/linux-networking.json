@@ -1,0 +1,367 @@
+{
+ "title": "Linux Networking",
+ "subtitle": "Kernel plumbing from NIC to services, mapped to OSI L1 to L4",
+ "layers": [
+  {
+   "layer": 0,
+   "label": "L1 Physical"
+  },
+  {
+   "layer": 1,
+   "label": "L2 Link"
+  },
+  {
+   "layer": 2,
+   "label": "L3 Network"
+  },
+  {
+   "layer": 3,
+   "label": "L4 to L7 Services"
+  }
+ ],
+ "boxes": [
+  {
+   "id": "uplink",
+   "label": "Uplink NIC",
+   "tech": "Ethernet NIC",
+   "icon": null,
+   "layer": 0,
+   "col": 1,
+   "row": 0,
+   "says": "The NIC carries traffic to the wire.",
+   "detail": "The physical interface sends translated packets out. Replies return through conntrack."
+  },
+  {
+   "id": "ns",
+   "label": "Namespace",
+   "tech": "Network namespace",
+   "icon": null,
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "Namespaces isolate network stacks.",
+   "detail": "Each owns interfaces, routes and firewall rules. Containers live inside one."
+  },
+  {
+   "id": "veth",
+   "label": "veth pair",
+   "tech": "veth",
+   "icon": null,
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "A veth pair is a cable.",
+   "detail": "Frames entering one end exit the other. One end sits in the namespace."
+  },
+  {
+   "id": "bridge",
+   "label": "Bridge",
+   "tech": "Linux bridge",
+   "icon": null,
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "Bridges switch frames by MAC.",
+   "detail": "Host-side veth ends attach to a bridge that learns MAC addresses."
+  },
+  {
+   "id": "routing",
+   "label": "Routing",
+   "tech": "Routing table",
+   "icon": null,
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "Routes pick the next hop.",
+   "detail": "The kernel matches the longest prefix; the default route covers the rest."
+  },
+  {
+   "id": "ipfwd",
+   "label": "ip_forward",
+   "tech": "ip_forward",
+   "icon": null,
+   "layer": 2,
+   "col": 1,
+   "row": 0,
+   "says": "ip_forward makes a host a router.",
+   "detail": "net.ipv4.ip_forward=1 lets packets cross interfaces. Without it transit traffic drops."
+  },
+  {
+   "id": "nat",
+   "label": "NAT",
+   "tech": "iptables NAT",
+   "icon": null,
+   "layer": 2,
+   "col": 2,
+   "row": 0,
+   "says": "iptables translates addresses.",
+   "detail": "MASQUERADE rewrites private sources. conntrack maps replies back."
+  },
+  {
+   "id": "vrrp",
+   "label": "VRRP",
+   "tech": "keepalived",
+   "icon": null,
+   "layer": 2,
+   "col": 3,
+   "row": 0,
+   "says": "VRRP floats one IP.",
+   "detail": "keepalived elects a master by priority. The backup takes over in seconds."
+  },
+  {
+   "id": "sshd",
+   "label": "sshd",
+   "tech": "OpenSSH",
+   "icon": null,
+   "layer": 3,
+   "col": 0,
+   "row": 0,
+   "says": "sshd takes keys only.",
+   "detail": "PasswordAuthentication no, PermitRootLogin no, AllowUsers. Test with sshd -t."
+  },
+  {
+   "id": "dnsmasq",
+   "label": "dnsmasq",
+   "tech": "dnsmasq",
+   "icon": null,
+   "layer": 3,
+   "col": 1,
+   "row": 0,
+   "says": "dnsmasq serves A and PTR.",
+   "detail": "Static records, forwarders and a cache on port 53."
+  },
+  {
+   "id": "haproxy",
+   "label": "HAProxy",
+   "tech": "HAProxy",
+   "icon": "haproxy",
+   "layer": 3,
+   "col": 2,
+   "row": 0,
+   "says": "HAProxy rides the floating IP.",
+   "detail": "The load balancer binds the VIP that keepalived moves between nodes.",
+   "href": "#/tech/haproxy"
+  }
+ ],
+ "wires": [
+  {
+   "from": "ns",
+   "to": "veth",
+   "label": "eth0",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "veth",
+   "to": "bridge",
+   "label": "attach",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "bridge",
+   "to": "routing",
+   "label": "egress",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "routing",
+   "to": "ipfwd",
+   "label": "forward",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "ipfwd",
+   "to": "nat",
+   "label": "POSTROUTING",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "nat",
+   "to": "uplink",
+   "label": "masquerade",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "vrrp",
+   "to": "uplink",
+   "label": "virtual IP",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "haproxy",
+   "to": "vrrp",
+   "label": "binds VIP",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "sshd",
+   "to": "routing",
+   "label": "tcp 22",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "dnsmasq",
+   "to": "routing",
+   "label": "udp 53",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  }
+ ],
+ "tabs": [
+  {
+   "id": "plumbing",
+   "label": "Plumbing",
+   "focus": [
+    "ns",
+    "veth",
+    "bridge",
+    "routing",
+    "ipfwd",
+    "nat",
+    "uplink"
+   ]
+  },
+  {
+   "id": "resilience",
+   "label": "Resilience",
+   "focus": [
+    "vrrp",
+    "haproxy",
+    "routing",
+    "uplink"
+   ]
+  },
+  {
+   "id": "onprem",
+   "label": "On-prem services",
+   "focus": [
+    "sshd",
+    "dnsmasq",
+    "routing",
+    "nat"
+   ]
+  }
+ ],
+ "steps": [
+  {
+   "title": "Isolate",
+   "text": "A namespace gives the process its own stack.",
+   "boxes": [
+    "ns",
+    "veth"
+   ],
+   "wires": [
+    [
+     "ns",
+     "veth"
+    ]
+   ]
+  },
+  {
+   "title": "Switch",
+   "text": "veth ends attach to a bridge that learns MACs.",
+   "boxes": [
+    "veth",
+    "bridge"
+   ],
+   "wires": [
+    [
+     "veth",
+     "bridge"
+    ]
+   ]
+  },
+  {
+   "title": "Route and forward",
+   "text": "ip_forward lets the kernel route between subnets.",
+   "boxes": [
+    "bridge",
+    "routing",
+    "ipfwd"
+   ],
+   "wires": [
+    [
+     "bridge",
+     "routing"
+    ],
+    [
+     "routing",
+     "ipfwd"
+    ]
+   ]
+  },
+  {
+   "title": "Translate",
+   "text": "MASQUERADE rewrites sources; conntrack returns replies.",
+   "boxes": [
+    "ipfwd",
+    "nat",
+    "uplink"
+   ],
+   "wires": [
+    [
+     "ipfwd",
+     "nat"
+    ],
+    [
+     "nat",
+     "uplink"
+    ]
+   ]
+  },
+  {
+   "title": "Float and serve",
+   "text": "VRRP moves the VIP; sshd and dnsmasq answer on it.",
+   "boxes": [
+    "vrrp",
+    "haproxy",
+    "sshd",
+    "dnsmasq"
+   ],
+   "wires": [
+    [
+     "haproxy",
+     "vrrp"
+    ],
+    [
+     "sshd",
+     "routing"
+    ],
+    [
+     "dnsmasq",
+     "routing"
+    ]
+   ]
+  }
+ ],
+ "declarations": [
+  "A veth pair is a cable.",
+  "Bridges switch frames by MAC.",
+  "iptables translates addresses.",
+  "VRRP floats one IP."
+ ],
+ "run": {
+  "cmd": "ip netns exec a1 ip route get 10.0.2.11",
+  "lines": [
+   "10.0.2.11 via 10.0.1.1 dev eth0 src 10.0.1.11"
+  ]
+ }
+}

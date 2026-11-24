@@ -1,0 +1,426 @@
+{
+  "projects": [
+    {
+      "slug": "aws-private-mern",
+      "title": "Private MERN stack on AWS",
+      "category": "Cloud",
+      "kind": "Personal project",
+      "summary": "Multi-AZ VPC with a private Docker host behind an ALB.",
+      "icons": [
+        "amazonaws",
+        "docker",
+        "nginx",
+        "mongodb",
+        "react"
+      ],
+      "bullets": [
+        "Designed a multi-AZ VPC with public and private subnets, IGW and NAT",
+        "Deployed Docker Compose with Nginx fronting React and Node containers on bridge networks",
+        "Secured a private EC2 with no public IP, reached through SSM Session Manager",
+        "Configured ALB, ACM TLS and Route 53, with X-Request-ID log correlation"
+      ],
+      "repo": "https://github.com/iamhasanimam/mern-docker-implementation",
+      "image": "https://raw.githubusercontent.com/iamhasanimam/mern-docker-implementation/main/Mern-Docker-Architecture.png",
+      "imageAlt": "AWS architecture: Route 53, ALB, private EC2 running Nginx, React and Node containers, MongoDB Atlas, CloudWatch",
+      "stack": [
+        "AWS VPC",
+        "ALB",
+        "Docker Compose",
+        "Nginx",
+        "MongoDB Atlas",
+        "SSM"
+      ],
+      "year": "2025",
+      "status": "shipped"
+    },
+    {
+      "slug": "aws-observability",
+      "title": "CloudWatch alarms and secrets",
+      "category": "Observability",
+      "kind": "Personal project",
+      "summary": "Logs, metrics and alarms plus parameter-based secrets for the AWS stack.",
+      "icons": [
+        "amazonaws",
+        "nginx",
+        "docker",
+        "gnubash",
+        "mongodb"
+      ],
+      "bullets": [
+        "Configured CloudWatch logs for Nginx and backend containers",
+        "Built alarms on disk, memory and ALB health and latency, notified through SNS",
+        "Secured secrets in SSM Parameter Store, loaded by a deployment script",
+        "Secured MongoDB Atlas by allow-listing only the NAT gateway IP"
+      ],
+      "repo": "https://github.com/iamhasanimam/mern-docker-implementation",
+      "image": null,
+      "imageAlt": null,
+      "stack": [
+        "CloudWatch",
+        "SNS",
+        "SSM Parameter Store",
+        "Bash",
+        "MongoDB Atlas"
+      ],
+      "year": "2025",
+      "status": "shipped"
+    },
+    {
+      "slug": "react-s3-cloudfront",
+      "title": "React on S3 and CloudFront",
+      "category": "Cloud",
+      "kind": "Personal project",
+      "summary": "Static React hosting from a private bucket behind CloudFront.",
+      "icons": [
+        "amazonaws",
+        "react",
+        "nginx",
+        "gnubash",
+        "linux"
+      ],
+      "bullets": [
+        "Deployed the React build to a private S3 bucket",
+        "Secured bucket access with CloudFront origin access control",
+        "Configured ACM TLS on the CloudFront distribution",
+        "Documented a PM2, Nginx and Let's Encrypt variant for a single host"
+      ],
+      "repo": "https://github.com/iamhasanimam/mern-docker-implementation",
+      "image": null,
+      "imageAlt": null,
+      "stack": [
+        "S3",
+        "CloudFront",
+        "OAC",
+        "ACM",
+        "PM2",
+        "Nginx"
+      ],
+      "year": "2025",
+      "status": "shipped"
+    },
+    {
+      "slug": "esxi-rds-lab",
+      "title": "ESXi remote desktop lab",
+      "category": "Virtualization",
+      "kind": "Personal project",
+      "summary": "Seven-server RDS and DaaS on bare-metal ESXi 8.0.",
+      "icons": [
+        "vmware",
+        "windows",
+        "powershell",
+        "linux",
+        "gnubash"
+      ],
+      "bullets": [
+        "Built ESXi 8.0 on a Hetzner bare-metal server",
+        "Deployed seven Windows Server 2022 VMs covering AD, RDS roles and a jumpbox",
+        "Configured a dual-NIC RD Gateway on 443 with NAT",
+        "Secured the lab with a public vSwitch0 and a private vSwitch1 without uplink"
+      ],
+      "repo": "https://github.com/iamhasanimam/Infrastructure-Management",
+      "image": "https://raw.githubusercontent.com/iamhasanimam/Infrastructure-Management/main/Vmware%20Esxi%20Setup/screenshots/Project%20Architecture.png",
+      "imageAlt": "ESXi lab diagram: RD Gateway with two NICs, session hosts and domain controller on public and internal vSwitches",
+      "stack": [
+        "ESXi 8.0",
+        "Windows Server 2022",
+        "AD DS",
+        "RDS",
+        "vSwitch",
+        "Hetzner"
+      ],
+      "year": "2025",
+      "status": "shipped"
+    },
+    {
+      "slug": "ad-migration",
+      "title": "Domain controller migration lab",
+      "category": "Virtualization",
+      "kind": "Personal project",
+      "summary": "Moved AD, DNS and DHCP from DC01 to DC02.",
+      "icons": [
+        "windows",
+        "powershell",
+        "vmware",
+        "linux",
+        "gnubash"
+      ],
+      "bullets": [
+        "Migrated all five FSMO roles from DC01 to DC02 with PowerShell",
+        "Configured adprep forestprep and domainprep before promoting the new controller",
+        "Configured repadmin and dcdiag replication checks before each role move",
+        "Migrated DNS and DHCP services to the new server"
+      ],
+      "repo": "https://github.com/iamhasanimam/Infrastructure-Management/tree/main/Vmware%20Esxi%20Setup/Migration",
+      "image": null,
+      "imageAlt": null,
+      "stack": [
+        "Active Directory",
+        "PowerShell",
+        "repadmin",
+        "dcdiag",
+        "DNS",
+        "DHCP"
+      ],
+      "year": "2025",
+      "status": "shipped"
+    },
+    {
+      "slug": "ec2-microservices",
+      "title": "Microservices on EC2 with CI/CD",
+      "category": "CI/CD",
+      "kind": "Personal project",
+      "summary": "Three services on Docker and EC2 behind a path-routing ALB.",
+      "icons": [
+        "amazonaws",
+        "docker",
+        "githubactions",
+        "postgresql",
+        "mongodb"
+      ],
+      "bullets": [
+        "Designed user, product and order services on Docker and Ubuntu EC2",
+        "Documented ALB path-based routing with Route 53 and ACM TLS",
+        "Documented a GitHub Actions deploy workflow triggered on push to main",
+        "Documented SSM Parameter Store secrets for RDS and MongoDB Atlas credentials"
+      ],
+      "repo": "https://github.com/iamhasanimam/AWS",
+      "image": null,
+      "imageAlt": null,
+      "stack": [
+        "EC2",
+        "ALB",
+        "GitHub Actions",
+        "PostgreSQL",
+        "MongoDB",
+        "Docker"
+      ],
+      "year": "2025",
+      "status": "shipped"
+    },
+    {
+      "slug": "istio-traffic",
+      "title": "Istio traffic management",
+      "category": "Kubernetes & Mesh",
+      "kind": "Production",
+      "summary": "Canary, blue-green and percentage routing on a large public-sector platform.",
+      "icons": [
+        "istio",
+        "kubernetes",
+        "prometheus",
+        "grafana",
+        "opentelemetry"
+      ],
+      "bullets": [
+        "Implemented VirtualService and DestinationRule for canary and blue-green releases",
+        "Configured percentage-based traffic splitting between service versions",
+        "Tuned ringHash load balancing for session affinity per frontend pod",
+        "Secured workloads with AuthorizationPolicy and mTLS"
+      ],
+      "repo": null,
+      "image": null,
+      "imageAlt": null,
+      "stack": [
+        "Istio",
+        "VirtualService",
+        "DestinationRule",
+        "ringHash",
+        "mTLS"
+      ],
+      "year": "2025-2026",
+      "status": "shipped"
+    },
+    {
+      "slug": "multicluster-mesh",
+      "title": "Multi-cluster Kubernetes with a service mesh",
+      "category": "Kubernetes & Mesh",
+      "kind": "Production",
+      "summary": "Two clusters joined in one Istio mesh. Blog coming soon.",
+      "icons": [
+        "istio",
+        "kubernetes",
+        "linux",
+        "prometheus",
+        "grafana"
+      ],
+      "bullets": [
+        "Designed an east-west gateway exposed through NodePort",
+        "Configured an AUTO_PASSTHROUGH pod in the receiving cluster",
+        "Deployed sidecar injection through annotation for the added cluster",
+        "Documented cross-cluster service connectivity in a coming blog"
+      ],
+      "repo": null,
+      "image": null,
+      "imageAlt": null,
+      "stack": [
+        "Istio",
+        "Kubernetes",
+        "East-west gateway",
+        "NodePort",
+        "AUTO_PASSTHROUGH"
+      ],
+      "year": "2026",
+      "status": "coming soon"
+    },
+    {
+      "slug": "cluster-hardening",
+      "title": "Kubernetes policy and autoscaling",
+      "category": "Kubernetes & Mesh",
+      "kind": "Production",
+      "summary": "Network isolation, autoscaling and highly available identity.",
+      "icons": [
+        "kubernetes",
+        "keycloak",
+        "linux",
+        "python",
+        "gnubash"
+      ],
+      "bullets": [
+        "Secured namespaces with NetworkPolicy and AuthorizationPolicy",
+        "Built an HPA rule ConfigMap generator",
+        "Configured Keycloak high availability with Infinispan",
+        "Documented the platform in a 44-page readiness and rollback runbook"
+      ],
+      "repo": null,
+      "image": null,
+      "imageAlt": null,
+      "stack": [
+        "NetworkPolicy",
+        "HPA",
+        "Keycloak",
+        "Infinispan",
+        "RBAC"
+      ],
+      "year": "2025-2026",
+      "status": "shipped"
+    },
+    {
+      "slug": "jenkins-argocd-kong",
+      "title": "Jenkins, ArgoCD and Kong pipelines",
+      "category": "CI/CD",
+      "kind": "Production",
+      "summary": "14-stage delivery pipeline and guarded API gateway changes.",
+      "icons": [
+        "jenkins",
+        "argo",
+        "kong",
+        "kubernetes",
+        "gnubash"
+      ],
+      "bullets": [
+        "Built a 14-stage Jenkins and ArgoCD pipeline for GitOps delivery",
+        "Automated Kong configuration with decK and diff-guard Jenkins pipelines",
+        "Implemented diff by default, stop on deletions, backup before sync",
+        "Deployed smoke tests after every sync"
+      ],
+      "repo": null,
+      "image": null,
+      "imageAlt": null,
+      "stack": [
+        "Jenkins",
+        "ArgoCD",
+        "Kong",
+        "decK",
+        "Kustomize"
+      ],
+      "year": "2025-2026",
+      "status": "shipped"
+    },
+    {
+      "slug": "observability-stack",
+      "title": "Metrics, logs and traces",
+      "category": "Observability",
+      "kind": "Production",
+      "summary": "Node, service and trace telemetry in Prometheus, Loki, Tempo and Grafana.",
+      "icons": [
+        "prometheus",
+        "grafana",
+        "loki",
+        "opentelemetry",
+        "kubernetes"
+      ],
+      "bullets": [
+        "Deployed node_exporter for host metrics",
+        "Configured Spring Boot Actuator metrics scraped through ServiceMonitor",
+        "Implemented OpenTelemetry pushing logs to Loki and traces to Tempo",
+        "Built Grafana dashboards around the four golden signals"
+      ],
+      "repo": null,
+      "image": null,
+      "imageAlt": null,
+      "stack": [
+        "Prometheus",
+        "Grafana",
+        "Loki",
+        "Tempo",
+        "OpenTelemetry",
+        "node_exporter"
+      ],
+      "year": "2025-2026",
+      "status": "shipped"
+    },
+    {
+      "slug": "edge-haproxy-nginx",
+      "title": "HAProxy and NGINX edge",
+      "category": "Edge & Networking",
+      "kind": "Production",
+      "summary": "Redundant edge preserving the true client IP.",
+      "icons": [
+        "haproxy",
+        "nginx",
+        "linux",
+        "kong",
+        "kubernetes"
+      ],
+      "bullets": [
+        "Configured HAProxy and NGINX edge layers with VRRP failover",
+        "Implemented PROXY protocol for client source IP preservation",
+        "Tuned HAProxy upstreams and NGINX http and stream blocks",
+        "Documented the traffic path for troubleshooting"
+      ],
+      "repo": null,
+      "image": null,
+      "imageAlt": null,
+      "stack": [
+        "HAProxy",
+        "NGINX",
+        "VRRP",
+        "PROXY protocol",
+        "keepalived"
+      ],
+      "year": "2025-2026",
+      "status": "shipped"
+    }
+  ],
+  "studied": [
+    {
+      "title": "Kubernetes Networking",
+      "repo": "https://github.com/iamhasanimam/Kubernetes-Networking",
+      "note": "Studied / forked for learning"
+    },
+    {
+      "title": "Jenkins Zero To Hero",
+      "repo": "https://github.com/iamhasanimam/Jenkins-Zero-To-Hero",
+      "note": "Studied / forked for learning"
+    },
+    {
+      "title": "GitHub Actions Zero to Hero",
+      "repo": "https://github.com/iamhasanimam/GitHub-Actions-Zero-to-Hero",
+      "note": "Studied / forked for learning"
+    },
+    {
+      "title": "OpenTelemetry Astronomy Shop",
+      "repo": "https://github.com/iamhasanimam/ultimate-devops-project-demo",
+      "note": "Studied / forked for learning"
+    },
+    {
+      "title": "Online Boutique microservices demo",
+      "repo": "https://github.com/iamhasanimam/microservices-demo",
+      "note": "Studied / forked for learning"
+    },
+    {
+      "title": "Terraform basics",
+      "repo": "https://github.com/iamhasanimam/learn_terarform_basics",
+      "note": "Studied / forked for learning"
+    }
+  ]
+}

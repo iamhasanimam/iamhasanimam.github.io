@@ -1,0 +1,236 @@
+{
+  "title": "Istio Service Mesh Traffic Flow",
+  "summary": "istiod pushes config to Envoy sidecars, which enforce mTLS and traffic rules defined by VirtualService and DestinationRule objects.",
+  "nodes": [
+    {
+      "id": "ext",
+      "label": "External Client",
+      "sub": "Outside the mesh",
+      "kind": "client",
+      "icon": null,
+      "detail": "Sends requests to the mesh edge over HTTPS."
+    },
+    {
+      "id": "gateway",
+      "label": "Ingress Gateway",
+      "sub": "Envoy at the edge",
+      "kind": "proxy",
+      "icon": "istio",
+      "detail": "A standalone Envoy that accepts external traffic. Its listeners are configured by Gateway and VirtualService resources.",
+      "group": "Mesh edge"
+    },
+    {
+      "id": "istiod",
+      "label": "istiod",
+      "sub": "Control plane",
+      "kind": "control",
+      "icon": "istio",
+      "detail": "Converts Istio resources into Envoy config via xDS, and acts as a certificate authority issuing workload certificates.",
+      "group": "Control plane"
+    },
+    {
+      "id": "vs",
+      "label": "VirtualService",
+      "sub": "Routing rules",
+      "kind": "control",
+      "icon": "istio",
+      "detail": "Defines how requests are routed: match on headers or paths, split traffic by weight, add retries, timeouts or fault injection."
+    },
+    {
+      "id": "dr",
+      "label": "DestinationRule",
+      "sub": "Subsets and policy",
+      "kind": "control",
+      "icon": "istio",
+      "detail": "Defines subsets by pod label, load balancing policy, connection pools and outlier detection for a destination."
+    },
+    {
+      "id": "envoy_a",
+      "label": "Sidecar Envoy A",
+      "sub": "Beside frontend pod",
+      "kind": "proxy",
+      "icon": "envoyproxy",
+      "detail": "Intercepts all pod traffic, originates mTLS with its workload certificate and applies routing rules.",
+      "group": "Service A pod"
+    },
+    {
+      "id": "app_a",
+      "label": "Frontend App",
+      "sub": "Service A",
+      "kind": "service",
+      "icon": null,
+      "detail": "Application container unaware of mTLS and routing; it talks plain HTTP to localhost.",
+      "group": "Service A pod"
+    },
+    {
+      "id": "envoy_b",
+      "label": "Sidecar Envoy B",
+      "sub": "Beside backend pod",
+      "kind": "proxy",
+      "icon": "envoyproxy",
+      "detail": "Terminates mTLS, verifies caller identity, enforces authorization policy and emits metrics and traces.",
+      "group": "Service B pod"
+    },
+    {
+      "id": "app_b",
+      "label": "Backend v1/v2",
+      "sub": "Service B subsets",
+      "kind": "service",
+      "icon": null,
+      "detail": "Backend pods with version labels. Subsets let VirtualService send a percentage of traffic to v2 for canaries.",
+      "group": "Service B pod"
+    }
+  ],
+  "links": [
+    {
+      "from": "ext",
+      "to": "gateway",
+      "label": "HTTPS",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "gateway",
+      "to": "envoy_a",
+      "label": "route",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "envoy_a",
+      "to": "app_a",
+      "label": "localhost",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "envoy_a",
+      "to": "envoy_b",
+      "label": "mTLS",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "envoy_b",
+      "to": "app_b",
+      "label": "plain HTTP",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "vs",
+      "to": "istiod",
+      "label": "applied",
+      "style": "dashed",
+      "flow": false
+    },
+    {
+      "from": "dr",
+      "to": "istiod",
+      "label": "applied",
+      "style": "dashed",
+      "flow": false
+    },
+    {
+      "from": "istiod",
+      "to": "envoy_a",
+      "label": "xDS config",
+      "style": "dashed",
+      "flow": true
+    },
+    {
+      "from": "istiod",
+      "to": "envoy_b",
+      "label": "xDS config",
+      "style": "dashed",
+      "flow": true
+    }
+  ],
+  "steps": [
+    {
+      "title": "Rules become config",
+      "text": "VirtualService and DestinationRule objects are read by istiod and translated to Envoy configuration.",
+      "nodes": [
+        "vs",
+        "istiod",
+        "dr"
+      ],
+      "links": [
+        [
+          "vs",
+          "istiod"
+        ],
+        [
+          "dr",
+          "istiod"
+        ]
+      ]
+    },
+    {
+      "title": "istiod pushes xDS",
+      "text": "istiod streams routes, clusters and certificates to every sidecar and gateway.",
+      "nodes": [
+        "istiod",
+        "envoy_a",
+        "envoy_b"
+      ],
+      "links": [
+        [
+          "istiod",
+          "envoy_a"
+        ],
+        [
+          "istiod",
+          "envoy_b"
+        ]
+      ]
+    },
+    {
+      "title": "Gateway admits traffic",
+      "text": "The ingress gateway accepts external HTTPS and routes per VirtualService.",
+      "nodes": [
+        "ext",
+        "gateway",
+        "envoy_a"
+      ],
+      "links": [
+        [
+          "ext",
+          "gateway"
+        ],
+        [
+          "gateway",
+          "envoy_a"
+        ]
+      ]
+    },
+    {
+      "title": "Sidecars secure the hop",
+      "text": "Envoy A opens an mTLS connection to Envoy B; both verify SPIFFE identities.",
+      "nodes": [
+        "envoy_a",
+        "envoy_b"
+      ],
+      "links": [
+        [
+          "envoy_a",
+          "envoy_b"
+        ]
+      ]
+    },
+    {
+      "title": "Subsets split traffic",
+      "text": "DestinationRule subsets and weights decide whether the request reaches v1 or v2.",
+      "nodes": [
+        "envoy_b",
+        "app_b"
+      ],
+      "links": [
+        [
+          "envoy_b",
+          "app_b"
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,252 @@
+{
+  "title": "Kong API Gateway Request Path",
+  "summary": "Requests pass through Kong's plugin pipeline before reaching upstream services; configuration comes from PostgreSQL or declarative files applied by decK in CI.",
+  "nodes": [
+    {
+      "id": "client",
+      "label": "API Client",
+      "sub": "Browser, mobile or service",
+      "kind": "client",
+      "icon": null,
+      "detail": "Sends HTTPS requests to the gateway with a token or API key. It never talks to upstream services directly."
+    },
+    {
+      "id": "kong_dp",
+      "label": "Kong Data Plane",
+      "sub": "Nginx/OpenResty proxy",
+      "kind": "proxy",
+      "icon": "kong",
+      "detail": "Proxies traffic using routes and services held in memory. Runs each request through the plugin pipeline: authentication, rate limiting, transformation, logging.",
+      "group": "Data plane"
+    },
+    {
+      "id": "plugins",
+      "label": "Plugin Pipeline",
+      "sub": "Auth, rate limit, transform",
+      "kind": "process",
+      "icon": "kong",
+      "detail": "Plugins run in phases (access, header_filter, log). Typical order: authentication, rate limiting, request transformer, then logging on the response path.",
+      "group": "Data plane"
+    },
+    {
+      "id": "upstream_a",
+      "label": "Upstream Service A",
+      "sub": "Backend API",
+      "kind": "service",
+      "icon": null,
+      "detail": "A backend service registered as a Kong Service. Kong load balances across its targets and runs active or passive health checks.",
+      "group": "Upstreams"
+    },
+    {
+      "id": "upstream_b",
+      "label": "Upstream Service B",
+      "sub": "Backend API",
+      "kind": "service",
+      "icon": null,
+      "detail": "Another backend behind a separate route. Different routes can apply different plugin sets.",
+      "group": "Upstreams"
+    },
+    {
+      "id": "admin_api",
+      "label": "Admin API",
+      "sub": "Config endpoint",
+      "kind": "control",
+      "icon": "kong",
+      "detail": "REST API for managing services, routes, consumers and plugins. Should be restricted to internal networks and protected by RBAC.",
+      "group": "Control plane"
+    },
+    {
+      "id": "postgres",
+      "label": "PostgreSQL",
+      "sub": "Config store",
+      "kind": "store",
+      "icon": "postgresql",
+      "detail": "Holds gateway configuration in database mode. Data planes cache it locally so request handling does not query the database.",
+      "group": "Control plane"
+    },
+    {
+      "id": "deck",
+      "label": "deck",
+      "sub": "Declarative sync tool",
+      "kind": "control",
+      "icon": null,
+      "detail": "CLI that diffs and syncs a declarative YAML file against Kong. Run from CI so gateway config is reviewed and versioned like code.",
+      "group": "Config as code"
+    },
+    {
+      "id": "git_ci",
+      "label": "Git + CI",
+      "sub": "Versioned YAML",
+      "kind": "process",
+      "icon": "git",
+      "detail": "Gateway configuration lives in Git. A pipeline validates the file and runs decK sync after merge.",
+      "group": "Config as code"
+    }
+  ],
+  "links": [
+    {
+      "from": "client",
+      "to": "kong_dp",
+      "label": "HTTPS",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "kong_dp",
+      "to": "plugins",
+      "label": "phases",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "plugins",
+      "to": "upstream_a",
+      "label": "route /a",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "plugins",
+      "to": "upstream_b",
+      "label": "route /b",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "git_ci",
+      "to": "deck",
+      "label": "YAML",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "deck",
+      "to": "admin_api",
+      "label": "sync",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "admin_api",
+      "to": "postgres",
+      "label": "write",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "postgres",
+      "to": "kong_dp",
+      "label": "config cache",
+      "style": "dashed",
+      "flow": true
+    },
+    {
+      "from": "admin_api",
+      "to": "kong_dp",
+      "label": "push config",
+      "style": "dashed",
+      "flow": true
+    }
+  ],
+  "steps": [
+    {
+      "title": "Client sends request",
+      "text": "The client calls a public hostname; Kong matches it to a route by host, path and method.",
+      "nodes": [
+        "client",
+        "kong_dp"
+      ],
+      "links": [
+        [
+          "client",
+          "kong_dp"
+        ]
+      ]
+    },
+    {
+      "title": "Plugins run in order",
+      "text": "Authentication and rate-limit plugins execute first; a failure returns 401 or 429 without touching the upstream.",
+      "nodes": [
+        "kong_dp",
+        "plugins"
+      ],
+      "links": [
+        [
+          "kong_dp",
+          "plugins"
+        ]
+      ]
+    },
+    {
+      "title": "Proxy to upstream",
+      "text": "Kong selects a healthy target using load balancing and forwards the request to the matching service.",
+      "nodes": [
+        "plugins",
+        "upstream_a",
+        "upstream_b"
+      ],
+      "links": [
+        [
+          "plugins",
+          "upstream_a"
+        ],
+        [
+          "plugins",
+          "upstream_b"
+        ]
+      ]
+    },
+    {
+      "title": "Config reviewed in Git",
+      "text": "Route and plugin changes are committed as declarative YAML and validated by the CI pipeline.",
+      "nodes": [
+        "git_ci",
+        "deck"
+      ],
+      "links": [
+        [
+          "git_ci",
+          "deck"
+        ]
+      ]
+    },
+    {
+      "title": "decK syncs the gateway",
+      "text": "decK diffs the file against live state and applies changes through the Admin API into the datastore.",
+      "nodes": [
+        "deck",
+        "admin_api",
+        "postgres"
+      ],
+      "links": [
+        [
+          "deck",
+          "admin_api"
+        ],
+        [
+          "admin_api",
+          "postgres"
+        ]
+      ]
+    },
+    {
+      "title": "Data planes pick up config",
+      "text": "Data planes receive updated configuration and apply it without dropping connections.",
+      "nodes": [
+        "postgres",
+        "kong_dp",
+        "admin_api"
+      ],
+      "links": [
+        [
+          "postgres",
+          "kong_dp"
+        ],
+        [
+          "admin_api",
+          "kong_dp"
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,207 @@
+{
+  "posts": [
+    {
+      "title": "What does a DevOps engineer actually do?",
+      "summary": "Three levels explained from the ground up. Linux: two ports, CORS enforced by the browser, a reverse proxy for one origin. Docker: bridge networks, name resolution, veth pairs as cables. Kubernetes: a Service as a stable virtual IP and DNS name for changing pod IPs. Then lean VPC and multi-AZ design, and the path DNS, L4 load balancer, API gateway (Kong, Gateway API, AWS API Gateway), Service, Pod, database. Start of a 90-day hands-on series.",
+      "tags": [
+        "DevOps",
+        "Kubernetes",
+        "Docker",
+        "Linux",
+        "APIGateway",
+        "Kong"
+      ],
+      "date": "2026-11",
+      "url": null,
+      "status": "published",
+      "readMinutes": 6,
+      "source": "linkedin",
+      "impressions": 8382
+    },
+    {
+      "title": "End-to-end MERN deployment on AWS: Docker bridge networks, ACM on ALB, Route 53, private subnets",
+      "summary": "Compose with an Nginx reverse proxy and request-level log correlation; a VPC with public and private subnets, IGW and NAT; a private EC2 with no public IP reached through SSM Session Manager; HTTPS on the ALB via ACM; a Route 53 domain; MongoDB Atlas restricted to the NAT public IP; secrets in SSM Parameter Store through a deploy script; CloudWatch logs and metrics. Path: Route 53, ALB, Nginx, containers, MongoDB Atlas.",
+      "tags": [
+        "AWS",
+        "Docker",
+        "Nginx",
+        "Route53"
+      ],
+      "date": "2025-11",
+      "url": "https://lnkd.in/gv8UFzvi",
+      "status": "published",
+      "readMinutes": 8,
+      "source": "linkedin",
+      "demo": "https://app.lauv.in",
+      "note": "repo link; verify short link"
+    },
+    {
+      "title": "How to deploy a MERN stack application on AWS",
+      "summary": "A three-tier build: VPC, subnets, IGW and Route 53; Node and Express on EC2 with PM2 behind Nginx and Let's Encrypt TLS; React on a private S3 bucket served by CloudFront with OAC and ACM; MongoDB Atlas with an IP allow list; CloudWatch alarms and AMI snapshots.",
+      "tags": [
+        "AWS",
+        "CloudFront",
+        "S3",
+        "TLS"
+      ],
+      "date": "2025-06",
+      "url": "https://lnkd.in/gDGzNn8T",
+      "status": "published",
+      "readMinutes": 7,
+      "source": "linkedin"
+    },
+    {
+      "title": "Server migration journey: DC01 to DC02",
+      "summary": "A VMware ESXi lab migration of AD DS, DNS and DHCP: promote an additional domain controller, check the schema version (88), run adprep forestprep and domainprep, verify replication with repadmin and dcdiag, transfer the five FSMO roles with PowerShell, export and import DNS and DHCP, then decommission the old controller. Written up on GitHub in iamhasanimam/Infrastructure-Management.",
+      "tags": [
+        "ActiveDirectory",
+        "VMware",
+        "FSMO",
+        "PowerShell"
+      ],
+      "date": "2025-05",
+      "url": "https://lnkd.in/g3SwsTG3",
+      "status": "published",
+      "readMinutes": 9,
+      "source": "linkedin"
+    },
+    {
+      "title": "Enterprise DaaS architecture on VMware ESXi: fully functional and secure",
+      "summary": "A seven-server Remote Desktop Services build on ESXi 8.0 and Windows Server 2022: AD, DNS and DHCP; an RD Gateway with two NICs over HTTPS 443 with NAT; a Connection Broker; two session hosts; a file server restricted to the RDS hosts; a dedicated jumpbox; and separate public and private vSwitches.",
+      "tags": [
+        "VMware",
+        "RDS",
+        "Networking"
+      ],
+      "date": "2025-04",
+      "url": "https://lnkd.in/gBtzPt2n",
+      "status": "published",
+      "readMinutes": 8,
+      "source": "linkedin"
+    },
+    {
+      "title": "From bare metal to enterprise-ready: full VMware ESXi infrastructure build",
+      "summary": "ESXi 8.0 on a Hetzner bare-metal server, a dual-NIC RD Gateway bridging WAN and LAN, vSwitch0 as the public side and vSwitch1 as the internal side, and no external NICs on the internal servers.",
+      "tags": [
+        "VMware",
+        "Hetzner",
+        "Zero trust"
+      ],
+      "date": "2025-03",
+      "url": "https://lnkd.in/gEdfnGQM",
+      "status": "published",
+      "readMinutes": 6,
+      "source": "linkedin"
+    },
+    {
+      "title": "Where did the client IP go between NGINX, HAProxy and the app?",
+      "summary": "A lab video on source IP preservation across proxy tiers: X-Forwarded-For versus PROXY protocol.",
+      "tags": [
+        "NGINX",
+        "HAProxy",
+        "Networking"
+      ],
+      "date": "2026-12",
+      "url": null,
+      "status": "draft",
+      "readMinutes": 5,
+      "source": "devops-lab"
+    },
+    {
+      "title": "How do you stop a Kong deploy from deleting production routes?",
+      "summary": "A lab video on decK diff guards: review the diff in the pipeline before anything is applied.",
+      "tags": [
+        "Kong",
+        "decK",
+        "CI/CD"
+      ],
+      "date": "2026-12",
+      "url": null,
+      "status": "draft",
+      "readMinutes": 6,
+      "source": "devops-lab"
+    },
+    {
+      "title": "Why does a JVM get OOMKilled with a heap that looks small enough?",
+      "summary": "A lab video on container memory limits, off-heap memory and how a Keycloak JVM is sized.",
+      "tags": [
+        "Keycloak",
+        "Kubernetes",
+        "JVM"
+      ],
+      "date": "2026-12",
+      "url": null,
+      "status": "draft",
+      "readMinutes": 6,
+      "source": "devops-lab"
+    },
+    {
+      "title": "Why does one slow SMS provider hang every login?",
+      "summary": "A lab video on timeouts, retries and circuit breakers between the gateway and an identity flow.",
+      "tags": [
+        "Resilience",
+        "Kong",
+        "Keycloak"
+      ],
+      "date": "2026-12",
+      "url": null,
+      "status": "draft",
+      "readMinutes": 6,
+      "source": "devops-lab"
+    },
+    {
+      "title": "What moved p95 under load?",
+      "summary": "A lab video using k6 to separate real latency changes from noise.",
+      "tags": [
+        "k6",
+        "Performance",
+        "Observability"
+      ],
+      "date": "2026-12",
+      "url": null,
+      "status": "draft",
+      "readMinutes": 6,
+      "source": "devops-lab"
+    },
+    {
+      "title": "One request through NGINX, HAProxy and Kong, seen with tcpdump",
+      "summary": "A lab video following a single request hop by hop on the wire.",
+      "tags": [
+        "tcpdump",
+        "Networking"
+      ],
+      "date": "2026-12",
+      "url": null,
+      "status": "draft",
+      "readMinutes": 7,
+      "source": "devops-lab"
+    },
+    {
+      "title": "Why does a Redis failover break logins?",
+      "summary": "A lab video on Redis cluster failover and what sessions and clients do when the master moves.",
+      "tags": [
+        "Redis",
+        "Reliability"
+      ],
+      "date": "2026-12",
+      "url": null,
+      "status": "draft",
+      "readMinutes": 6,
+      "source": "devops-lab"
+    },
+    {
+      "title": "Two NGINX nodes sharing one IP with keepalived",
+      "summary": "A lab video on VRRP failover for a proxy tier.",
+      "tags": [
+        "keepalived",
+        "VRRP",
+        "NGINX"
+      ],
+      "date": "2026-12",
+      "url": null,
+      "status": "draft",
+      "readMinutes": 6,
+      "source": "devops-lab"
+    }
+  ]
+}

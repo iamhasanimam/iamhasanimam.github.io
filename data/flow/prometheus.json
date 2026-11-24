@@ -1,0 +1,396 @@
+{
+  "title": "Prometheus",
+  "subtitle": "Pull-based metrics, rules and alerting",
+  "layers": [
+    {
+      "layer": 0,
+      "label": "Targets"
+    },
+    {
+      "layer": 1,
+      "label": "Discovery"
+    },
+    {
+      "layer": 2,
+      "label": "Prometheus"
+    },
+    {
+      "layer": 3,
+      "label": "Consumers"
+    },
+    {
+      "layer": 4,
+      "label": "Outputs"
+    }
+  ],
+  "tabs": [
+    {
+      "id": "collect",
+      "label": "Collect",
+      "focus": [
+        "nodeexp",
+        "actuator",
+        "servicemon",
+        "otel",
+        "prom"
+      ]
+    },
+    {
+      "id": "query",
+      "label": "Query and store",
+      "focus": [
+        "prom",
+        "grafana",
+        "thanos",
+        "objstore"
+      ]
+    },
+    {
+      "id": "alert",
+      "label": "Rules and alerts",
+      "focus": [
+        "prom",
+        "alertmgr",
+        "notify"
+      ]
+    }
+  ],
+  "boxes": [
+    {
+      "id": "nodeexp",
+      "label": "node_exporter",
+      "tech": "node_exporter",
+      "icon": "prometheus",
+      "layer": 0,
+      "col": 0,
+      "row": 0,
+      "says": "node_exporter exposes host CPU, memory, disk, network.",
+      "detail": "Reads /proc and /sys, serves text on :9100/metrics. Shows node saturation under every workload."
+    },
+    {
+      "id": "actuator",
+      "label": "Spring Actuator",
+      "tech": "Spring Boot Actuator",
+      "icon": "springboot",
+      "layer": 0,
+      "col": 2,
+      "row": 0,
+      "says": "Actuator serves JVM and HTTP metrics.",
+      "detail": "Micrometer publishes request histograms, heap and GC per endpoint and status at /actuator/prometheus."
+    },
+    {
+      "id": "otel",
+      "label": "OTel Collector",
+      "tech": "OpenTelemetry Collector",
+      "icon": "opentelemetry",
+      "layer": 0,
+      "col": 4,
+      "row": 0,
+      "says": "The collector pushes by remote_write.",
+      "detail": "Receives OTLP from short-lived or firewalled workloads and writes to /api/v1/write."
+    },
+    {
+      "id": "servicemon",
+      "label": "ServiceMonitor",
+      "tech": "Prometheus Operator",
+      "icon": "kubernetes",
+      "layer": 1,
+      "col": 2,
+      "row": 0,
+      "says": "ServiceMonitor declares which Services get scraped.",
+      "detail": "Selects Services by label, names port, path and interval. Teams ship it with their app."
+    },
+    {
+      "id": "prom",
+      "label": "Prometheus",
+      "tech": "Prometheus",
+      "icon": "prometheus",
+      "layer": 2,
+      "col": 2,
+      "row": 0,
+      "says": "Prometheus scrapes, stores and evaluates.",
+      "detail": "One binary: discovery, scraping, local TSDB, rule evaluation. up==0 reveals dead targets.",
+      "size": [
+        2,
+        1,
+        2
+      ],
+      "inner": [
+        {
+          "id": "scrape",
+          "label": "Scrape"
+        },
+        {
+          "id": "tsdb",
+          "label": "TSDB"
+        },
+        {
+          "id": "rules",
+          "label": "Rules"
+        },
+        {
+          "id": "alerting",
+          "label": "Alerts"
+        }
+      ]
+    },
+    {
+      "id": "alertmgr",
+      "label": "Alertmanager",
+      "tech": "Alertmanager",
+      "icon": "prometheus",
+      "layer": 3,
+      "col": 0,
+      "row": 0,
+      "says": "Alertmanager groups, silences and routes alerts.",
+      "detail": "Routes by labels such as severity and team; inhibits duplicates, repeats until resolved."
+    },
+    {
+      "id": "grafana",
+      "label": "Grafana",
+      "tech": "Grafana",
+      "icon": "grafana",
+      "layer": 3,
+      "col": 2,
+      "row": 0,
+      "says": "Grafana runs PromQL and draws p95.",
+      "detail": "histogram_quantile over bucket rates gives latency percentiles for dashboards.",
+      "href": "#/tech/grafana"
+    },
+    {
+      "id": "thanos",
+      "label": "Thanos Sidecar",
+      "tech": "Thanos",
+      "icon": "prometheus",
+      "layer": 3,
+      "col": 4,
+      "row": 0,
+      "says": "Thanos sidecar ships sealed blocks off-node.",
+      "detail": "Uploads two-hour TSDB blocks to object storage; Thanos Query merges old and live data."
+    },
+    {
+      "id": "notify",
+      "label": "Receivers",
+      "tech": "Slack",
+      "icon": "slack",
+      "layer": 4,
+      "col": 0,
+      "row": 0,
+      "says": "Receivers get the page.",
+      "detail": "Webhook, Slack or email receivers notify whoever the route names."
+    },
+    {
+      "id": "objstore",
+      "label": "Object Store",
+      "tech": "MinIO",
+      "icon": "minio",
+      "layer": 4,
+      "col": 4,
+      "row": 0,
+      "says": "Object storage holds long-term blocks.",
+      "detail": "S3-compatible bucket keeps months of metrics cheaply, outside the Prometheus disk.",
+      "href": "#/tech/loki-minio"
+    }
+  ],
+  "wires": [
+    {
+      "from": "nodeexp",
+      "to": "prom",
+      "label": "scrape /metrics",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "actuator",
+      "to": "prom",
+      "label": "scrape",
+      "style": "solid",
+      "flow": true,
+      "weight": "bold"
+    },
+    {
+      "from": "servicemon",
+      "to": "actuator",
+      "label": "selects",
+      "style": "dashed",
+      "flow": false,
+      "weight": "normal"
+    },
+    {
+      "from": "servicemon",
+      "to": "prom",
+      "label": "targets",
+      "style": "solid",
+      "flow": true,
+      "weight": "bold"
+    },
+    {
+      "from": "otel",
+      "to": "prom",
+      "label": "remote_write",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "grafana",
+      "to": "prom",
+      "label": "PromQL",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "prom",
+      "to": "alertmgr",
+      "label": "firing alerts",
+      "style": "solid",
+      "flow": true,
+      "weight": "bold"
+    },
+    {
+      "from": "alertmgr",
+      "to": "notify",
+      "label": "route",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "thanos",
+      "to": "prom",
+      "label": "reads blocks",
+      "style": "dashed",
+      "flow": false,
+      "weight": "normal"
+    },
+    {
+      "from": "thanos",
+      "to": "objstore",
+      "label": "upload",
+      "style": "solid",
+      "flow": true,
+      "weight": "bold"
+    }
+  ],
+  "steps": [
+    {
+      "title": "Expose",
+      "text": "Hosts and apps publish /metrics.",
+      "boxes": [
+        "nodeexp",
+        "actuator"
+      ],
+      "wires": []
+    },
+    {
+      "title": "Discover",
+      "text": "ServiceMonitor selects Services; no central edit.",
+      "boxes": [
+        "servicemon",
+        "actuator",
+        "prom"
+      ],
+      "wires": [
+        [
+          "servicemon",
+          "prom"
+        ],
+        [
+          "servicemon",
+          "actuator"
+        ]
+      ]
+    },
+    {
+      "title": "Scrape",
+      "text": "Prometheus pulls every target and appends samples.",
+      "boxes": [
+        "prom",
+        "nodeexp",
+        "actuator",
+        "otel"
+      ],
+      "wires": [
+        [
+          "nodeexp",
+          "prom"
+        ],
+        [
+          "actuator",
+          "prom"
+        ],
+        [
+          "otel",
+          "prom"
+        ]
+      ]
+    },
+    {
+      "title": "Query",
+      "text": "Grafana asks PromQL; histograms give p95.",
+      "boxes": [
+        "grafana",
+        "prom"
+      ],
+      "wires": [
+        [
+          "grafana",
+          "prom"
+        ]
+      ]
+    },
+    {
+      "title": "Alert",
+      "text": "Rules fire; Alertmanager routes to receivers.",
+      "boxes": [
+        "prom",
+        "alertmgr",
+        "notify"
+      ],
+      "wires": [
+        [
+          "prom",
+          "alertmgr"
+        ],
+        [
+          "alertmgr",
+          "notify"
+        ]
+      ]
+    },
+    {
+      "title": "Retain",
+      "text": "Sidecar uploads blocks to object storage.",
+      "boxes": [
+        "thanos",
+        "objstore",
+        "prom"
+      ],
+      "wires": [
+        [
+          "thanos",
+          "objstore"
+        ],
+        [
+          "thanos",
+          "prom"
+        ]
+      ]
+    }
+  ],
+  "declarations": [
+    "Prometheus pulls.",
+    "Histograms answer p95.",
+    "Alertmanager routes.",
+    "Thanos remembers."
+  ],
+  "run": {
+    "cmd": "promtool query instant localhost:9090 up",
+    "lines": [
+      "up{job=\"spring-app\"} = 1",
+      "up{job=\"node\"} = 1"
+    ]
+  }
+}

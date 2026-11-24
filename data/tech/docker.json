@@ -1,0 +1,159 @@
+{
+ "slug": "docker",
+ "name": "Docker",
+ "category": "Containers",
+ "icon": "docker",
+ "level": "hands-on",
+ "tagline": "Runs apps as isolated Linux processes from layered images.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Namespaces: what a container sees",
+   "body": "A container is a process started with new namespaces.\npid, net, mnt, uts, ipc and user give a private view.\nThe kernel is shared; there is no hypervisor.\nlsns lists them; nsenter -t PID -n enters one."
+  },
+  {
+   "title": "cgroups: what a container uses",
+   "body": "--memory is a hard cap on the whole cgroup, page cache included.\nOver the cap, the kernel OOM-kills; docker inspect shows OOMKilled true, exit 137.\n--cpus limits CPU time; --pids-limit caps process count.\ncgroup v2 is the default on modern distributions."
+  },
+  {
+   "title": "Image layers",
+   "body": "An image is read-only layers addressed by content digest.\nEach filesystem-changing instruction adds a layer.\nOrder instructions from stable to volatile to keep the cache.\noverlay2 mounts layers as lowerdirs plus one writable upperdir.\nKeep data in volumes, not the writable layer."
+  },
+  {
+   "title": "Bridge networks and veth",
+   "body": "Each container gets a veth pair; one end joins a Linux bridge.\nThe default docker0 bridge has no name resolution.\nUser-defined bridges add DNS at 127.0.0.11.\nPublished ports (-p) become iptables DNAT rules.\nOutbound traffic is masqueraded to the host IP."
+  },
+  {
+   "title": "Compose profiles",
+   "body": "Compose declares services, networks and volumes in one file.\nA profile starts a service only when requested.\nCore services start by default; data and observability start on demand.\nmem_limit on each service keeps a small host stable."
+  }
+ ],
+ "flow": [
+  "docker run calls dockerd over the Unix socket.",
+  "dockerd pulls missing layers and verifies digests.",
+  "containerd mounts the layers as overlayfs with a writable layer.",
+  "runc creates namespaces and applies cgroup limits.",
+  "A veth pair joins the container to the bridge; an IP is assigned.",
+  "iptables adds DNAT rules for published ports.",
+  "The entrypoint starts as PID 1; the log driver captures output.",
+  "On exit or OOM, the restart policy decides what happens next."
+ ],
+ "deploy": {
+  "summary": "Prepare an Ubuntu Docker host, then inspect namespaces, cgroups, veth and layers.",
+  "prerequisites": [
+   "Ubuntu 22.04 or 24.04 VM, 4 GB RAM, sudo user",
+   "Network access to download.docker.com",
+   "A workstation with an SSH key pair",
+   "Static address and DNS record set by your network team"
+  ],
+  "steps": [
+   {
+    "title": "SSH key login and sshd hardening",
+    "lang": "bash",
+    "code": "ssh-copy-id -i ~/.ssh/id_ed25519.pub admin@<HOST_IP>\nsudo tee /etc/ssh/sshd_config.d/10-hardening.conf <<'EOF'\nPasswordAuthentication no\nPermitRootLogin no\nMaxAuthTries 3\nEOF\nsudo sshd -t && sudo systemctl reload ssh",
+    "note": "Keep your current session open and test a second login before logging out. Replace admin and HOST_IP."
+   },
+   {
+    "title": "Install Docker Engine",
+    "lang": "bash",
+    "code": "sudo apt-get update && sudo apt-get install -y ca-certificates curl\nsudo install -m 0755 -d /etc/apt/keyrings\nsudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc\necho \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable\" | sudo tee /etc/apt/sources.list.d/docker.list\nsudo apt-get update\nsudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin\nsudo usermod -aG docker $USER",
+    "note": "Log out and in for the group change. The docker group is root-equivalent."
+   },
+   {
+    "title": "Daemon defaults",
+    "lang": "bash",
+    "code": "sudo tee /etc/docker/daemon.json <<'EOF'\n{\n  \"log-driver\": \"json-file\",\n  \"log-opts\": { \"max-size\": \"10m\", \"max-file\": \"3\" },\n  \"live-restore\": true\n}\nEOF\nsudo systemctl restart docker",
+    "note": "Without rotation, a chatty container fills the disk. live-restore keeps containers up during daemon restarts."
+   },
+   {
+    "title": "Inspect namespaces and cgroups",
+    "lang": "bash",
+    "code": "docker run -d --name web --memory 128m nginx:1.27.3\nPID=$(docker inspect -f '{{.State.Pid}}' web)\nsudo lsns -p $PID\nsudo nsenter -t $PID -n ip -br addr\ncat /sys/fs/cgroup/system.slice/docker-$(docker inspect -f '{{.Id}}' web).scope/memory.max",
+    "note": "memory.max shows 134217728 on cgroup v2 with the systemd driver. The container has its own eth0."
+   },
+   {
+    "title": "Bridge network and veth pairs",
+    "lang": "bash",
+    "code": "docker network create lab-net\ndocker run -d --name a --network lab-net nginx:1.27.3\ndocker run --rm --network lab-net busybox:1.36 nslookup a\nip -br link show type veth\nbridge link show\nsudo iptables -t nat -S POSTROUTING | grep MASQUERADE",
+    "note": "Each running container adds one veth on the host. User-defined networks resolve names through 127.0.0.11."
+   },
+   {
+    "title": "Compose with profiles and memory limits",
+    "lang": "bash",
+    "code": "cat > compose.yaml <<'EOF'\nname: lab\nservices:\n  web:\n    image: nginx:1.27.3\n    ports: [\"8080:80\"]\n    mem_limit: 128m\n    restart: unless-stopped\n  db:\n    image: postgres:16.4\n    environment:\n      POSTGRES_PASSWORD: change-me\n    mem_limit: 512m\n    volumes: [pgdata:/var/lib/postgresql/data]\n    profiles: [data]\nvolumes:\n  pgdata:\nEOF\ndocker compose up -d\ndocker compose --profile data up -d\ndocker compose ps",
+    "note": "The first command starts web only. The second adds db. Change the placeholder password."
+   },
+   {
+    "title": "Trigger OOMKilled",
+    "lang": "bash",
+    "code": "docker run --name hog --memory 64m --memory-swap 64m python:3.12-slim \\\n  python -c \"x = b'x' * (200*1024*1024)\"\ndocker inspect -f 'OOMKilled={{.State.OOMKilled}} exit={{.State.ExitCode}}' hog\ndocker rm hog",
+    "note": "Expect OOMKilled=true and exit=137. Raise the limit or fix the leak; never just remove the limit."
+   },
+   {
+    "title": "Read the image layers",
+    "lang": "bash",
+    "code": "docker history nginx:1.27.3\ndocker image inspect -f '{{json .RootFS.Layers}}' nginx:1.27.3\ndocker system df",
+    "note": "Each row in history is a layer. Shared base layers are stored once."
+   }
+  ]
+ },
+ "verify": [
+  "Namespaces exist: sudo lsns -p $(docker inspect -f \"{{.State.Pid}}\" web)",
+  "Limit applied: docker inspect -f \"{{.HostConfig.Memory}}\" web",
+  "veth on bridge: bridge link show",
+  "DNAT rules present: sudo iptables -t nat -S DOCKER",
+  "Disk use: docker system df"
+ ],
+ "pitfalls": [
+  "Published ports bypass ufw rules; filter in the DOCKER-USER chain instead.",
+  "Unrotated json-file logs fill the disk.",
+  "Tight --memory limits cause OOMKilled with exit 137.",
+  "The default bridge has no DNS; use a user-defined network.",
+  "Never mount the Docker socket into an untrusted container.",
+  "Deleted files do not shrink earlier layers; use multi-stage builds.",
+  "Containers run as root by default; set a non-root USER."
+ ],
+ "furtherReading": [
+  {
+   "label": "Docker networking",
+   "url": "https://docs.docker.com/engine/network/"
+  },
+  {
+   "label": "Resource constraints",
+   "url": "https://docs.docker.com/engine/containers/resource_constraints/"
+  },
+  {
+   "label": "Compose profiles",
+   "url": "https://docs.docker.com/compose/how-tos/profiles/"
+  },
+  {
+   "label": "OverlayFS storage driver",
+   "url": "https://docs.docker.com/engine/storage/drivers/overlayfs-driver/"
+  }
+ ],
+ "keyPoints": [
+  "Namespaces isolate what a container sees.",
+  "cgroups cap what it uses; over memory means OOMKilled.",
+  "Images are read-only layers; the container adds one writable layer.",
+  "Bridge networks connect containers over veth pairs and NAT."
+ ],
+ "quickDeploy": [
+  "Install Docker Engine and set daemon log limits.",
+  "Inspect namespaces and cgroups of a running container.",
+  "Run a Compose stack with profiles and memory limits.",
+  "Trigger and read an OOMKilled exit 137."
+ ],
+ "osi": [
+  "L2",
+  "L3",
+  "L4"
+ ],
+ "osiNote": "Bridges switch frames; iptables translates published ports.",
+ "production": [
+  "Set memory and CPU limits on every container.",
+  "Rotate json-file logs; enable live-restore.",
+  "Run non-root with read-only root and dropped capabilities.",
+  "Pin image tags; scan images before they ship.",
+  "Alert on restarts, OOMKilled and docker system df growth."
+ ]
+}

@@ -1,0 +1,436 @@
+{
+ "title": "VMware ESXi",
+ "subtitle": "One bare-metal host: private network, NAT, domain and remote desktops.",
+ "layers": [
+  {
+   "layer": 3,
+   "label": "Access"
+  },
+  {
+   "layer": 2,
+   "label": "Guest VMs"
+  },
+  {
+   "layer": 1,
+   "label": "Virtual network"
+  },
+  {
+   "layer": 0,
+   "label": "Hypervisor"
+  }
+ ],
+ "groups": [
+  {
+   "id": "rds",
+   "label": "Remote Desktop Services",
+   "boxes": [
+    "rdgw",
+    "rdcb",
+    "rdsh"
+   ]
+  },
+  {
+   "id": "ad",
+   "label": "Active Directory",
+   "boxes": [
+    "dc01",
+    "dc02"
+   ]
+  }
+ ],
+ "tabs": [
+  {
+   "id": "access",
+   "label": "Access",
+   "focus": [
+    "user",
+    "gw",
+    "rdgw",
+    "rdcb",
+    "rdsh"
+   ]
+  },
+  {
+   "id": "net",
+   "label": "Network",
+   "focus": [
+    "vsw0",
+    "gw",
+    "vsw1",
+    "esxi"
+   ]
+  },
+  {
+   "id": "dir",
+   "label": "Directory",
+   "focus": [
+    "dc01",
+    "dc02",
+    "fs",
+    "rdsh",
+    "jump"
+   ]
+  }
+ ],
+ "boxes": [
+  {
+   "id": "user",
+   "label": "Remote User",
+   "tech": "RDP client",
+   "icon": null,
+   "layer": 3,
+   "col": 0,
+   "row": 0,
+   "says": "Users connect over HTTPS.",
+   "detail": "The client reaches the RD Gateway name on port 443."
+  },
+  {
+   "id": "gw",
+   "label": "Gateway VM",
+   "tech": "Linux dual-NIC gateway",
+   "icon": "linux",
+   "layer": 3,
+   "col": 2,
+   "row": 0,
+   "says": "The gateway VM routes and NATs.",
+   "detail": "One NIC on each vSwitch; MASQUERADE out, DNAT 443 in."
+  },
+  {
+   "id": "rdgw",
+   "label": "RD Gateway",
+   "tech": "RD Gateway",
+   "icon": null,
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "RD Gateway proxies RDP over HTTPS.",
+   "detail": "Authenticates users against AD and enforces access policy."
+  },
+  {
+   "id": "rdcb",
+   "label": "Conn Broker",
+   "tech": "Connection Broker",
+   "icon": null,
+   "layer": 2,
+   "col": 1,
+   "row": 0,
+   "says": "The broker places sessions.",
+   "detail": "Picks a session host from the collection."
+  },
+  {
+   "id": "rdsh",
+   "label": "Session Hosts",
+   "tech": "Session hosts",
+   "icon": null,
+   "layer": 2,
+   "col": 2,
+   "row": 0,
+   "says": "Session hosts run desktops.",
+   "detail": "Users work here; shares map from the file server."
+  },
+  {
+   "id": "dc01",
+   "label": "DC01",
+   "tech": "Windows Server 2022 DC",
+   "icon": null,
+   "layer": 2,
+   "col": 3,
+   "row": 0,
+   "says": "DC01 runs AD DS, DNS, DHCP.",
+   "detail": "Authenticates users, resolves names and leases addresses."
+  },
+  {
+   "id": "dc02",
+   "label": "DC02",
+   "tech": "Windows Server 2022 DC",
+   "icon": null,
+   "layer": 2,
+   "col": 3,
+   "row": 1,
+   "says": "DC02 replaces DC01.",
+   "detail": "Joins, replicates and takes all five FSMO roles."
+  },
+  {
+   "id": "fs",
+   "label": "File Server",
+   "tech": "Windows file server",
+   "icon": null,
+   "layer": 2,
+   "col": 1,
+   "row": 1,
+   "says": "The file server shares data.",
+   "detail": "SMB shares with NTFS permissions tied to AD groups."
+  },
+  {
+   "id": "vsw0",
+   "label": "vSwitch0",
+   "tech": "ESXi standard vSwitch",
+   "icon": null,
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "vSwitch0 carries the uplink.",
+   "detail": "L2 switch bound to vmnic0 and the WAN side of the gateway."
+  },
+  {
+   "id": "vsw1",
+   "label": "vSwitch1",
+   "tech": "ESXi standard vSwitch",
+   "icon": null,
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "vSwitch1 is private.",
+   "detail": "No uplink: an isolated L2 segment for every lab VM."
+  },
+  {
+   "id": "esxi",
+   "label": "ESXi 8.0",
+   "tech": "VMware ESXi 8.0",
+   "icon": "vmware",
+   "layer": 0,
+   "col": 1,
+   "row": 0,
+   "says": "ESXi runs on bare metal.",
+   "detail": "The VMkernel schedules VMs and hosts both vSwitches and datastores.",
+   "inner": [
+    {
+     "id": "vmk",
+     "label": "VMkernel"
+    },
+    {
+     "id": "vs",
+     "label": "vSwitches"
+    },
+    {
+     "id": "ds",
+     "label": "Datastore"
+    },
+    {
+     "id": "hc",
+     "label": "Host Client"
+    }
+   ]
+  },
+  {
+   "id": "jump",
+   "label": "Jumpbox",
+   "tech": "Admin jumpbox",
+   "icon": null,
+   "layer": 3,
+   "col": 1,
+   "row": 0,
+   "says": "The jumpbox is the admin door.",
+   "detail": "Hardened host on the private network; the only path for RDP and SSH admin."
+  }
+ ],
+ "wires": [
+  {
+   "from": "user",
+   "to": "vsw0",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "HTTPS 443"
+  },
+  {
+   "from": "vsw0",
+   "to": "gw",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "WAN"
+  },
+  {
+   "from": "gw",
+   "to": "vsw1",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "LAN"
+  },
+  {
+   "from": "vsw1",
+   "to": "rdgw",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "DNAT"
+  },
+  {
+   "from": "rdgw",
+   "to": "rdcb",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "RDP"
+  },
+  {
+   "from": "rdcb",
+   "to": "rdsh",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "broker"
+  },
+  {
+   "from": "rdsh",
+   "to": "fs",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "SMB"
+  },
+  {
+   "from": "rdgw",
+   "to": "dc01",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal",
+   "label": "auth"
+  },
+  {
+   "from": "dc01",
+   "to": "dc02",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal",
+   "label": "replicate"
+  },
+  {
+   "from": "esxi",
+   "to": "vsw0",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "esxi",
+   "to": "vsw1",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "jump",
+   "to": "vsw1",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal",
+   "label": "admin"
+  }
+ ],
+ "steps": [
+  {
+   "title": "Enter",
+   "text": "HTTPS arrives on vSwitch0 through the uplink.",
+   "boxes": [
+    "user",
+    "vsw0",
+    "gw"
+   ],
+   "wires": [
+    [
+     "user",
+     "vsw0"
+    ],
+    [
+     "vsw0",
+     "gw"
+    ]
+   ]
+  },
+  {
+   "title": "Translate",
+   "text": "The gateway forwards 443 to the RD Gateway.",
+   "boxes": [
+    "gw",
+    "vsw1",
+    "rdgw"
+   ],
+   "wires": [
+    [
+     "gw",
+     "vsw1"
+    ],
+    [
+     "vsw1",
+     "rdgw"
+    ]
+   ]
+  },
+  {
+   "title": "Authenticate",
+   "text": "RD Gateway checks the user against AD DS.",
+   "boxes": [
+    "rdgw",
+    "dc01"
+   ],
+   "wires": [
+    [
+     "rdgw",
+     "dc01"
+    ]
+   ]
+  },
+  {
+   "title": "Place",
+   "text": "The broker assigns a session host.",
+   "boxes": [
+    "rdcb",
+    "rdsh"
+   ],
+   "wires": [
+    [
+     "rdgw",
+     "rdcb"
+    ],
+    [
+     "rdcb",
+     "rdsh"
+    ]
+   ]
+  },
+  {
+   "title": "Work",
+   "text": "The session maps shares from the file server.",
+   "boxes": [
+    "rdsh",
+    "fs"
+   ],
+   "wires": [
+    [
+     "rdsh",
+     "fs"
+    ]
+   ]
+  },
+  {
+   "title": "Migrate",
+   "text": "DC02 replicates, then takes the FSMO roles.",
+   "boxes": [
+    "dc01",
+    "dc02"
+   ],
+   "wires": [
+    [
+     "dc01",
+     "dc02"
+    ]
+   ]
+  }
+ ],
+ "declarations": [
+  "vSwitch0 uplinks; vSwitch1 stays private.",
+  "The gateway VM routes and NATs.",
+  "AD DS, DNS and DHCP run on DC01.",
+  "RD Gateway wraps RDP in HTTPS."
+ ],
+ "run": {
+  "cmd": "netdom query fsmo",
+  "lines": [
+   "Schema master               DC02.lab.local",
+   "PDC                         DC02.lab.local"
+  ]
+ }
+}

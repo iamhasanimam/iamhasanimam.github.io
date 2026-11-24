@@ -1,0 +1,49 @@
+/* stack3d - scoped styles. All overlays are translucent glass; the scene shows through. */
+.stack3d{--glass:rgba(24,20,110,.34);--glass-b:rgba(190,186,255,.28);--blur:blur(14px) saturate(140%);position:relative;width:100%;height:clamp(520px,78vh,780px);min-height:520px;overflow:hidden;color:#eef;font-family:Inter,"Segoe UI",system-ui,sans-serif;background:transparent;isolation:isolate}
+.stack3d *{box-sizing:border-box}
+.stack3d .stack3d__root{position:absolute;inset:0}
+.stack3d .stack3d__canvas{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none}
+.stack3d .stack3d__head{position:absolute;top:18px;left:20px;max-width:min(44%,440px);display:flex;flex-direction:column;gap:4px;pointer-events:none;text-shadow:0 1px 14px rgba(0,0,40,.6)}
+.stack3d .stack3d__head strong{font-size:clamp(18px,2.2vw,26px);font-weight:700;letter-spacing:-.01em}
+.stack3d .stack3d__head span{font-size:13.5px;line-height:1.45;color:#c9c7ff}
+.stack3d .stack3d__tabs{position:absolute;top:16px;right:16px;z-index:4;display:flex;gap:4px;padding:5px;border-radius:99px;background:var(--glass);border:1px solid var(--glass-b);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:0 8px 32px rgba(0,0,30,.35)}
+.stack3d .stack3d__tab{font:600 13px/1 Inter,system-ui,sans-serif;color:#d9d8ff;background:transparent;border:0;border-radius:99px;padding:10px 16px;min-height:38px;cursor:pointer;transition:background .2s,color .2s}
+.stack3d .stack3d__tab:hover{background:rgba(255,255,255,.1)}
+.stack3d .stack3d__tab.is-on{background:rgba(255,159,28,.92);color:#1b1000;box-shadow:0 0 18px rgba(255,159,28,.45)}
+.stack3d .stack3d__tab:focus-visible,.stack3d .stack3d__x:focus-visible{outline:2px solid #ff9f1c;outline-offset:2px}
+.stack3d .stack3d__tip{position:absolute;left:0;top:0;z-index:6;pointer-events:none;display:flex;flex-direction:column;gap:2px;max-width:260px;padding:9px 13px;border-radius:12px;background:rgba(26,22,120,.5);border:1px solid var(--glass-b);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:0 8px 28px rgba(0,0,30,.4);font-size:12.5px;line-height:1.4}
+.stack3d .stack3d__tip b{font-size:13.5px}.stack3d .stack3d__tip span{color:#d2d0ff}
+.stack3d [hidden]{display:none!important}
+.stack3d .stack3d__card{position:absolute;top:72px;right:16px;width:min(330px,calc(100% - 32px));z-index:5;padding:18px 18px 16px;border-radius:18px;background:linear-gradient(160deg,rgba(58,53,208,.34),rgba(20,16,100,.3));border:1px solid var(--glass-b);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:0 14px 44px rgba(0,0,30,.4),inset 0 1px 0 rgba(255,255,255,.14)}
+.stack3d .stack3d__chip{--c:#8f7cff;display:inline-block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--c);border:1px solid var(--c);border-radius:99px;padding:2px 9px}
+.stack3d .stack3d__card h3{margin:8px 0 4px;font-size:20px}
+.stack3d .stack3d__says{margin:0 0 8px;font-size:13.5px;color:#ffc66b;line-height:1.45}
+.stack3d .stack3d__detail{margin:0;font-size:13.5px;line-height:1.55;color:#eceaff}
+.stack3d .stack3d__x{position:absolute;top:10px;right:10px;width:32px;height:32px;border:0;border-radius:9px;background:transparent;color:#d8d6ff;font-size:22px;cursor:pointer}
+.stack3d .stack3d__x:hover{background:rgba(255,255,255,.12)}
+.stack3d .stack3d__term{position:absolute;left:16px;bottom:16px;z-index:3;width:min(380px,46%);border-radius:14px;background:rgba(14,12,70,.38);border:1px solid var(--glass-b);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:0 10px 36px rgba(0,0,30,.4);overflow:hidden;font-family:ui-monospace,"JetBrains Mono","SF Mono",Menlo,Consolas,monospace}
+.stack3d .stack3d__term-bar{display:flex;gap:6px;padding:9px 12px;border-bottom:1px solid rgba(190,186,255,.16)}
+.stack3d .stack3d__term-bar i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.28)}
+.stack3d .stack3d__term-bar i:first-child{background:#ff9f1c}
+.stack3d .stack3d__term-body{padding:10px 14px 12px;min-height:118px;max-height:168px;overflow:hidden;font-size:12px;line-height:1.65;color:#dcdaff}
+.stack3d .stack3d__ps{color:#ff9f1c}
+.stack3d .stack3d__out{color:#bfe9df}
+.stack3d .stack3d__caret{display:inline-block;width:7px;height:13px;margin-left:2px;vertical-align:-2px;background:#ff9f1c;animation:stack3d-blink 1s steps(2) infinite}
+@keyframes stack3d-blink{50%{opacity:0}}
+.stack3d .stack3d__decl{position:absolute;right:16px;bottom:12px;max-width:40%;text-align:right;font-size:11px;line-height:1.4;color:rgba(214,212,255,.62)}
+.stack3d .stack3d__sr{position:absolute;width:1px;height:1px;margin:0;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;list-style:none}
+.stack3d .stack3d__fallback{position:absolute;inset:0;overflow:auto;padding:24px;background:rgba(20,16,100,.35)}
+.stack3d .stack3d__fallback li{margin:0 0 6px;line-height:1.5}
+@media (prefers-reduced-motion:reduce){.stack3d *{transition:none!important}.stack3d .stack3d__caret{animation:none}}
+@media (max-width:640px){
+  .stack3d{min-height:560px}
+  .stack3d .stack3d__head{max-width:none;right:16px;top:14px}
+  .stack3d .stack3d__head span{display:none}
+  .stack3d .stack3d__tabs{top:auto;right:auto;left:50%;transform:translateX(-50%);bottom:auto;top:56px;max-width:calc(100% - 24px);overflow-x:auto}
+  .stack3d .stack3d__tab{padding:9px 12px;font-size:12px;white-space:nowrap}
+  .stack3d .stack3d__card{top:auto;left:0;right:0;bottom:0;width:auto;border-radius:20px 20px 0 0;padding-bottom:22px}
+  .stack3d .stack3d__term{width:calc(100% - 32px);bottom:12px}
+  .stack3d .stack3d__term-body{min-height:70px;max-height:96px;font-size:11px}
+  .stack3d .stack3d__decl{display:none}
+  .stack3d.has-card .stack3d__term{display:none}
+}

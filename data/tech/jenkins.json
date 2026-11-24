@@ -1,0 +1,152 @@
+{
+ "slug": "jenkins",
+ "name": "Jenkins",
+ "category": "CI/CD",
+ "icon": "jenkins",
+ "level": "hands-on",
+ "tagline": "Runs every commit through gated pipelines and ships it via GitOps.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Controller and agents",
+   "body": "The controller holds config, credentials, job history and the queue.\nSet controller executors to 0; agents run every build.\nAgents join by SSH, inbound WebSocket, or as Docker and Kubernetes pods.\nJENKINS_HOME is the state to persist and back up."
+  },
+  {
+   "title": "Declarative pipeline",
+   "body": "A Jenkinsfile in Git defines agent, environment, options, stages and post.\nThe parser validates structure before the first step runs.\nUse when conditions to restrict deploy stages to main.\nPut heavy logic in shared libraries, not Groovy in the Jenkinsfile."
+  },
+  {
+   "title": "Gated delivery stages",
+   "body": "Build, test, SonarQube, quality gate, image build, Trivy scan, push, GitOps, smoke.\nCheap checks run first; any failed gate stops the pipeline.\nPush to Nexus or a registry with an immutable commit tag.\nJenkins never runs kubectl; it commits the tag and Argo CD reconciles."
+  },
+  {
+   "title": "Credentials",
+   "body": "The Credentials plugin stores secrets encrypted under JENKINS_HOME/secrets.\nBind them with credentials() or withCredentials; logs mask the values.\nScope them to a folder and use least privilege.\nRotate a secret in the store; no pipeline edit needed."
+  },
+  {
+   "title": "decK diff-guard for Kong",
+   "body": "A pipeline validates, then backs up the live gateway with deck gateway dump.\ndeck gateway diff runs read-only and the stage fails on any deleting line.\nSync runs only after approval on main, then a smoke test.\nThe backup file is the rollback: sync it back."
+  }
+ ],
+ "flow": [
+  "Developer pushes to Git; a webhook reaches the controller.",
+  "Controller reads the Jenkinsfile and queues the build.",
+  "An agent checks out, builds and runs unit tests.",
+  "SonarQube analyses; the quality gate blocks bad code.",
+  "Trivy scans the image; HIGH and CRITICAL fail the build.",
+  "Image is pushed to Nexus with an immutable tag.",
+  "Pipeline commits the new tag to the GitOps repo.",
+  "Argo CD syncs the cluster to match Git.",
+  "Smoke test checks the live endpoint."
+ ],
+ "deploy": {
+  "summary": "Jenkins LTS on a Linux VM under systemd, hardened SSH, one SSH agent, then pipelines.",
+  "prerequisites": [
+   "Ubuntu 22.04 or 24.04 VM, 4 vCPU, 8 GB RAM",
+   "Sudo access and a static IP",
+   "DNS A record ci.example.com (placeholder)",
+   "Outbound HTTPS to pkg.jenkins.io"
+  ],
+  "steps": [
+   {
+    "title": "SSH keys and sshd hardening",
+    "lang": "bash",
+    "code": "ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -C ops@example.com\nssh-copy-id -i ~/.ssh/id_ed25519.pub ops@192.0.2.10\nsudo tee /etc/ssh/sshd_config.d/99-hardening.conf <<'EOF'\nPermitRootLogin no\nPasswordAuthentication no\nPubkeyAuthentication yes\nEOF\nsudo sshd -t && sudo systemctl reload ssh",
+    "note": "192.0.2.10 is a placeholder. Keep a second session open until key login works."
+   },
+   {
+    "title": "Static address and DNS",
+    "lang": "yaml",
+    "code": "# /etc/netplan/60-static.yaml (placeholders)\nnetwork:\n  version: 2\n  ethernets:\n    ens18:\n      addresses: [192.0.2.10/24]\n      routes:\n        - to: default\n          via: 192.0.2.1\n      nameservers:\n        addresses: [192.0.2.2]\n# then: sudo netplan apply\n# DNS: ci.example.com. IN A 192.0.2.10",
+    "note": "Match the interface name from ip -br link. Use your own subnet."
+   },
+   {
+    "title": "Install Java and Jenkins LTS",
+    "lang": "bash",
+    "code": "sudo apt-get update && sudo apt-get install -y fontconfig openjdk-17-jre curl\nsudo wget -O /usr/share/keyrings/jenkins-keyring.asc https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key\necho 'deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/' | sudo tee /etc/apt/sources.list.d/jenkins.list\nsudo apt-get update && sudo apt-get install -y jenkins\napt-cache policy jenkins | head -3",
+    "note": "Pin with apt-mark hold jenkins after choosing an LTS version."
+   },
+   {
+    "title": "systemd service and firewall",
+    "lang": "bash",
+    "code": "sudo systemctl enable --now jenkins\nsudo systemctl status jenkins --no-pager\nsudo ufw allow OpenSSH\nsudo ufw allow 8080/tcp\nsudo ufw enable\nsudo cat /var/lib/jenkins/secrets/initialAdminPassword",
+    "note": "Put NGINX with TLS in front, then close 8080 to everyone but the proxy."
+   },
+   {
+    "title": "Agent VM over SSH",
+    "lang": "bash",
+    "code": "# on the agent VM\nsudo apt-get install -y openjdk-17-jre git docker.io\nsudo useradd -m -s /bin/bash jenkins-agent && sudo mkdir -p /home/jenkins-agent/.ssh\n# on the controller: ssh-keygen -t ed25519 -f ~/agent_key -N ''\n# paste agent_key.pub into /home/jenkins-agent/.ssh/authorized_keys\n# UI: Manage Jenkins > Nodes > New Node > Launch via SSH, credential agent-ssh\n# UI: Built-In Node > Number of executors = 0",
+    "note": "Add the agent to the docker group only if builds need it."
+   },
+   {
+    "title": "Pipeline: build to smoke test",
+    "lang": "groovy",
+    "code": "pipeline {\n  agent { label 'docker' }\n  options { timeout(time: 45, unit: 'MINUTES'); timestamps(); disableConcurrentBuilds(); buildDiscarder(logRotator(numToKeepStr: '20')) }\n  environment {\n    IMAGE = \"registry.example.com/team/app\"   // placeholder\n    TAG   = \"${env.GIT_COMMIT.take(8)}\"\n    REG   = credentials('registry-creds')\n  }\n  stages {\n    stage('Build')   { steps { sh './mvnw -B -DskipTests package' } }\n    stage('Test')    { steps { sh './mvnw -B test' } post { always { junit 'target/surefire-reports/*.xml' } } }\n    stage('Sonar')   { steps { withSonarQubeEnv('sonar') { sh './mvnw -B sonar:sonar' } } }\n    stage('Gate')    { steps { timeout(time: 10, unit: 'MINUTES') { waitForQualityGate abortPipeline: true } } }\n    stage('Image')   { steps { sh 'docker build -t $IMAGE:$TAG .' } }\n    stage('Trivy')   { steps { sh 'trivy image --exit-code 1 --severity HIGH,CRITICAL $IMAGE:$TAG' } }\n    stage('Push')    { steps { sh 'echo $REG_PSW | docker login registry.example.com -u $REG_USR --password-stdin && docker push $IMAGE:$TAG' } }\n    stage('GitOps')  { when { branch 'main' } steps { sh './ci/bump-tag.sh $IMAGE $TAG' } }\n    stage('Argo CD') { when { branch 'main' } steps { sh 'argocd app sync app --grpc-web && argocd app wait app --health --timeout 300' } }\n    stage('Smoke')   { when { branch 'main' } steps { sh 'curl -fsS https://app.example.com/health' } }\n  }\n  post { cleanup { cleanWs() } }\n}",
+    "note": "Save as Jenkinsfile. Registry, ci/ scripts and the sonar name are placeholders."
+   },
+   {
+    "title": "Kong decK diff-guard pipeline",
+    "lang": "groovy",
+    "code": "pipeline {\n  agent { label 'deck' }\n  environment { KONG_ADDR = 'http://kong-admin.internal:8001' }   // placeholder\n  stages {\n    stage('Validate') { steps { sh 'deck gateway validate kong.yaml' } }\n    stage('Backup')   { steps { sh 'deck gateway dump -o backup-${BUILD_NUMBER}.yaml --kong-addr $KONG_ADDR'; archiveArtifacts 'backup-*.yaml' } }\n    stage('Diff')     { steps { sh '''\n      deck gateway diff -s kong.yaml --kong-addr $KONG_ADDR --no-color | tee diff.txt\n      if grep -E '^deleting ' diff.txt; then echo 'Deletions found: blocked'; exit 1; fi\n    ''' } }\n    stage('Approve')  { when { branch 'main' } steps { input message: 'Apply this diff?' } }\n    stage('Sync')     { when { branch 'main' } steps { sh 'deck gateway sync -s kong.yaml --kong-addr $KONG_ADDR' } }\n    stage('Smoke')    { when { branch 'main' } steps { sh 'curl -fsS https://api.example.com/health' } }\n  }\n  post { failure { sh 'echo \"restore: deck gateway sync -s backup-${BUILD_NUMBER}.yaml\"' } }\n}",
+    "note": "The guard greps decK's plain diff for deleting lines. Confirm the output format on your decK version."
+   }
+  ]
+ },
+ "verify": [
+  "Service up: systemctl is-active jenkins",
+  "UI responds: curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/login",
+  "Agent online: Manage Jenkins > Nodes shows the agent without a red cross",
+  "Backup exists: ls -lh /var/lib/jenkins/jobs | head",
+  "Guard works: deck gateway diff -s kong.yaml --no-color | grep -c '^deleting '"
+ ],
+ "pitfalls": [
+  "Builds on the controller expose credentials; keep executors at 0.",
+  "Unpinned plugins break upgrades; pin versions and test updates on a copy.",
+  "Mounting the Docker socket gives builds root on the host.",
+  "Hardcoded secrets in Jenkinsfile leak through Git history; use credentials().",
+  "Without a JENKINS_HOME backup, a lost controller loses jobs and secrets.",
+  "deck sync deletes what is not in the file; always diff and back up first.",
+  "Stale workspaces fill the disk; use cleanWs() and buildDiscarder."
+ ],
+ "furtherReading": [
+  {
+   "label": "Pipeline syntax",
+   "url": "https://www.jenkins.io/doc/book/pipeline/syntax/"
+  },
+  {
+   "label": "Linux installation",
+   "url": "https://www.jenkins.io/doc/book/installing/linux/"
+  },
+  {
+   "label": "Using credentials",
+   "url": "https://www.jenkins.io/doc/book/using/using-credentials/"
+  },
+  {
+   "label": "decK documentation",
+   "url": "https://developer.konghq.com/deck/"
+  }
+ ],
+ "keyPoints": [
+  "The controller schedules and records; agents run the builds.",
+  "Declarative Jenkinsfile in Git defines every stage and gate.",
+  "Credentials are injected at runtime and masked in logs.",
+  "Jenkins commits the image tag; Argo CD deploys it."
+ ],
+ "quickDeploy": [
+  "Install Java 17 and the Jenkins LTS package.",
+  "Start the systemd service and unlock the UI.",
+  "Attach an SSH agent and set controller executors to 0.",
+  "Commit a Jenkinsfile and run the pipeline."
+ ],
+ "osi": [
+  "L7"
+ ],
+ "osiNote": "Orchestrates over HTTP, SSH and webhooks; builds run on agents.",
+ "production": [
+  "Run controller with zero executors; builds only on agents.",
+  "Back up JENKINS_HOME nightly and test the restore.",
+  "Define the controller in JCasC and pin plugin versions.",
+  "Role-based access, no anonymous read, TLS on a reverse proxy.",
+  "Scrape the Prometheus plugin; alert on queue length and agent offline."
+ ]
+}

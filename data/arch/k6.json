@@ -1,0 +1,218 @@
+{
+  "title": "k6 Load Testing Flow",
+  "summary": "A k6 script spawns virtual users against a target, records metrics like p95 latency, enforces thresholds and streams results to Prometheus and Grafana.",
+  "nodes": [
+    {
+      "id": "script",
+      "label": "Test Script",
+      "sub": "JavaScript scenario",
+      "kind": "client",
+      "icon": "k6",
+      "detail": "Defines requests, checks and options such as stages, scenarios and thresholds. Stored in Git and run from CI."
+    },
+    {
+      "id": "k6",
+      "label": "k6 Runner",
+      "sub": "Go engine",
+      "kind": "process",
+      "icon": "k6",
+      "detail": "Executes the script and schedules virtual users. Each VU runs the default function in a loop.",
+      "group": "Load generator"
+    },
+    {
+      "id": "vus",
+      "label": "Virtual Users",
+      "sub": "Concurrent iterations",
+      "kind": "process",
+      "icon": "k6",
+      "detail": "Simulated users running in parallel. Ramping stages increase or decrease the VU count over time.",
+      "group": "Load generator"
+    },
+    {
+      "id": "target",
+      "label": "Target Service",
+      "sub": "System under test",
+      "kind": "service",
+      "icon": null,
+      "detail": "The service or environment receiving the load, ideally a production-like staging setup."
+    },
+    {
+      "id": "metrics",
+      "label": "Metrics",
+      "sub": "http_req_duration, errors",
+      "kind": "observe",
+      "icon": "k6",
+      "detail": "Built-in metrics include http_req_duration, http_req_failed and iterations. Trends report percentiles such as p95."
+    },
+    {
+      "id": "thresholds",
+      "label": "Thresholds",
+      "sub": "Pass/fail criteria",
+      "kind": "control",
+      "icon": "k6",
+      "detail": "Rules like p(95)<500 or error rate under 1 percent. A breach makes k6 exit non-zero, failing the CI job.",
+      "group": "Load generator"
+    },
+    {
+      "id": "prom",
+      "label": "Prometheus",
+      "sub": "Remote write receiver",
+      "kind": "store",
+      "icon": "prometheus",
+      "detail": "Receives k6 metrics through the Prometheus remote write output for storage next to system metrics."
+    },
+    {
+      "id": "grafana",
+      "label": "Grafana",
+      "sub": "Results dashboard",
+      "kind": "observe",
+      "icon": "grafana",
+      "detail": "Plots latency percentiles, request rate and errors, correlated with server-side metrics."
+    }
+  ],
+  "links": [
+    {
+      "from": "script",
+      "to": "k6",
+      "label": "run",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "k6",
+      "to": "vus",
+      "label": "spawn",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "vus",
+      "to": "target",
+      "label": "HTTP requests",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "target",
+      "to": "metrics",
+      "label": "responses",
+      "style": "dashed",
+      "flow": true
+    },
+    {
+      "from": "vus",
+      "to": "metrics",
+      "label": "record",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "metrics",
+      "to": "thresholds",
+      "label": "evaluate",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "metrics",
+      "to": "prom",
+      "label": "remote write",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "prom",
+      "to": "grafana",
+      "label": "query",
+      "style": "dashed",
+      "flow": true
+    }
+  ],
+  "steps": [
+    {
+      "title": "Script defines the test",
+      "text": "The script sets stages, checks and thresholds, and k6 starts it locally or in CI.",
+      "nodes": [
+        "script",
+        "k6"
+      ],
+      "links": [
+        [
+          "script",
+          "k6"
+        ]
+      ]
+    },
+    {
+      "title": "VUs generate load",
+      "text": "k6 ramps virtual users that loop through the scenario against the target service.",
+      "nodes": [
+        "k6",
+        "vus",
+        "target"
+      ],
+      "links": [
+        [
+          "k6",
+          "vus"
+        ],
+        [
+          "vus",
+          "target"
+        ]
+      ]
+    },
+    {
+      "title": "Metrics are recorded",
+      "text": "Each request is timed; http_req_duration and failure rates are aggregated.",
+      "nodes": [
+        "vus",
+        "metrics",
+        "target"
+      ],
+      "links": [
+        [
+          "vus",
+          "metrics"
+        ],
+        [
+          "target",
+          "metrics"
+        ]
+      ]
+    },
+    {
+      "title": "Thresholds decide pass/fail",
+      "text": "k6 compares p95 latency and error rate to limits and exits non-zero on breach.",
+      "nodes": [
+        "metrics",
+        "thresholds"
+      ],
+      "links": [
+        [
+          "metrics",
+          "thresholds"
+        ]
+      ]
+    },
+    {
+      "title": "Results are visualised",
+      "text": "Metrics are remote-written to Prometheus and plotted in Grafana alongside server metrics.",
+      "nodes": [
+        "metrics",
+        "prom",
+        "grafana"
+      ],
+      "links": [
+        [
+          "metrics",
+          "prom"
+        ],
+        [
+          "prom",
+          "grafana"
+        ]
+      ]
+    }
+  ]
+}

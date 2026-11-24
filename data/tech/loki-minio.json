@@ -1,0 +1,158 @@
+{
+ "slug": "loki-minio",
+ "name": "Loki + MinIO",
+ "category": "Observability",
+ "icon": "grafana",
+ "level": "hands-on",
+ "tagline": "Logs indexed by labels, chunks in S3 storage, traces beside them in Tempo.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Write path",
+   "body": "Alloy pushes batches to the distributor over HTTP or OTLP.\nThe distributor validates, rate-limits and hashes each stream onto the ring.\nIngesters append to a chunk in memory and write a WAL.\nFull or idle chunks flush to MinIO as objects."
+  },
+  {
+   "title": "Index and chunks",
+   "body": "Chunks are compressed log lines for one stream.\nThe TSDB index maps label sets and time to chunks.\nIndex files upload to the same bucket via the shipper.\nA schema_config entry pins index type and schema from a date."
+  },
+  {
+   "title": "Labels and cardinality",
+   "body": "One unique label set is one stream with its own chunks.\nKeep labels few and stable: namespace, app, env, level.\nNever label by user ID, request ID or IP.\nPut variable data in the line or structured metadata."
+  },
+  {
+   "title": "LogQL",
+   "body": "A stream selector uses the index: {app=\"checkout\", env=\"prod\"}.\nLine filters come next, then parsers: | json, | logfmt.\nLabel filters refine: | status >= 500.\nMetric queries turn logs into numbers: rate(...[5m])."
+  },
+  {
+   "title": "Traces, storage and retention",
+   "body": "Alloy sends traces to Tempo; trace_id links a log line to its trace.\nLoki uses the s3 backend with s3forcepathstyle against MinIO.\nThe compactor deletes data older than retention_period.\nPer-stream retention overrides apply through retention_stream rules."
+  }
+ ],
+ "flow": [
+  "The application emits structured logs and spans over OTLP.",
+  "Alloy receives OTLP and batches it.",
+  "Logs go to Loki, traces go to Tempo.",
+  "The distributor hashes each stream onto the ingester ring.",
+  "Ingesters fill chunks in memory and write the WAL.",
+  "Flushed chunks and index files land in MinIO.",
+  "A LogQL query is split by time and sent to queriers.",
+  "Queriers read the index, then fetch chunks from MinIO and ingesters.",
+  "The compactor deletes expired data."
+ ],
+ "deploy": {
+  "summary": "Single-binary Loki 3.1, Tempo, Alloy and MinIO under Docker Compose on one Linux VM.",
+  "prerequisites": [
+   "Linux VM with Docker Engine 24+ and Compose v2",
+   "Static IP and DNS name for the VM",
+   "About 4 GB RAM and a dedicated data disk",
+   "Ports 3100, 4317, 4318 reachable by clients"
+  ],
+  "steps": [
+   {
+    "title": "Prepare the host",
+    "lang": "bash",
+    "code": "sudo mkdir -p /opt/obs && cd /opt/obs\nprintf 'MINIO_ROOT_USER=minioadmin\\nMINIO_ROOT_PASSWORD=CHANGE-ME-32-chars\\n' | sudo tee .env >/dev/null\nsudo chmod 600 .env\nsudo ufw allow from 10.0.0.0/24 to any port 3100,4317,4318 proto tcp   # placeholder subnet",
+    "note": "Replace the password and subnet. Only the trusted subnet reaches Loki and OTLP."
+   },
+   {
+    "title": "Compose file",
+    "lang": "yaml",
+    "code": "services:\n  minio:\n    image: minio/minio:RELEASE.2024-06-13T22-53-53Z\n    command: server /data --console-address \":9001\"\n    environment:\n      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set in .env}\n      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set in .env}\n    volumes: [minio-data:/data]\n    ports: [\"127.0.0.1:9000:9000\", \"127.0.0.1:9001:9001\"]\n  minio-init:\n    image: minio/mc:RELEASE.2024-06-12T14-34-03Z\n    depends_on: [minio]\n    environment:\n      MINIO_ROOT_USER: ${MINIO_ROOT_USER}\n      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}\n    entrypoint: >\n      /bin/sh -c \"until mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}; do sleep 2; done &&\n      mc mb --ignore-existing local/loki-data\"\n  loki:\n    image: grafana/loki:3.1.0\n    command: [\"-config.file=/etc/loki/loki.yaml\", \"-config.expand-env=true\"]\n    environment:\n      MINIO_ROOT_USER: ${MINIO_ROOT_USER}\n      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}\n    volumes: [\"./loki.yaml:/etc/loki/loki.yaml:ro\", \"loki-data:/loki\"]\n    depends_on:\n      minio-init: {condition: service_completed_successfully}\n    ports: [\"3100:3100\"]\n  tempo:\n    image: grafana/tempo:2.5.0\n    command: [\"-config.file=/etc/tempo.yaml\"]\n    volumes: [\"./tempo.yaml:/etc/tempo.yaml:ro\", \"tempo-data:/var/tempo\"]\n    ports: [\"127.0.0.1:3200:3200\"]\n  alloy:\n    image: grafana/alloy:v1.2.0\n    command: [\"run\", \"--server.http.listen-addr=0.0.0.0:12345\", \"/etc/alloy/config.alloy\"]\n    volumes: [\"./config.alloy:/etc/alloy/config.alloy:ro\"]\n    depends_on: [loki, tempo]\n    ports: [\"4317:4317\", \"4318:4318\", \"127.0.0.1:12345:12345\"]\nvolumes:\n  minio-data: {}\n  loki-data: {}\n  tempo-data: {}",
+    "note": "Save as /opt/obs/compose.yaml. MinIO binds to localhost; verify the pinned tags exist in your registry."
+   },
+   {
+    "title": "Loki config with MinIO",
+    "lang": "yaml",
+    "code": "auth_enabled: false\nserver:\n  http_listen_port: 3100\ncommon:\n  path_prefix: /loki\n  replication_factor: 1\n  ring:\n    kvstore:\n      store: inmemory\n  storage:\n    s3:\n      endpoint: minio:9000\n      bucketnames: loki-data\n      access_key_id: ${MINIO_ROOT_USER}\n      secret_access_key: ${MINIO_ROOT_PASSWORD}\n      s3forcepathstyle: true\n      insecure: true\nschema_config:\n  configs:\n    - from: 2024-04-01\n      store: tsdb\n      object_store: s3\n      schema: v13\n      index:\n        prefix: index_\n        period: 24h\nstorage_config:\n  tsdb_shipper:\n    active_index_directory: /loki/tsdb-index\n    cache_location: /loki/tsdb-cache\ncompactor:\n  working_directory: /loki/compactor\n  retention_enabled: true\n  delete_request_store: s3\nlimits_config:\n  retention_period: 168h\n  allow_structured_metadata: true\n  max_label_names_per_series: 15\ningester:\n  wal:\n    dir: /loki/wal\nanalytics:\n  reporting_enabled: false",
+    "note": "Save as loki.yaml. insecure true is lab-only; use TLS to MinIO and replication 3 in production."
+   },
+   {
+    "title": "Tempo config",
+    "lang": "yaml",
+    "code": "server:\n  http_listen_port: 3200\ndistributor:\n  receivers:\n    otlp:\n      protocols:\n        grpc:\n          endpoint: 0.0.0.0:4317\nstorage:\n  trace:\n    backend: local\n    wal:\n      path: /var/tempo/wal\n    local:\n      path: /var/tempo/blocks",
+    "note": "Save as tempo.yaml. Local block storage for the lab; point it at S3 for production."
+   },
+   {
+    "title": "Alloy pipeline",
+    "lang": "hcl",
+    "code": "otelcol.receiver.otlp \"default\" {\n  grpc { endpoint = \"0.0.0.0:4317\" }\n  http { endpoint = \"0.0.0.0:4318\" }\n  output {\n    logs   = [otelcol.processor.batch.default.input]\n    traces = [otelcol.processor.batch.default.input]\n  }\n}\n\notelcol.processor.batch \"default\" {\n  output {\n    logs   = [otelcol.exporter.otlphttp.loki.input]\n    traces = [otelcol.exporter.otlp.tempo.input]\n  }\n}\n\notelcol.exporter.otlphttp \"loki\" {\n  client { endpoint = \"http://loki:3100/otlp\" }\n}\n\notelcol.exporter.otlp \"tempo\" {\n  client {\n    endpoint = \"tempo:4317\"\n    tls { insecure = true }\n  }\n}",
+    "note": "Save as config.alloy. Loki 3 accepts OTLP natively at /otlp; resource attributes become labels or structured metadata."
+   },
+   {
+    "title": "Run under systemd",
+    "lang": "bash",
+    "code": "sudo tee /etc/systemd/system/obs.service >/dev/null <<'UNIT'\n[Unit]\nDescription=Loki, Tempo, MinIO and Alloy\nRequires=docker.service\nAfter=docker.service network-online.target\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\nWorkingDirectory=/opt/obs\nExecStart=/usr/bin/docker compose up -d\nExecStop=/usr/bin/docker compose down\n\n[Install]\nWantedBy=multi-user.target\nUNIT\nsudo systemctl daemon-reload\nsudo systemctl enable --now obs.service",
+    "note": "The stack now starts at boot."
+   },
+   {
+    "title": "Push and query a line",
+    "lang": "bash",
+    "code": "NOW=$(date +%s)000000000\ncurl -s -X POST http://localhost:3100/loki/api/v1/push -H 'Content-Type: application/json' \\\n  -d \"{\\\"streams\\\":[{\\\"stream\\\":{\\\"app\\\":\\\"demo\\\",\\\"env\\\":\\\"lab\\\"},\\\"values\\\":[[\\\"$NOW\\\",\\\"level=error msg=hello\\\"]]}]}\"\ncurl -sG http://localhost:3100/loki/api/v1/query_range --data-urlencode 'query={app=\"demo\"} |= \"error\"'",
+    "note": "Expect the line under result.values."
+   },
+   {
+    "title": "Find chunks in MinIO",
+    "lang": "bash",
+    "code": "cd /opt/obs && docker compose restart loki\ndocker compose run --rm --entrypoint /bin/sh minio-init -c \\\n 'mc alias set l http://minio:9000 \"$MINIO_ROOT_USER\" \"$MINIO_ROOT_PASSWORD\" && mc ls --recursive l/loki-data | head'",
+    "note": "Restarting Loki forces a flush; otherwise wait for chunk idle time."
+   }
+  ]
+ },
+ "verify": [
+  "Ready: curl -s http://localhost:3100/ready",
+  "Labels: curl -s http://localhost:3100/loki/api/v1/labels",
+  "Retention: curl -s http://localhost:3100/config | grep -E 'retention_(enabled|period)'",
+  "Alloy: curl -s http://localhost:12345/-/ready",
+  "Tempo: curl -s http://localhost:3200/ready"
+ ],
+ "pitfalls": [
+  "High-cardinality labels bloat the index and slow every query.",
+  "MinIO needs s3forcepathstyle true; the bucket must exist before Loki starts.",
+  "retention_period does nothing without compactor retention_enabled and delete_request_store.",
+  "Edit schema_config by adding a future-dated entry, never by changing an old one.",
+  "Clock skew makes Loki reject out-of-order or too-old entries.",
+  "replication_factor 1 with an inmemory ring loses recent logs on a crash.",
+  "Promtail is in maintenance mode; start new work on Alloy."
+ ],
+ "furtherReading": [
+  {
+   "label": "Loki architecture",
+   "url": "https://grafana.com/docs/loki/latest/get-started/architecture/"
+  },
+  {
+   "label": "Label best practices",
+   "url": "https://grafana.com/docs/loki/latest/get-started/labels/bp-labels/"
+  },
+  {
+   "label": "Loki retention",
+   "url": "https://grafana.com/docs/loki/latest/operations/storage/retention/"
+  },
+  {
+   "label": "Alloy OTLP HTTP exporter",
+   "url": "https://grafana.com/docs/alloy/latest/reference/components/otelcol/otelcol.exporter.otlphttp/"
+  }
+ ],
+ "keyPoints": [
+  "Loki indexes labels only; log lines stay in compressed chunks.",
+  "MinIO holds chunks and index files over the S3 API.",
+  "Alloy pushes OTLP logs to Loki and traces to Tempo.",
+  "Few stable labels keep cardinality, cost and queries healthy."
+ ],
+ "quickDeploy": [
+  "Run MinIO, Loki, Tempo and Alloy with Compose",
+  "Point loki.yaml at the MinIO bucket",
+  "Send OTLP through Alloy to both backends",
+  "Query with LogQL and find chunks in MinIO"
+ ],
+ "osi": [
+  "L7"
+ ],
+ "osiNote": "Speaks HTTP, gRPC and S3 over TCP.",
+ "production": [
+  "Run replication_factor 3 with WAL on persistent disks.",
+  "Enable compactor retention; set per-tenant limits and stream rules.",
+  "Back up the MinIO bucket; use erasure coding across drives.",
+  "Enforce TLS to MinIO and keep credentials in a secrets store.",
+  "Alert on ingester flush failures, 429 rate limits and active streams."
+ ]
+}

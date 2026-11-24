@@ -1,0 +1,158 @@
+{
+ "slug": "aws",
+ "name": "AWS",
+ "category": "Cloud",
+ "icon": "amazonaws",
+ "level": "working",
+ "tagline": "Private VPC, TLS load balancer, SSM access and CloudFront: a production web stack.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "VPC and routing (L3)",
+   "body": "Public subnets route 0.0.0.0/0 to the Internet Gateway.\nPrivate subnets route 0.0.0.0/0 to the NAT gateway.\nNAT gives private hosts one fixed egress IP.\nMongoDB Atlas allow-lists that NAT IP only."
+  },
+  {
+   "title": "Application Load Balancer (L7)",
+   "body": "The ALB sits in public subnets and terminates TLS with an ACM certificate.\nRoute 53 alias records point the domain at the ALB.\nHealth checks decide which targets receive traffic.\nSecurity groups chain: internet, ALB group, app group."
+  },
+  {
+   "title": "Private EC2 and Docker",
+   "body": "Instances have no public IP and port 22 is closed.\nDocker Compose runs Nginx and the app on separate bridge networks.\nNginx reverse-proxies to the app; only Nginx publishes a port.\nThe app reads secrets from Parameter Store at start."
+  },
+  {
+   "title": "SSM access and secrets",
+   "body": "The instance role AmazonSSMManagedInstanceCore registers the SSM agent outbound.\naws ssm start-session opens an IAM-authenticated, logged shell.\nParameter Store SecureString holds the database URI, encrypted by KMS."
+  },
+  {
+   "title": "Frontend and alarms",
+   "body": "The React build sits in a private S3 bucket; CloudFront reads it through OAC.\nCloudWatch alarms publish to an SNS topic that emails the operator.\nAlarm on unhealthy hosts, 5XX and latency."
+  }
+ ],
+ "flow": [
+  "Browser resolves the domain in Route 53.",
+  "Static paths hit CloudFront, which fetches from private S3 through OAC.",
+  "App paths reach the ALB in a public subnet over HTTPS.",
+  "ALB terminates TLS with ACM and forwards HTTP to a healthy target.",
+  "Nginx in Docker proxies to the app container on a private bridge.",
+  "The app reads Parameter Store and calls MongoDB Atlas through NAT.",
+  "CloudWatch evaluates metrics and SNS notifies on alarm."
+ ],
+ "deploy": {
+  "summary": "Build the stack with AWS CLI v2 in one shell. NAT and ALB bill hourly; run the cleanup.",
+  "prerequisites": [
+   "AWS CLI v2 configured with a non-root identity",
+   "Session Manager plugin installed locally",
+   "Route 53 hosted zone for your domain (placeholders: ZONE_ID, DOMAIN)",
+   "bash shell with uuidgen"
+  ],
+  "steps": [
+   {
+    "title": "1. VPC, subnets, IGW, NAT and routes",
+    "lang": "bash",
+    "code": "export AWS_REGION=ap-south-1 AWS_PAGER=\"\"\nAZ_A=${AWS_REGION}a; AZ_B=${AWS_REGION}b\nVPC=$(aws ec2 create-vpc --cidr-block 10.20.0.0/16 --tag-specifications 'ResourceType=vpc,Tags=[{Key=Name,Value=demo-vpc}]' --query Vpc.VpcId --output text)\naws ec2 modify-vpc-attribute --vpc-id $VPC --enable-dns-hostnames\nPUB_A=$(aws ec2 create-subnet --vpc-id $VPC --cidr-block 10.20.0.0/24  --availability-zone $AZ_A --query Subnet.SubnetId --output text)\nPUB_B=$(aws ec2 create-subnet --vpc-id $VPC --cidr-block 10.20.1.0/24  --availability-zone $AZ_B --query Subnet.SubnetId --output text)\nPRIV_A=$(aws ec2 create-subnet --vpc-id $VPC --cidr-block 10.20.10.0/24 --availability-zone $AZ_A --query Subnet.SubnetId --output text)\nPRIV_B=$(aws ec2 create-subnet --vpc-id $VPC --cidr-block 10.20.11.0/24 --availability-zone $AZ_B --query Subnet.SubnetId --output text)\nIGW=$(aws ec2 create-internet-gateway --query InternetGateway.InternetGatewayId --output text)\naws ec2 attach-internet-gateway --internet-gateway-id $IGW --vpc-id $VPC\nPUB_RT=$(aws ec2 create-route-table --vpc-id $VPC --query RouteTable.RouteTableId --output text)\naws ec2 create-route --route-table-id $PUB_RT --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW\naws ec2 associate-route-table --route-table-id $PUB_RT --subnet-id $PUB_A\naws ec2 associate-route-table --route-table-id $PUB_RT --subnet-id $PUB_B\nEIP=$(aws ec2 allocate-address --domain vpc --query AllocationId --output text)\nNAT=$(aws ec2 create-nat-gateway --subnet-id $PUB_A --allocation-id $EIP --query NatGateway.NatGatewayId --output text)\naws ec2 wait nat-gateway-available --nat-gateway-ids $NAT\nNAT_IP=$(aws ec2 describe-addresses --allocation-ids $EIP --query 'Addresses[0].PublicIp' --output text)\nPRIV_RT=$(aws ec2 create-route-table --vpc-id $VPC --query RouteTable.RouteTableId --output text)\naws ec2 create-route --route-table-id $PRIV_RT --destination-cidr-block 0.0.0.0/0 --nat-gateway-id $NAT\naws ec2 associate-route-table --route-table-id $PRIV_RT --subnet-id $PRIV_A\naws ec2 associate-route-table --route-table-id $PRIV_RT --subnet-id $PRIV_B\necho \"Allow-list in MongoDB Atlas: $NAT_IP/32\"",
+    "note": "Add $NAT_IP/32 to the Atlas IP access list. In production run one NAT per AZ."
+   },
+   {
+    "title": "2. Security groups and instance role",
+    "lang": "bash",
+    "code": "ALB_SG=$(aws ec2 create-security-group --group-name demo-alb-sg --description ALB --vpc-id $VPC --query GroupId --output text)\nAPP_SG=$(aws ec2 create-security-group --group-name demo-app-sg --description App --vpc-id $VPC --query GroupId --output text)\naws ec2 authorize-security-group-ingress --group-id $ALB_SG --protocol tcp --port 443 --cidr 0.0.0.0/0\naws ec2 authorize-security-group-ingress --group-id $APP_SG --protocol tcp --port 80 --source-group $ALB_SG\ncat > trust.json <<'EOF'\n{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ec2.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}\nEOF\ncat > params.json <<'EOF'\n{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"ssm:GetParameter\"],\"Resource\":\"arn:aws:ssm:*:*:parameter/demo/*\"}]}\nEOF\naws iam create-role --role-name demo-ssm-role --assume-role-policy-document file://trust.json\naws iam attach-role-policy --role-name demo-ssm-role --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore\naws iam put-role-policy --role-name demo-ssm-role --policy-name demo-params --policy-document file://params.json\naws iam create-instance-profile --instance-profile-name demo-ssm-profile\naws iam add-role-to-instance-profile --instance-profile-name demo-ssm-profile --role-name demo-ssm-role\nsleep 15",
+    "note": "No rule opens port 22. A customer-managed KMS key also needs kms:Decrypt on the role."
+   },
+   {
+    "title": "3. Store the secret in Parameter Store",
+    "lang": "bash",
+    "code": "aws ssm put-parameter --name /demo/MONGO_URI --type SecureString \\\n  --value 'mongodb+srv://USER:PASS@CLUSTER.mongodb.net/db'   # placeholder",
+    "note": "Replace the placeholder with your Atlas URI. The default aws/ssm KMS key encrypts it."
+   },
+   {
+    "title": "4. Private EC2 with Docker Compose and Nginx",
+    "lang": "bash",
+    "code": "AMI=$(aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 --query Parameter.Value --output text)\ncat > userdata.sh <<'UD'\n#!/bin/bash\ndnf install -y docker\nsystemctl enable --now docker\nmkdir -p /usr/local/lib/docker/cli-plugins /opt/app\ncurl -SL https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose\nchmod +x /usr/local/lib/docker/cli-plugins/docker-compose\ncat > /opt/app/nginx.conf <<'NG'\nserver { listen 80; location / { proxy_pass http://app:5678; proxy_set_header Host $host; proxy_set_header X-Forwarded-For $remote_addr; } }\nNG\ncat > /opt/app/compose.yaml <<'CY'\nservices:\n  nginx:\n    image: nginx:1.27-alpine\n    ports: [\"80:80\"]\n    volumes: [\"./nginx.conf:/etc/nginx/conf.d/default.conf:ro\"]\n    networks: [front, back]\n    restart: always\n  app:\n    image: hashicorp/http-echo:1.0\n    command: [\"-text=hello from app\"]\n    networks: [back]\n    restart: always\nnetworks:\n  front: {driver: bridge}\n  back: {driver: bridge}\nCY\ncd /opt/app && docker compose up -d\nUD\nI1=$(aws ec2 run-instances --image-id $AMI --instance-type t3.micro --subnet-id $PRIV_A --security-group-ids $APP_SG \\\n  --iam-instance-profile Name=demo-ssm-profile --metadata-options HttpTokens=required,HttpPutResponseHopLimit=2 --user-data file://userdata.sh \\\n  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=demo-app-a}]' --query 'Instances[0].InstanceId' --output text)\naws ec2 wait instance-running --instance-ids $I1",
+    "note": "Nginx joins both bridge networks; the app joins only back. A real app reads MONGO_URI with aws ssm get-parameter --with-decryption."
+   },
+   {
+    "title": "5. ACM certificate, HTTPS ALB and Route 53 alias",
+    "lang": "bash",
+    "code": "DOMAIN=app.example.com; ZONE_ID=ZXXXXXXXXXXXX   # placeholders\nCERT=$(aws acm request-certificate --domain-name $DOMAIN --validation-method DNS --query CertificateArn --output text)\nsleep 15\nread CN CV < <(aws acm describe-certificate --certificate-arn $CERT --query 'Certificate.DomainValidationOptions[0].ResourceRecord.[Name,Value]' --output text)\naws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch \"{\\\"Changes\\\":[{\\\"Action\\\":\\\"UPSERT\\\",\\\"ResourceRecordSet\\\":{\\\"Name\\\":\\\"$CN\\\",\\\"Type\\\":\\\"CNAME\\\",\\\"TTL\\\":300,\\\"ResourceRecords\\\":[{\\\"Value\\\":\\\"$CV\\\"}]}}]}\"\naws acm wait certificate-validated --certificate-arn $CERT\nTG=$(aws elbv2 create-target-group --name demo-tg --protocol HTTP --port 80 --vpc-id $VPC --target-type instance --health-check-path / --query 'TargetGroups[0].TargetGroupArn' --output text)\naws elbv2 register-targets --target-group-arn $TG --targets Id=$I1\nALB=$(aws elbv2 create-load-balancer --name demo-alb --subnets $PUB_A $PUB_B --security-groups $ALB_SG --query 'LoadBalancers[0].LoadBalancerArn' --output text)\naws elbv2 create-listener --load-balancer-arn $ALB --protocol HTTPS --port 443 --certificates CertificateArn=$CERT --ssl-policy ELBSecurityPolicy-TLS13-1-2-2021-06 --default-actions Type=forward,TargetGroupArn=$TG\naws elbv2 wait load-balancer-available --load-balancer-arns $ALB\nread ALB_DNS ALB_ZONE < <(aws elbv2 describe-load-balancers --load-balancer-arns $ALB --query 'LoadBalancers[0].[DNSName,CanonicalHostedZoneId]' --output text)\naws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch \"{\\\"Changes\\\":[{\\\"Action\\\":\\\"UPSERT\\\",\\\"ResourceRecordSet\\\":{\\\"Name\\\":\\\"$DOMAIN\\\",\\\"Type\\\":\\\"A\\\",\\\"AliasTarget\\\":{\\\"HostedZoneId\\\":\\\"$ALB_ZONE\\\",\\\"DNSName\\\":\\\"$ALB_DNS\\\",\\\"EvaluateTargetHealth\\\":true}}}]}\"",
+    "note": "The domain must live in your Route 53 zone. Validation usually completes within minutes."
+   },
+   {
+    "title": "6. Reach the instance with SSM",
+    "lang": "bash",
+    "code": "aws ssm describe-instance-information --query 'InstanceInformationList[].InstanceId'\naws ssm start-session --target $I1",
+    "note": "The instance appears within minutes. Inside the shell run docker ps to see both containers."
+   },
+   {
+    "title": "7. Private S3 behind CloudFront with OAC",
+    "lang": "bash",
+    "code": "BUCKET=demo-static-$(uuidgen | tr 'A-Z' 'a-z' | cut -c1-12)\naws s3api create-bucket --bucket $BUCKET --region $AWS_REGION --create-bucket-configuration LocationConstraint=$AWS_REGION\necho '<h1>React build goes here</h1>' > index.html\naws s3 cp index.html s3://$BUCKET/index.html --content-type text/html\nOAC=$(aws cloudfront create-origin-access-control --origin-access-control-config \"Name=demo-oac-$BUCKET,SigningProtocol=sigv4,SigningBehavior=always,OriginAccessControlOriginType=s3\" --query OriginAccessControl.Id --output text)\ncat > cf.json <<EOF\n{\"CallerReference\":\"demo-$(date +%s)\",\"Comment\":\"static\",\"Enabled\":true,\"DefaultRootObject\":\"index.html\",\n \"Origins\":{\"Quantity\":1,\"Items\":[{\"Id\":\"s3-origin\",\"DomainName\":\"$BUCKET.s3.$AWS_REGION.amazonaws.com\",\"S3OriginConfig\":{\"OriginAccessIdentity\":\"\"},\"OriginAccessControlId\":\"$OAC\"}]},\n \"DefaultCacheBehavior\":{\"TargetOriginId\":\"s3-origin\",\"ViewerProtocolPolicy\":\"redirect-to-https\",\"CachePolicyId\":\"658327ea-f89d-4fab-a63d-7e88639e58f6\",\"Compress\":true}}\nEOF\nread DIST_ID DIST_DOMAIN < <(aws cloudfront create-distribution --distribution-config file://cf.json --query 'Distribution.[Id,DomainName]' --output text)\nACCT=$(aws sts get-caller-identity --query Account --output text)\ncat > bucket-policy.json <<EOF\n{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"AllowCloudFrontOAC\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"cloudfront.amazonaws.com\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::$BUCKET/*\",\"Condition\":{\"StringEquals\":{\"AWS:SourceArn\":\"arn:aws:cloudfront::$ACCT:distribution/$DIST_ID\"}}}]}\nEOF\naws s3api put-bucket-policy --bucket $BUCKET --policy file://bucket-policy.json\necho \"https://$DIST_DOMAIN/\"",
+    "note": "Needs bash. 658327ea-f89d-4fab-a63d-7e88639e58f6 is the managed CachingOptimized policy."
+   },
+   {
+    "title": "8. CloudWatch alarm through SNS",
+    "lang": "bash",
+    "code": "TOPIC=$(aws sns create-topic --name demo-alerts --query TopicArn --output text)\naws sns subscribe --topic-arn $TOPIC --protocol email --notification-endpoint you@example.com   # placeholder\nTG_DIM=${TG##*:}; ALB_DIM=${ALB#*:loadbalancer/}\naws cloudwatch put-metric-alarm --alarm-name demo-unhealthy-targets --namespace AWS/ApplicationELB --metric-name UnHealthyHostCount --statistic Maximum \\\n  --dimensions Name=TargetGroup,Value=$TG_DIM Name=LoadBalancer,Value=$ALB_DIM --period 60 --evaluation-periods 2 --threshold 1 \\\n  --comparison-operator GreaterThanOrEqualToThreshold --treat-missing-data notBreaching --alarm-actions $TOPIC",
+    "note": "Confirm the email subscription first. Test by running docker stop on the nginx container via SSM."
+   }
+  ]
+ },
+ "verify": [
+  "curl -I https://$DOMAIN/ returns 200 with a valid ACM certificate.",
+  "aws elbv2 describe-target-health --target-group-arn $TG shows healthy.",
+  "aws ec2 describe-instances --instance-ids $I1 --query 'Reservations[].Instances[].PublicIpAddress' returns null.",
+  "curl -I https://$DIST_DOMAIN/ returns 200; the direct S3 URL returns 403.",
+  "aws cloudwatch describe-alarms --alarm-names demo-unhealthy-targets shows OK, then ALARM on failure."
+ ],
+ "pitfalls": [
+  "NAT gateways and ALBs bill hourly; forgotten ones are the classic surprise bill.",
+  "Atlas rejects connections if the allow-list lacks the current NAT Elastic IP.",
+  "SSM needs an outbound path (NAT or VPC endpoints) and the instance role.",
+  "Unhealthy targets usually mean the app security group omits the ALB group.",
+  "ACM certificates for an ALB must be in the ALB's region.",
+  "A wrong distribution ARN in the bucket policy gives AccessDenied through CloudFront.",
+  "CloudFront caches index.html; invalidate it after each frontend deploy."
+ ],
+ "furtherReading": [
+  {
+   "label": "Amazon VPC User Guide",
+   "url": "https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html"
+  },
+  {
+   "label": "Application Load Balancers",
+   "url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html"
+  },
+  {
+   "label": "Session Manager",
+   "url": "https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html"
+  },
+  {
+   "label": "CloudFront OAC for S3",
+   "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html"
+  }
+ ],
+ "keyPoints": [
+  "Public subnets hold only the ALB and NAT; servers stay private.",
+  "SSM Session Manager replaces SSH: no key, no open port 22.",
+  "ACM and Route 53 put TLS and a real name on the ALB.",
+  "CloudWatch alarms notify through SNS; secrets live in Parameter Store."
+ ],
+ "quickDeploy": [
+  "Create VPC, subnets, IGW, NAT and route tables.",
+  "Launch private EC2 with an SSM role.",
+  "Add ACM certificate, HTTPS ALB and Route 53 alias.",
+  "Wire CloudFront, CloudWatch and SNS alarms."
+ ],
+ "osi": [
+  "L3",
+  "L4",
+  "L7"
+ ],
+ "osiNote": "Routes subnets at L3, balances TCP at L4, terminates TLS at L7.",
+ "production": [
+  "One NAT gateway per AZ; allow-list its Elastic IP in MongoDB Atlas.",
+  "Spread targets across two AZs; health-check the ALB target group.",
+  "Keep secrets in SSM Parameter Store as SecureString; never in user-data.",
+  "Enforce IMDSv2, security-group chaining and S3 Block Public Access.",
+  "Alarm on UnHealthyHostCount, ALB 5XX and target response time."
+ ]
+}

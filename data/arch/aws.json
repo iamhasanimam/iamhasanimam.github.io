@@ -1,0 +1,247 @@
+{
+  "title": "AWS Web Application Architecture",
+  "summary": "Route 53 and CloudFront front an ALB and S3; private EC2 reaches the internet through NAT, is managed by SSM, and monitored by CloudWatch.",
+  "nodes": [
+    {
+      "id": "users",
+      "label": "Users",
+      "sub": "Internet clients",
+      "kind": "client",
+      "icon": null,
+      "detail": "Browsers resolve the domain via DNS and connect over HTTPS."
+    },
+    {
+      "id": "r53",
+      "label": "Route 53",
+      "sub": "DNS",
+      "kind": "network",
+      "icon": "amazonroute53",
+      "detail": "Resolves the domain name to CloudFront or the load balancer using alias records."
+    },
+    {
+      "id": "cf",
+      "label": "CloudFront",
+      "sub": "CDN with OAC",
+      "kind": "proxy",
+      "icon": "amazoncloudfront",
+      "detail": "Caches content at edge locations. Origin Access Control lets only CloudFront read the private S3 bucket."
+    },
+    {
+      "id": "s3",
+      "label": "S3 Bucket",
+      "sub": "Static assets",
+      "kind": "store",
+      "icon": "amazons3",
+      "detail": "Private bucket for static files. Public access is blocked; access is granted to CloudFront through OAC.",
+      "group": "Storage"
+    },
+    {
+      "id": "alb",
+      "label": "ALB",
+      "sub": "Public subnet",
+      "kind": "proxy",
+      "icon": "amazonaws",
+      "detail": "Application load balancer terminating TLS and routing by host or path to targets in private subnets.",
+      "group": "Public subnet"
+    },
+    {
+      "id": "nat",
+      "label": "NAT Gateway",
+      "sub": "Static outbound IP",
+      "kind": "network",
+      "icon": "amazonaws",
+      "detail": "Lets private instances reach the internet without inbound exposure. Its Elastic IP can be allow-listed by external services.",
+      "group": "Public subnet"
+    },
+    {
+      "id": "ec2",
+      "label": "Private EC2",
+      "sub": "App server",
+      "kind": "service",
+      "icon": "amazonec2",
+      "detail": "Runs the application with no public IP. Administered through SSM Session Manager rather than open SSH.",
+      "group": "Private subnet"
+    },
+    {
+      "id": "ssm",
+      "label": "SSM, Parameter Store",
+      "sub": "Access and config",
+      "kind": "control",
+      "icon": "amazonaws",
+      "detail": "Session Manager gives audited shell access. Parameter Store holds configuration and encrypted secrets read via IAM role."
+    },
+    {
+      "id": "atlas",
+      "label": "MongoDB Atlas",
+      "sub": "External database",
+      "kind": "store",
+      "icon": "mongodb",
+      "detail": "Managed database outside AWS whose IP access list permits only the NAT gateway's public address."
+    },
+    {
+      "id": "cw",
+      "label": "CloudWatch",
+      "sub": "Logs and metrics",
+      "kind": "observe",
+      "icon": "amazoncloudwatch",
+      "detail": "Collects metrics, logs and alarms from the ALB, instances and other services."
+    }
+  ],
+  "links": [
+    {
+      "from": "users",
+      "to": "r53",
+      "label": "DNS",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "users",
+      "to": "cf",
+      "label": "HTTPS",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "cf",
+      "to": "s3",
+      "label": "OAC",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "cf",
+      "to": "alb",
+      "label": "dynamic",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "alb",
+      "to": "ec2",
+      "label": "forward",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "ec2",
+      "to": "nat",
+      "label": "outbound",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "nat",
+      "to": "atlas",
+      "label": "allow-listed IP",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "ssm",
+      "to": "ec2",
+      "label": "session, config",
+      "style": "dashed",
+      "flow": true
+    },
+    {
+      "from": "ec2",
+      "to": "cw",
+      "label": "logs",
+      "style": "dashed",
+      "flow": true
+    }
+  ],
+  "steps": [
+    {
+      "title": "DNS directs the user",
+      "text": "Route 53 resolves the domain to the CloudFront distribution.",
+      "nodes": [
+        "users",
+        "r53",
+        "cf"
+      ],
+      "links": [
+        [
+          "users",
+          "r53"
+        ],
+        [
+          "users",
+          "cf"
+        ]
+      ]
+    },
+    {
+      "title": "CloudFront serves the edge",
+      "text": "Static requests are served from cache or read from S3 via Origin Access Control.",
+      "nodes": [
+        "cf",
+        "s3"
+      ],
+      "links": [
+        [
+          "cf",
+          "s3"
+        ]
+      ]
+    },
+    {
+      "title": "Dynamic requests reach the ALB",
+      "text": "Other paths go to the ALB in the public subnet, which forwards to private instances.",
+      "nodes": [
+        "cf",
+        "alb",
+        "ec2"
+      ],
+      "links": [
+        [
+          "cf",
+          "alb"
+        ],
+        [
+          "alb",
+          "ec2"
+        ]
+      ]
+    },
+    {
+      "title": "Outbound uses NAT",
+      "text": "The private instance reaches the external database through the NAT gateway, whose IP is allow-listed.",
+      "nodes": [
+        "ec2",
+        "nat",
+        "atlas"
+      ],
+      "links": [
+        [
+          "ec2",
+          "nat"
+        ],
+        [
+          "nat",
+          "atlas"
+        ]
+      ]
+    },
+    {
+      "title": "Operate and observe",
+      "text": "SSM provides shell access and Parameter Store config, while CloudWatch collects logs and alarms.",
+      "nodes": [
+        "ssm",
+        "ec2",
+        "cw"
+      ],
+      "links": [
+        [
+          "ssm",
+          "ec2"
+        ],
+        [
+          "ec2",
+          "cw"
+        ]
+      ]
+    }
+  ]
+}

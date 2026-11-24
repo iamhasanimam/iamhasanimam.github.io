@@ -1,0 +1,223 @@
+{
+  "title": "HAProxy High Availability Load Balancing",
+  "summary": "Clients reach a keepalived-managed floating IP. The active HAProxy applies ACLs, health-checked backends and PROXY protocol to reach servers.",
+  "nodes": [
+    {
+      "id": "clients",
+      "label": "Clients",
+      "sub": "Internet or LAN users",
+      "kind": "client",
+      "icon": null,
+      "detail": "Connect to a single virtual IP and are unaware of which load balancer node currently answers."
+    },
+    {
+      "id": "vip",
+      "label": "Floating VIP",
+      "sub": "VRRP virtual IP",
+      "kind": "network",
+      "icon": null,
+      "detail": "Virtual IP owned by whichever node is VRRP MASTER. On failure it moves to the BACKUP within a few seconds."
+    },
+    {
+      "id": "ka_master",
+      "label": "keepalived MASTER",
+      "sub": "Holds the VIP",
+      "kind": "control",
+      "icon": null,
+      "detail": "Sends VRRP advertisements and tracks a HAProxy health script. Higher priority wins the election.",
+      "group": "Active node"
+    },
+    {
+      "id": "ka_backup",
+      "label": "keepalived BACKUP",
+      "sub": "Standby node",
+      "kind": "control",
+      "icon": null,
+      "detail": "Listens for advertisements. If they stop, it claims the VIP and sends gratuitous ARP.",
+      "group": "Standby node"
+    },
+    {
+      "id": "hap_fe",
+      "label": "HAProxy Frontend",
+      "sub": "Bind, ACLs, rules",
+      "kind": "proxy",
+      "icon": "haproxy",
+      "detail": "Terminates or passes through TCP/TLS, evaluates ACLs on host, path or SNI, and chooses a backend with use_backend rules.",
+      "group": "Active node"
+    },
+    {
+      "id": "hap_be",
+      "label": "HAProxy Backend",
+      "sub": "Balance and health checks",
+      "kind": "proxy",
+      "icon": "haproxy",
+      "detail": "Distributes requests using roundrobin or leastconn. Active health checks mark servers up or down and remove failed ones from rotation.",
+      "group": "Active node"
+    },
+    {
+      "id": "srv_a",
+      "label": "Server A",
+      "sub": "Application node",
+      "kind": "service",
+      "icon": null,
+      "detail": "Backend application server. Receives client details via PROXY protocol or X-Forwarded-For."
+    },
+    {
+      "id": "srv_b",
+      "label": "Server B",
+      "sub": "Application node",
+      "kind": "service",
+      "icon": null,
+      "detail": "Second backend server. Can be drained with maintenance mode for zero-downtime deploys."
+    },
+    {
+      "id": "stats",
+      "label": "Stats Page",
+      "sub": "Runtime metrics",
+      "kind": "observe",
+      "icon": null,
+      "detail": "HAProxy stats and runtime API expose session counts, server state and health check results."
+    }
+  ],
+  "links": [
+    {
+      "from": "clients",
+      "to": "vip",
+      "label": "connect",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "vip",
+      "to": "hap_fe",
+      "label": "owned by MASTER",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "ka_master",
+      "to": "vip",
+      "label": "VRRP",
+      "style": "dashed",
+      "flow": false
+    },
+    {
+      "from": "ka_master",
+      "to": "ka_backup",
+      "label": "advertisements",
+      "style": "dashed",
+      "flow": true
+    },
+    {
+      "from": "hap_fe",
+      "to": "hap_be",
+      "label": "use_backend",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "hap_be",
+      "to": "srv_a",
+      "label": "PROXY protocol",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "hap_be",
+      "to": "srv_b",
+      "label": "PROXY protocol",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "hap_be",
+      "to": "stats",
+      "label": "metrics",
+      "style": "dashed",
+      "flow": true
+    }
+  ],
+  "steps": [
+    {
+      "title": "Clients target the VIP",
+      "text": "Clients resolve one address. It is a VRRP virtual IP, not tied to a single machine.",
+      "nodes": [
+        "clients",
+        "vip"
+      ],
+      "links": [
+        [
+          "clients",
+          "vip"
+        ]
+      ]
+    },
+    {
+      "title": "MASTER owns the VIP",
+      "text": "keepalived on the MASTER advertises priority, and traffic lands on its HAProxy frontend.",
+      "nodes": [
+        "ka_master",
+        "vip",
+        "hap_fe"
+      ],
+      "links": [
+        [
+          "ka_master",
+          "vip"
+        ],
+        [
+          "vip",
+          "hap_fe"
+        ]
+      ]
+    },
+    {
+      "title": "ACLs pick a backend",
+      "text": "The frontend matches host, path or SNI via ACLs and routes to the right backend pool.",
+      "nodes": [
+        "hap_fe",
+        "hap_be"
+      ],
+      "links": [
+        [
+          "hap_fe",
+          "hap_be"
+        ]
+      ]
+    },
+    {
+      "title": "Health checks gate servers",
+      "text": "The backend only sends traffic to servers passing health checks, using PROXY protocol to preserve client IP.",
+      "nodes": [
+        "hap_be",
+        "srv_a",
+        "srv_b"
+      ],
+      "links": [
+        [
+          "hap_be",
+          "srv_a"
+        ],
+        [
+          "hap_be",
+          "srv_b"
+        ]
+      ]
+    },
+    {
+      "title": "Failover on MASTER loss",
+      "text": "If advertisements stop, the BACKUP takes the VIP and its HAProxy continues serving.",
+      "nodes": [
+        "ka_master",
+        "ka_backup",
+        "vip"
+      ],
+      "links": [
+        [
+          "ka_master",
+          "ka_backup"
+        ]
+      ]
+    }
+  ]
+}

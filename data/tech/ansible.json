@@ -1,0 +1,149 @@
+{
+ "slug": "ansible",
+ "name": "Ansible",
+ "category": "Automation",
+ "icon": "ansible",
+ "level": "working",
+ "tagline": "Agentless, idempotent automation: bring servers to a known state over SSH.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Control node and inventory",
+   "body": "The control node holds playbooks, roles and inventory.\nInventory groups hosts; group_vars override per group.\nTargets need only SSH and Python.\nForks run tasks on hosts in parallel."
+  },
+  {
+   "title": "Modules and idempotency",
+   "body": "Each task calls a module such as apt, user or lineinfile.\nModules compare desired and actual state.\nThe recap reports ok, changed or failed per host.\ncommand and shell always report changed unless guarded."
+  },
+  {
+   "title": "Roles, handlers and templates",
+   "body": "Roles package tasks, handlers, templates and defaults.\nHandlers run once at the end, only when notified.\nJinja2 templates render per-host files.\nvalidate: tests a file before it replaces the original."
+  },
+  {
+   "title": "Check mode and diff",
+   "body": "--check simulates the run and changes nothing.\n--diff prints the exact file changes.\n--limit scopes the run to one host or group.\nA second run with changed=0 proves idempotency."
+  },
+  {
+   "title": "On-prem bring-up",
+   "body": "Create users, keys and sudoers drop-ins first.\nHarden sshd: no passwords, no root, AllowUsers.\nSet chrony, firewall rules and cron jobs.\nCron or CI re-runs the baseline to correct drift."
+  }
+ ],
+ "flow": [
+  "Control node reads inventory and selects the hosts.",
+  "It opens SSH sessions in parallel, default five forks.",
+  "Modules are copied to each host and executed.",
+  "Each module compares desired state with actual state.",
+  "Changed tasks notify handlers, such as an sshd restart.",
+  "Handlers run once at the end of the play.",
+  "The recap reports ok, changed, unreachable and failed."
+ ],
+ "deploy": {
+  "summary": "Bring up on-prem hosts: control node, inventory, then a baseline role with SSH hardening, chrony, firewall and cron.",
+  "prerequisites": [
+   "Control node with Python 3.11+",
+   "Target Ubuntu hosts with SSH and a sudo user",
+   "Static IPs and DNS for each host",
+   "A console or second SSH session as fallback"
+  ],
+  "steps": [
+   {
+    "title": "Control node and SSH key",
+    "lang": "bash",
+    "code": "python3 -m venv ~/ansible-venv && . ~/ansible-venv/bin/activate\npip install 'ansible-core==2.18.6'\nansible-galaxy collection install ansible.posix:1.6.2 community.general:10.7.0\nssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_ops -C ops@control\nssh-copy-id -i ~/.ssh/id_ed25519_ops.pub ops@10.0.10.11",
+    "note": "Repeat ssh-copy-id per host. Needs Python 3.11+ on the control node."
+   },
+   {
+    "title": "Inventory, config and connectivity",
+    "lang": "bash",
+    "code": "mkdir -p ~/infra/{inventory,roles} && cd ~/infra\ncat > ansible.cfg <<'EOF'\n[defaults]\ninventory = inventory/hosts.ini\nprivate_key_file = ~/.ssh/id_ed25519_ops\nhost_key_checking = True\n[privilege_escalation]\nbecome = True\nEOF\ncat > inventory/hosts.ini <<'EOF'\n[web]\nweb01 ansible_host=10.0.10.11\nweb02 ansible_host=10.0.10.12\n[db]\ndb01 ansible_host=10.0.10.21\n[all:vars]\nansible_user=ops\nEOF\nansible all -m ansible.builtin.ping",
+    "note": "Replace the addresses with your hosts. Expect SUCCESS and pong from each."
+   },
+   {
+    "title": "Ad-hoc commands",
+    "lang": "bash",
+    "code": "ansible all -a 'uptime'\nansible web -m ansible.builtin.setup -a 'filter=ansible_distribution*'\nansible web -b -m ansible.builtin.apt -a 'name=chrony state=present update_cache=yes'\nansible db -b -m ansible.builtin.service -a 'name=cron state=started enabled=true'\nansible all -b -m ansible.builtin.shell -a 'df -h /' --limit web01",
+    "note": "Ad-hoc is for one-off checks. Anything repeatable belongs in a role."
+   },
+   {
+    "title": "Users and sudoers role",
+    "lang": "yaml",
+    "code": "# roles/baseline/tasks/users.yml\n- name: Create admin user\n  ansible.builtin.user: { name: deploy, groups: sudo, shell: /bin/bash, append: true }\n- name: Install authorized key\n  ansible.posix.authorized_key: { user: deploy, key: \"{{ lookup('file', '~/.ssh/id_ed25519_ops.pub') }}\" }\n- name: Passwordless sudo for deploy\n  ansible.builtin.copy:\n    dest: /etc/sudoers.d/deploy\n    content: \"deploy ALL=(ALL) NOPASSWD:ALL\\n\"\n    mode: '0440'\n    validate: /usr/sbin/visudo -cf %s",
+    "note": "visudo validation stops a bad sudoers file from locking you out."
+   },
+   {
+    "title": "SSH hardening with validation",
+    "lang": "yaml",
+    "code": "# roles/baseline/tasks/ssh.yml\n- name: Harden sshd_config\n  ansible.builtin.lineinfile:\n    path: /etc/ssh/sshd_config\n    regexp: \"^#?{{ item.key }}\\\\b\"\n    line: \"{{ item.key }} {{ item.value }}\"\n    validate: /usr/sbin/sshd -t -f %s\n  loop:\n    - { key: PasswordAuthentication, value: 'no' }\n    - { key: PermitRootLogin, value: 'no' }\n    - { key: PubkeyAuthentication, value: 'yes' }\n    - { key: AllowUsers, value: 'ops deploy' }\n  notify: Restart sshd\n# roles/baseline/handlers/main.yml\n- name: Restart sshd\n  ansible.builtin.service: { name: ssh, state: restarted }",
+    "note": "Keep a second session open. The service is ssh on Debian and sshd on RHEL."
+   },
+   {
+    "title": "Chrony, firewall and cron",
+    "lang": "yaml",
+    "code": "# roles/baseline/tasks/main.yml\n- ansible.builtin.import_tasks: users.yml\n- ansible.builtin.import_tasks: ssh.yml\n- name: Install chrony\n  ansible.builtin.apt: { name: chrony, state: present }\n- name: Point chrony at the internal NTP server\n  ansible.builtin.lineinfile: { path: /etc/chrony/chrony.conf, regexp: '^pool ', line: 'pool ntp.example.internal iburst' }\n  notify: Restart chrony\n- name: Allow SSH from the LAN first\n  community.general.ufw: { rule: allow, port: '22', proto: tcp, src: 10.0.10.0/24 }\n- name: Default deny, enable firewall\n  community.general.ufw: { state: enabled, policy: deny, direction: incoming }\n- name: Nightly disk report\n  ansible.builtin.cron: { name: disk-report, minute: '15', hour: '2', job: 'df -h > /var/log/disk-report.txt' }\n# handlers: Restart chrony -> ansible.builtin.service: { name: chrony, state: restarted }",
+    "note": "Always add the SSH allow rule before enabling the firewall."
+   },
+   {
+    "title": "Check, diff, apply, prove idempotency",
+    "lang": "bash",
+    "code": "cat > site.yml <<'EOF'\n- hosts: all\n  roles: [baseline]\nEOF\nansible-playbook site.yml --syntax-check\nansible-playbook site.yml --check --diff --limit web01\nansible-playbook site.yml\nansible-playbook site.yml   # second run must show changed=0",
+    "note": "Check mode predicts changes; diff shows the exact lines. Roll out to one host first."
+   }
+  ]
+ },
+ "verify": [
+  "ansible all -m ping returns SUCCESS and pong for every host.",
+  "Second ansible-playbook run ends with changed=0 and failed=0.",
+  "ssh -o PubkeyAuthentication=no ops@web01 is refused.",
+  "ssh root@web01 is denied; sshd -t exits 0.",
+  "chronyc tracking shows a reference ID and small offset."
+ ],
+ "pitfalls": [
+  "Enabling ufw before allowing port 22 locks you out.",
+  "shell and command report changed unless creates: or changed_when: is set.",
+  "Ubuntu sshd_config.d drop-ins can override your sshd_config lines.",
+  "Missing AllowUsers entry for your own user blocks your own login.",
+  "Skip validate: on sshd_config and a typo kills SSH.",
+  "Unpinned collections change behaviour between runs."
+ ],
+ "furtherReading": [
+  {
+   "label": "Getting started",
+   "url": "https://docs.ansible.com/ansible/latest/getting_started/index.html"
+  },
+  {
+   "label": "Check mode and diff",
+   "url": "https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_checkmode.html"
+  },
+  {
+   "label": "Ad-hoc commands",
+   "url": "https://docs.ansible.com/ansible/latest/command_guide/intro_adhoc.html"
+  },
+  {
+   "label": "lineinfile module",
+   "url": "https://docs.ansible.com/ansible/latest/collections/ansible/builtin/lineinfile_module.html"
+  }
+ ],
+ "keyPoints": [
+  "Agentless: the control node pushes modules over SSH.",
+  "Idempotent tasks converge state and report changed only on drift.",
+  "Inventory, roles and handlers make bring-up repeatable.",
+  "Run --check --diff first; keep secrets in Ansible Vault."
+ ],
+ "quickDeploy": [
+  "Install pinned ansible-core and an SSH key",
+  "Write inventory and test with ping",
+  "Apply a baseline role: users, SSH, chrony, firewall",
+  "Dry-run with --check --diff, apply, rerun"
+ ],
+ "osi": [
+  "L7"
+ ],
+ "osiNote": "Application-layer automation over SSH on TCP 22.",
+ "production": [
+  "Pin ansible-core and collection versions in a requirements file.",
+  "Run playbooks from CI with --check --diff as a gate.",
+  "Roll out with --limit and serial: one host, then batches.",
+  "Vault-encrypt secrets; keep the key out of the repository.",
+  "Log runs and alert on failed or unreachable hosts."
+ ]
+}

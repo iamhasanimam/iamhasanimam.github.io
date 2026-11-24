@@ -1,0 +1,169 @@
+{
+  "title": "Loki & MinIO",
+  "subtitle": "Label-indexed log storage on cost-efficient S3-compatible object storage.",
+  "tabs": [
+    {
+      "id": "overview",
+      "label": "Overview",
+      "layers": [
+        "ingest",
+        "store",
+        "query"
+      ]
+    },
+    {
+      "id": "write",
+      "label": "Write path",
+      "layers": [
+        "ingest",
+        "store"
+      ]
+    },
+    {
+      "id": "read",
+      "label": "Read path",
+      "layers": [
+        "store",
+        "query"
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "id": "ingest",
+      "label": "Ingest",
+      "tone": "indigo",
+      "tiles": [
+        {
+          "id": "agent",
+          "label": "Log agents",
+          "icon": "grafana",
+          "says": "Agents tail logs and attach labels.",
+          "detail": "Alloy or Promtail add namespace and app labels, which shape cost and query speed."
+        },
+        {
+          "id": "distributor",
+          "label": "Distributor",
+          "icon": "grafana",
+          "says": "The distributor validates streams and hashes them to ingesters.",
+          "detail": "Rate limits and replication protect the cluster and keep writes durable."
+        },
+        {
+          "id": "ingester",
+          "label": "Ingester",
+          "icon": "grafana",
+          "says": "Ingesters buffer in memory, protected by a WAL.",
+          "detail": "Chunks flush when full or old, turning many small writes into efficient objects."
+        }
+      ]
+    },
+    {
+      "id": "store",
+      "label": "Storage",
+      "tone": "violet",
+      "tiles": [
+        {
+          "id": "chunks",
+          "label": "Chunks",
+          "icon": "minio",
+          "says": "Compressed chunks live in object storage.",
+          "detail": "S3-compatible storage is inexpensive and durable, so retention is affordable."
+        },
+        {
+          "id": "index",
+          "label": "Label index",
+          "icon": "grafana",
+          "says": "The index maps label sets to chunks.",
+          "detail": "Indexing labels only, not full text, keeps storage small and ingestion fast."
+        },
+        {
+          "id": "compactor",
+          "label": "Compactor",
+          "icon": "grafana",
+          "says": "The compactor merges indexes and applies retention.",
+          "detail": "Retention policies delete old data automatically, which controls cost and compliance."
+        }
+      ]
+    },
+    {
+      "id": "query",
+      "label": "Query",
+      "tone": "orange",
+      "tiles": [
+        {
+          "id": "frontend",
+          "label": "Query frontend",
+          "icon": "grafana",
+          "says": "The frontend splits and caches large queries.",
+          "detail": "Parallel sub-queries return long time ranges quickly."
+        },
+        {
+          "id": "querier",
+          "label": "Querier",
+          "icon": "grafana",
+          "says": "Queriers read chunks and ingesters and filter lines.",
+          "detail": "Label selectors narrow data first, then line filters scan only what remains."
+        },
+        {
+          "id": "logql",
+          "label": "LogQL",
+          "icon": "grafana",
+          "says": "LogQL selects streams and derives metrics from logs.",
+          "detail": "Rates and counts from logs enable alerting without extra instrumentation."
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "from": "agent",
+      "to": "distributor"
+    },
+    {
+      "from": "distributor",
+      "to": "ingester"
+    },
+    {
+      "from": "ingester",
+      "to": "chunks"
+    },
+    {
+      "from": "ingester",
+      "to": "index"
+    },
+    {
+      "from": "compactor",
+      "to": "index"
+    },
+    {
+      "from": "chunks",
+      "to": "querier"
+    },
+    {
+      "from": "index",
+      "to": "querier"
+    },
+    {
+      "from": "frontend",
+      "to": "querier"
+    },
+    {
+      "from": "logql",
+      "to": "frontend"
+    }
+  ],
+  "run": {
+    "cmd": "logcli query '{app=\"web\"} |= \"error\"'",
+    "lines": [
+      "2024-01-01T10:00:01Z web error: upstream timeout",
+      "2024-01-01T10:00:07Z web error: upstream timeout",
+      "2 lines returned"
+    ]
+  },
+  "declarations": [
+    "Loki indexes labels, not log lines.",
+    "Object storage makes retention cheap.",
+    "Select by label first, filter second.",
+    "Logs become metrics with LogQL."
+  ]
+}

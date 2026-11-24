@@ -1,0 +1,168 @@
+{
+  "title": "Kubernetes & OKD",
+  "subtitle": "Declarative container orchestration that reconciles desired state continuously.",
+  "tabs": [
+    {
+      "id": "overview",
+      "label": "Overview",
+      "layers": [
+        "control",
+        "workload",
+        "net"
+      ]
+    },
+    {
+      "id": "controlplane",
+      "label": "Control",
+      "layers": [
+        "control"
+      ]
+    },
+    {
+      "id": "workloads",
+      "label": "Workloads",
+      "layers": [
+        "workload",
+        "net"
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "id": "control",
+      "label": "Control plane",
+      "tone": "indigo",
+      "tiles": [
+        {
+          "id": "apiserver",
+          "label": "API server",
+          "icon": "kubernetes",
+          "says": "The API server is the single front door for state.",
+          "detail": "Every client and component authenticates here. Uniform access and RBAC make the platform governable."
+        },
+        {
+          "id": "etcd",
+          "label": "etcd",
+          "icon": "kubernetes",
+          "says": "etcd stores cluster state with quorum consistency.",
+          "detail": "A Raft-based key-value store keeps desired and observed state. Backups of it are the foundation of disaster recovery."
+        },
+        {
+          "id": "controllers",
+          "label": "Controllers",
+          "icon": "kubernetes",
+          "says": "Controllers compare desired and actual state, then act.",
+          "detail": "Deployments, ReplicaSets and nodes each have a loop. Self-healing and rollouts come from reconciliation, not scripts."
+        }
+      ]
+    },
+    {
+      "id": "workload",
+      "label": "Workloads",
+      "tone": "violet",
+      "tiles": [
+        {
+          "id": "scheduler",
+          "label": "Scheduler",
+          "icon": "kubernetes",
+          "says": "The scheduler places pods using requests, affinity and taints.",
+          "detail": "Resource-aware placement packs nodes efficiently and spreads replicas across failure domains."
+        },
+        {
+          "id": "kubelet",
+          "label": "kubelet",
+          "icon": "kubernetes",
+          "says": "The kubelet runs pods and reports their health.",
+          "detail": "It starts containers through the runtime, executes probes and restarts what fails."
+        },
+        {
+          "id": "deploy",
+          "label": "Deployments",
+          "icon": "kubernetes",
+          "says": "Deployments roll out new versions gradually and roll back.",
+          "detail": "Rolling updates with readiness gates reduce release risk and shorten recovery from bad changes."
+        }
+      ]
+    },
+    {
+      "id": "net",
+      "label": "Networking & access",
+      "tone": "teal",
+      "tiles": [
+        {
+          "id": "service",
+          "label": "Services",
+          "icon": "kubernetes",
+          "says": "Services give pods a stable name and virtual IP.",
+          "detail": "Label selectors track ready endpoints, so clients never chase changing pod addresses."
+        },
+        {
+          "id": "route",
+          "label": "Route & Ingress",
+          "icon": "kubernetes",
+          "says": "Routes and Ingress expose HTTP services externally.",
+          "detail": "OKD routes are served by an HAProxy-based router; Ingress offers the portable equivalent with host and path rules."
+        },
+        {
+          "id": "rbac",
+          "label": "RBAC & quotas",
+          "icon": "kubernetes",
+          "says": "RBAC and quotas bound who can do what.",
+          "detail": "Roles, namespaces and resource quotas allow safe multi-team sharing of one cluster."
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "from": "apiserver",
+      "to": "etcd"
+    },
+    {
+      "from": "apiserver",
+      "to": "controllers"
+    },
+    {
+      "from": "controllers",
+      "to": "deploy"
+    },
+    {
+      "from": "scheduler",
+      "to": "kubelet"
+    },
+    {
+      "from": "controllers",
+      "to": "scheduler"
+    },
+    {
+      "from": "deploy",
+      "to": "service"
+    },
+    {
+      "from": "kubelet",
+      "to": "service"
+    },
+    {
+      "from": "service",
+      "to": "route"
+    },
+    {
+      "from": "apiserver",
+      "to": "rbac"
+    }
+  ],
+  "run": {
+    "cmd": "$ oc get pods -n demo",
+    "lines": [
+      "NAME             READY   STATUS    RESTARTS",
+      "web-7d9f-abcde    1/1     Running   0",
+      "web-7d9f-fghij    1/1     Running   0"
+    ]
+  },
+  "declarations": [
+    "Kubernetes orchestrates; controllers reconcile.",
+    "Declare desired state, never perform steps.",
+    "The API server is the only door to etcd.",
+    "Readiness gates decide who gets traffic."
+  ]
+}

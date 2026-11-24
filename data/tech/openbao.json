@@ -1,0 +1,156 @@
+{
+ "slug": "openbao",
+ "name": "OpenBao",
+ "category": "Secrets Management",
+ "icon": "openbao",
+ "level": "hands-on",
+ "tagline": "Stores secrets encrypted, issues short-lived credentials, audits every access.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Barrier, seal and unseal",
+   "body": "Storage holds only ciphertext sealed by the barrier key.\noperator init splits the root key into N Shamir shares.\nK shares unseal; the key then lives only in memory.\nAuto-unseal hands the root key to a KMS or HSM.\nbao operator seal locks everything instantly."
+  },
+  {
+   "title": "Raft integrated storage",
+   "body": "Data is replicated on each node; no external database.\nOne active leader writes; standbys forward or redirect.\nA majority commits each write: 2 of 3, 3 of 5.\nPort 8200 serves the API, 8201 serves cluster traffic.\nbao operator raft snapshot save captures a restorable backup."
+  },
+  {
+   "title": "Auth, tokens and policies",
+   "body": "AppRole gives machines a role ID plus a secret ID.\nLogin returns a token with policies and a TTL.\nPolicies list paths and capabilities; everything else is denied.\nKV v2 paths need the data/ and metadata/ prefixes."
+  },
+  {
+   "title": "Secrets engines and leases",
+   "body": "KV v2 keeps versions with soft delete and rollback.\nThe database engine creates a unique user per request.\nEvery dynamic secret carries a lease that is revoked on expiry.\nLease renew and revoke work per lease or per prefix."
+  },
+  {
+   "title": "Audit and injection",
+   "body": "Audit devices log each request; secret values are HMAC-hashed.\nAgent auto-auths with AppRole and renews the token.\nAgent templates write secrets to files for the app.\nRendered files refresh when the secret changes."
+  }
+ ],
+ "flow": [
+  "Workload or Agent presents role ID and secret ID.",
+  "AppRole validates them and returns a scoped, expiring token.",
+  "The request carries the token to a secrets path.",
+  "Policy allows or denies the capability on that path.",
+  "KV returns a version, or the database engine mints a leased user.",
+  "The leader commits the write to a Raft quorum.",
+  "The audit device records the request, with values hashed.",
+  "Agent renders the secret to a file for the app."
+ ],
+ "deploy": {
+  "summary": "On-prem path: Raft node in Docker with TLS, then auth and secrets, then backup and injection.",
+  "prerequisites": [
+   "Linux VM with Docker Engine and openssl",
+   "DNS name and static IP per node",
+   "Ports 8200 and 8201 open on the LAN",
+   "A PostgreSQL instance for dynamic secrets"
+  ],
+  "steps": [
+   {
+    "title": "Prepare host, directories and TLS",
+    "lang": "bash",
+    "code": "sudo useradd --system --home /srv/openbao --shell /usr/sbin/nologin bao\nsudo mkdir -p /srv/openbao/{config,data,tls,logs,backup}\nsudo openssl req -x509 -newkey rsa:4096 -nodes -days 365 \\\n  -keyout /srv/openbao/tls/tls.key -out /srv/openbao/tls/tls.crt \\\n  -subj '/CN=bao-1.example.internal' \\\n  -addext 'subjectAltName=DNS:bao-1.example.internal,IP:127.0.0.1,IP:<NODE_IP>'\nsudo chown -R bao:bao /srv/openbao && sudo chmod 600 /srv/openbao/tls/tls.key",
+    "note": "Replace <NODE_IP> and the DNS name. Use an internal CA in production."
+   },
+   {
+    "title": "Write the server config with Raft storage",
+    "lang": "hcl",
+    "code": "# /srv/openbao/config/bao.hcl\nui            = true\ndisable_mlock = true\napi_addr      = \"https://bao-1.example.internal:8200\"\ncluster_addr  = \"https://bao-1.example.internal:8201\"\nlistener \"tcp\" {\n  address       = \"0.0.0.0:8200\"\n  tls_cert_file = \"/openbao/tls/tls.crt\"\n  tls_key_file  = \"/openbao/tls/tls.key\"\n}\nstorage \"raft\" {\n  path    = \"/openbao/data\"\n  node_id = \"bao-1\"\n  retry_join {\n    leader_api_addr     = \"https://bao-2.example.internal:8200\"\n    leader_ca_cert_file = \"/openbao/tls/tls.crt\"\n  }\n}",
+    "note": "Repeat per node with its own node_id and addresses. disable_mlock is the documented choice for Raft."
+   },
+   {
+    "title": "Open the firewall and run the container",
+    "lang": "bash",
+    "code": "sudo ufw allow from <LAN_CIDR> to any port 8200,8201 proto tcp\ndocker run -d --name bao --restart unless-stopped \\\n  --user \"$(id -u bao):$(id -g bao)\" -p 8200:8200 -p 8201:8201 \\\n  -v /srv/openbao/config:/openbao/config:ro -v /srv/openbao/data:/openbao/data \\\n  -v /srv/openbao/tls:/openbao/tls:ro -v /srv/openbao/logs:/openbao/logs \\\n  -v /srv/openbao/backup:/openbao/backup \\\n  openbao/openbao:2.1.0 server\nbao() { docker exec -i -e BAO_ADDR=https://127.0.0.1:8200 \\\n  -e BAO_CACERT=/openbao/tls/tls.crt -e BAO_TOKEN bao bao \"$@\"; }",
+    "note": "8200 is the API, 8201 is node-to-node Raft traffic. Limit both to the cluster subnet."
+   },
+   {
+    "title": "Initialise and unseal",
+    "lang": "bash",
+    "code": "bao operator init -key-shares=5 -key-threshold=3 > ~/bao-init.txt\nbao operator unseal   # run three times, one share each\nexport BAO_TOKEN=<ROOT_TOKEN>\nbao status\nbao operator raft list-peers",
+    "note": "Give each share to a different custodian. Revoke the root token after setup."
+   },
+   {
+    "title": "KV v2, policy and AppRole",
+    "lang": "bash",
+    "code": "bao secrets enable -path=secret kv-v2\nbao kv put secret/myapp/config db_user=app db_pass='<VALUE>'\nbao policy write myapp - <<'EOF'\npath \"secret/data/myapp/*\"     { capabilities = [\"read\"] }\npath \"secret/metadata/myapp/*\" { capabilities = [\"list\"] }\nEOF\nbao auth enable approle\nbao write auth/approle/role/myapp token_policies=myapp token_ttl=1h \\\n  token_max_ttl=4h secret_id_ttl=10m secret_id_num_uses=1\nbao read -field=role_id auth/approle/role/myapp/role-id\nbao write -f -field=secret_id auth/approle/role/myapp/secret-id",
+    "note": "KV v2 policies target secret/data/... and secret/metadata/... A policy on secret/myapp/ matches nothing."
+   },
+   {
+    "title": "Dynamic PostgreSQL credentials",
+    "lang": "bash",
+    "code": "bao secrets enable database\nbao write database/config/appdb plugin_name=postgresql-database-plugin \\\n  allowed_roles=app-ro \\\n  connection_url='postgresql://{{username}}:{{password}}@db.example.internal:5432/appdb' \\\n  username=baoadmin password='<ADMIN_PASSWORD>'\nbao write -f database/rotate-root/appdb\nbao write database/roles/app-ro db_name=appdb default_ttl=1h max_ttl=24h \\\n  creation_statements=\"CREATE ROLE \\\"{{name}}\\\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}'; GRANT SELECT ON ALL TABLES IN SCHEMA public TO \\\"{{name}}\\\";\"\nbao read database/creds/app-ro",
+    "note": "Each read mints a unique user that expires with its lease. rotate-root hides the admin password from humans."
+   },
+   {
+    "title": "Audit device and Raft snapshot backup",
+    "lang": "bash",
+    "code": "bao audit enable file file_path=/openbao/logs/audit.log\nbao operator raft snapshot save /openbao/backup/bao-$(date +%F).snap\n# host crontab, token bound to a snapshot-only policy:\n0 2 * * * docker exec -e BAO_ADDR=https://127.0.0.1:8200 -e BAO_CACERT=/openbao/tls/tls.crt -e BAO_TOKEN=<BACKUP_TOKEN> bao bao operator raft snapshot save /openbao/backup/bao-$(date +\\%F).snap\n# restore: bao operator raft snapshot restore -force /openbao/backup/<FILE>.snap",
+    "note": "If every audit device fails, OpenBao refuses requests. Copy snapshots off-host."
+   },
+   {
+    "title": "Inject secrets with Agent",
+    "lang": "hcl",
+    "code": "# /etc/openbao/agent.hcl  (run: bao agent -config=/etc/openbao/agent.hcl)\nvault {\n  address = \"https://bao-1.example.internal:8200\"\n  ca_cert = \"/etc/openbao/ca.crt\"\n}\nauto_auth {\n  method \"approle\" {\n    config = {\n      role_id_file_path   = \"/etc/openbao/role_id\"\n      secret_id_file_path = \"/etc/openbao/secret_id\"\n    }\n  }\n}\ntemplate {\n  contents    = \"{{ with secret \\\"secret/data/myapp/config\\\" }}DB_PASS={{ .Data.data.db_pass }}{{ end }}\"\n  destination = \"/run/myapp/env\"\n  perms       = \"0640\"\n}",
+    "note": "Agent logs in, renews the token and rewrites the file when the secret changes. The app only reads a file."
+   }
+  ]
+ },
+ "verify": [
+  "bao status: Initialized true, Sealed false, Storage Type raft.",
+  "bao operator raft list-peers: all nodes listed, one leader.",
+  "curl -s --cacert tls.crt https://bao-1.example.internal:8200/v1/sys/health returns 200 on the leader.",
+  "bao read database/creds/app-ro returns a new username each time.",
+  "tail /srv/openbao/logs/audit.log shows each request as JSON."
+ ],
+ "pitfalls": [
+  "Policies on secret/myapp miss KV v2; use secret/data/myapp.",
+  "Losing unseal shares or the snapshot loses all data.",
+  "A full audit disk blocks every request.",
+  "Standby nodes need leader_ca_cert or retry_join fails on TLS.",
+  "Use secret_id_num_uses=1; a reusable secret ID is a password.",
+  "Dev mode is in-memory and unsealed; never use it in production."
+ ],
+ "furtherReading": [
+  {
+   "label": "Seal and unseal",
+   "url": "https://openbao.org/docs/concepts/seal/"
+  },
+  {
+   "label": "Integrated storage (Raft)",
+   "url": "https://openbao.org/docs/internals/integrated-storage/"
+  },
+  {
+   "label": "AppRole auth",
+   "url": "https://openbao.org/docs/auth/approle/"
+  },
+  {
+   "label": "Agent",
+   "url": "https://openbao.org/docs/agent-and-proxy/agent/"
+  }
+ ],
+ "keyPoints": [
+  "The barrier encrypts storage; Shamir shares or auto-unseal release the key.",
+  "Integrated Raft storage gives HA and needs quorum: three nodes.",
+  "AppRole proves identity; deny-by-default policies grant per-path capabilities.",
+  "KV v2 versions static secrets; dynamic engines mint leased credentials."
+ ],
+ "quickDeploy": [
+  "Run Raft config in Docker with TLS",
+  "Initialise, unseal and enable audit",
+  "Create KV v2, policy and AppRole",
+  "Snapshot to disk and inject with Agent"
+ ],
+ "osi": [
+  "L7"
+ ],
+ "osiNote": "Serves an HTTPS API; Raft peers talk over TLS on 8201.",
+ "production": [
+  "Run three or five Raft nodes; alert when quorum or leader is lost.",
+  "Use auto-unseal or custody Shamir shares; never keep all shares together.",
+  "Snapshot nightly with cron and ship copies off-host; test restore.",
+  "Enable two audit devices; alert on audit write failures.",
+  "Revoke the root token; use short TTLs and single-use secret IDs."
+ ]
+}

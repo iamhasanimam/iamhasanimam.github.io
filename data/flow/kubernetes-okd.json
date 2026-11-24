@@ -1,0 +1,381 @@
+{
+  "title": "Kubernetes / OKD",
+  "subtitle": "Control plane decides, nodes run, Services and Ingress route.",
+  "layers": [
+    {
+      "layer": 0,
+      "label": "Traffic"
+    },
+    {
+      "layer": 1,
+      "label": "Workloads"
+    },
+    {
+      "layer": 2,
+      "label": "Control plane"
+    }
+  ],
+  "groups": [
+    {
+      "id": "g-iso",
+      "label": "Isolation",
+      "boxes": [
+        "netpol",
+        "ns"
+      ]
+    }
+  ],
+  "boxes": [
+    {
+      "id": "ingress",
+      "label": "Ingress Route",
+      "tech": "Ingress / OpenShift Route",
+      "icon": "kubernetes",
+      "layer": 0,
+      "col": 0,
+      "row": 0,
+      "says": "Ingress routes by Host and path.",
+      "detail": "L7 entry. A controller terminates TLS and picks a Service. OKD serves Routes through HAProxy."
+    },
+    {
+      "id": "svc",
+      "label": "Service",
+      "tech": "Service",
+      "icon": null,
+      "layer": 0,
+      "col": 1,
+      "row": 0,
+      "says": "A Service balances at L4.",
+      "detail": "ClusterIP gives pods one stable address. NodePort opens a node port. Endpoints follow readiness."
+    },
+    {
+      "id": "netpol",
+      "label": "NetworkPolicy",
+      "tech": "NetworkPolicy",
+      "icon": null,
+      "layer": 0,
+      "col": 2,
+      "row": 0,
+      "says": "NetworkPolicy denies by default.",
+      "detail": "Selects pods, then allows by namespace and label. Needs a CNI that enforces it."
+    },
+    {
+      "id": "pods",
+      "label": "Pods",
+      "tech": "Pod",
+      "icon": null,
+      "layer": 1,
+      "col": 1,
+      "row": 0,
+      "says": "Pods run your containers.",
+      "detail": "Requests and limits set placement and OOM behaviour. Readiness gates traffic."
+    },
+    {
+      "id": "deploy",
+      "label": "Deployment",
+      "tech": "Deployment",
+      "icon": null,
+      "layer": 1,
+      "col": 0,
+      "row": 0,
+      "says": "Deployments roll out and roll back.",
+      "detail": "A ReplicaSet per version. maxSurge and maxUnavailable pace the rollout; rollout undo reverts."
+    },
+    {
+      "id": "hpa",
+      "label": "HPA",
+      "tech": "HorizontalPodAutoscaler",
+      "icon": null,
+      "layer": 1,
+      "col": 2,
+      "row": 0,
+      "says": "HPA scales replicas on metrics.",
+      "detail": "Reads CPU or custom metrics and sets replicas between min and max."
+    },
+    {
+      "id": "hpagen",
+      "label": "Rule Generator",
+      "tech": "HPA rule generator",
+      "icon": null,
+      "layer": 1,
+      "col": 2,
+      "row": 1,
+      "says": "One rule list renders every HPA.",
+      "detail": "A ConfigMap of per-service rules becomes consistent HPA manifests. Reviewable in Git."
+    },
+    {
+      "id": "api",
+      "label": "API Server",
+      "tech": "Kubernetes",
+      "icon": "kubernetes",
+      "layer": 2,
+      "col": 1,
+      "row": 0,
+      "says": "The API server is the front door.",
+      "detail": "Authenticates, authorizes with RBAC, validates and persists to etcd. Everything else watches it.",
+      "inner": [
+        {
+          "id": "apiserver",
+          "label": "API server"
+        },
+        {
+          "id": "etcd",
+          "label": "etcd"
+        },
+        {
+          "id": "scheduler",
+          "label": "Scheduler"
+        },
+        {
+          "id": "controllers",
+          "label": "Controllers"
+        }
+      ]
+    },
+    {
+      "id": "rbac",
+      "label": "RBAC",
+      "tech": "RBAC",
+      "icon": null,
+      "layer": 2,
+      "col": 0,
+      "row": 0,
+      "says": "RBAC grants least privilege.",
+      "detail": "Role and RoleBinding per namespace. ClusterRole for cluster scope. Verify with auth can-i."
+    },
+    {
+      "id": "ns",
+      "label": "Namespaces",
+      "tech": "Namespace",
+      "icon": null,
+      "layer": 0,
+      "col": 3,
+      "row": 0,
+      "says": "Namespaces scope names and quotas.",
+      "detail": "The unit for ResourceQuota, RBAC and NetworkPolicy. One per team or environment."
+    },
+    {
+      "id": "kubelet",
+      "label": "Kubelet",
+      "tech": "kubelet",
+      "icon": null,
+      "layer": 2,
+      "col": 2,
+      "row": 0,
+      "says": "The kubelet runs pods on nodes.",
+      "detail": "Pulls images through the runtime, runs probes and reports node and pod status."
+    }
+  ],
+  "wires": [
+    {
+      "from": "ingress",
+      "to": "svc",
+      "label": "L7 to L4",
+      "style": "solid",
+      "flow": true,
+      "weight": "bold"
+    },
+    {
+      "from": "svc",
+      "to": "pods",
+      "style": "solid",
+      "flow": true,
+      "weight": "bold"
+    },
+    {
+      "from": "netpol",
+      "to": "pods",
+      "label": "allow / deny",
+      "style": "dashed",
+      "flow": false,
+      "weight": "normal"
+    },
+    {
+      "from": "api",
+      "to": "deploy",
+      "style": "solid",
+      "flow": false,
+      "weight": "normal"
+    },
+    {
+      "from": "deploy",
+      "to": "pods",
+      "label": "ReplicaSet",
+      "style": "solid",
+      "flow": false,
+      "weight": "normal"
+    },
+    {
+      "from": "hpagen",
+      "to": "hpa",
+      "style": "solid",
+      "flow": false,
+      "weight": "normal"
+    },
+    {
+      "from": "hpa",
+      "to": "deploy",
+      "label": "scale",
+      "style": "solid",
+      "flow": false,
+      "weight": "normal"
+    },
+    {
+      "from": "api",
+      "to": "kubelet",
+      "style": "solid",
+      "flow": false,
+      "weight": "normal"
+    },
+    {
+      "from": "kubelet",
+      "to": "pods",
+      "style": "solid",
+      "flow": false,
+      "weight": "normal"
+    },
+    {
+      "from": "rbac",
+      "to": "api",
+      "style": "dashed",
+      "flow": false,
+      "weight": "normal"
+    },
+    {
+      "from": "rbac",
+      "to": "ns",
+      "label": "scopes",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    }
+  ],
+  "tabs": [
+    {
+      "id": "traffic",
+      "label": "Traffic",
+      "focus": [
+        "ingress",
+        "svc",
+        "netpol",
+        "pods"
+      ]
+    },
+    {
+      "id": "control",
+      "label": "Control plane",
+      "focus": [
+        "api",
+        "rbac",
+        "kubelet",
+        "deploy",
+        "pods"
+      ]
+    },
+    {
+      "id": "scale",
+      "label": "Scale and isolate",
+      "focus": [
+        "hpagen",
+        "hpa",
+        "deploy",
+        "ns",
+        "netpol"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "title": "Ingress",
+      "text": "Ingress terminates TLS and picks a Service.",
+      "boxes": [
+        "ingress",
+        "svc"
+      ],
+      "wires": [
+        [
+          "ingress",
+          "svc"
+        ]
+      ]
+    },
+    {
+      "title": "Service",
+      "text": "The Service balances across ready pods.",
+      "boxes": [
+        "svc",
+        "pods"
+      ],
+      "wires": [
+        [
+          "svc",
+          "pods"
+        ]
+      ]
+    },
+    {
+      "title": "Policy",
+      "text": "NetworkPolicy allows or drops the hop.",
+      "boxes": [
+        "netpol",
+        "pods"
+      ],
+      "wires": [
+        [
+          "netpol",
+          "pods"
+        ]
+      ]
+    },
+    {
+      "title": "Reconcile",
+      "text": "The API server and Deployment create pods.",
+      "boxes": [
+        "api",
+        "deploy",
+        "pods"
+      ],
+      "wires": [
+        [
+          "api",
+          "deploy"
+        ],
+        [
+          "deploy",
+          "pods"
+        ]
+      ]
+    },
+    {
+      "title": "Scale",
+      "text": "HPA raises replicas when CPU climbs.",
+      "boxes": [
+        "hpagen",
+        "hpa",
+        "deploy"
+      ],
+      "wires": [
+        [
+          "hpagen",
+          "hpa"
+        ],
+        [
+          "hpa",
+          "deploy"
+        ]
+      ]
+    }
+  ],
+  "declarations": [
+    "The API server decides.",
+    "Services balance at L4.",
+    "Ingress routes at L7.",
+    "Rollouts undo cleanly."
+  ],
+  "run": {
+    "cmd": "kubectl -n dev rollout undo deploy/web",
+    "lines": [
+      "deployment.apps/web rolled back"
+    ]
+  }
+}

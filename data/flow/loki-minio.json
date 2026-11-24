@@ -1,0 +1,392 @@
+{
+ "title": "Loki, Tempo and MinIO",
+ "subtitle": "Logs and traces on cheap object storage.",
+ "layers": [
+  {
+   "layer": 0,
+   "label": "Collect"
+  },
+  {
+   "layer": 1,
+   "label": "Loki and Tempo"
+  },
+  {
+   "layer": 2,
+   "label": "Index and chunks"
+  },
+  {
+   "layer": 3,
+   "label": "Object storage"
+  }
+ ],
+ "groups": [
+  {
+   "id": "loki",
+   "label": "Loki",
+   "boxes": [
+    "distributor",
+    "ingester",
+    "querier"
+   ]
+  }
+ ],
+ "tabs": [
+  {
+   "id": "ship",
+   "label": "Ship",
+   "focus": [
+    "app",
+    "alloy",
+    "distributor",
+    "tempo"
+   ]
+  },
+  {
+   "id": "store",
+   "label": "Store",
+   "focus": [
+    "ingester",
+    "index",
+    "chunks",
+    "minio"
+   ]
+  },
+  {
+   "id": "query",
+   "label": "Query",
+   "focus": [
+    "querier",
+    "index",
+    "chunks",
+    "grafana"
+   ]
+  }
+ ],
+ "boxes": [
+  {
+   "id": "app",
+   "label": "Application",
+   "tech": "OpenTelemetry SDK",
+   "icon": "opentelemetry",
+   "layer": 0,
+   "col": 0,
+   "row": 0,
+   "says": "Applications emit logs and spans over OTLP.",
+   "detail": "Services write structured logs and spans that share one trace ID."
+  },
+  {
+   "id": "alloy",
+   "label": "Alloy",
+   "tech": "Grafana Alloy",
+   "icon": "grafana",
+   "layer": 0,
+   "col": 1,
+   "row": 0,
+   "says": "Alloy receives OTLP and pushes it on.",
+   "detail": "Batches telemetry, then sends logs to Loki and traces to Tempo."
+  },
+  {
+   "id": "grafana",
+   "label": "Grafana",
+   "tech": "Grafana",
+   "icon": "grafana",
+   "layer": 0,
+   "col": 3,
+   "row": 0,
+   "says": "Grafana queries logs and traces.",
+   "detail": "Explore runs LogQL against Loki and jumps from a log line to its trace.",
+   "href": "#/tech/grafana"
+  },
+  {
+   "id": "distributor",
+   "label": "Distributor",
+   "tech": "Loki",
+   "icon": "grafana",
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "The distributor validates and hashes streams.",
+   "detail": "Enforces limits, then forwards each stream to replication_factor ingesters on the hash ring."
+  },
+  {
+   "id": "ingester",
+   "label": "Ingester",
+   "tech": "Loki",
+   "icon": "grafana",
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "Ingesters buffer and flush chunks.",
+   "detail": "Append lines to in-memory chunks with a WAL, then flush by size or age.",
+   "inner": [
+    {
+     "id": "wal",
+     "label": "WAL"
+    },
+    {
+     "id": "head-chunk",
+     "label": "Head chunk"
+    },
+    {
+     "id": "flush",
+     "label": "Flush"
+    }
+   ]
+  },
+  {
+   "id": "querier",
+   "label": "Querier",
+   "tech": "Loki",
+   "icon": "grafana",
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "Queriers read the index, then chunks.",
+   "detail": "Merge results from object storage and recent data still in ingesters."
+  },
+  {
+   "id": "tempo",
+   "label": "Tempo",
+   "tech": "Grafana Tempo",
+   "icon": "grafana",
+   "layer": 1,
+   "col": 3,
+   "row": 0,
+   "says": "Tempo stores traces by ID.",
+   "detail": "Batches spans into blocks; look up by trace ID or search with TraceQL."
+  },
+  {
+   "id": "index",
+   "label": "Label Index",
+   "tech": "TSDB index",
+   "icon": null,
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "The index maps labels to chunks.",
+   "detail": "Only labels are indexed, never log text. Keep labels few and stable."
+  },
+  {
+   "id": "chunks",
+   "label": "Chunks",
+   "tech": "Compressed log blocks",
+   "icon": null,
+   "layer": 2,
+   "col": 1,
+   "row": 0,
+   "says": "Chunks hold compressed log lines.",
+   "detail": "Immutable blocks per stream. Large chunks mean fewer objects and cheaper requests."
+  },
+  {
+   "id": "minio",
+   "label": "MinIO",
+   "tech": "MinIO",
+   "icon": "minio",
+   "layer": 3,
+   "col": 0,
+   "row": 0,
+   "says": "MinIO serves chunks over the S3 API.",
+   "detail": "Self-hosted object storage with erasure coding; Loki and Tempo use the S3 API."
+  }
+ ],
+ "wires": [
+  {
+   "from": "app",
+   "to": "alloy",
+   "label": "OTLP",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "alloy",
+   "to": "distributor",
+   "label": "logs",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "alloy",
+   "to": "tempo",
+   "label": "traces",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "distributor",
+   "to": "ingester",
+   "label": "replicate",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "ingester",
+   "to": "index",
+   "label": "labels",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "ingester",
+   "to": "chunks",
+   "label": "flush",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "index",
+   "to": "minio",
+   "label": "upload",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "chunks",
+   "to": "minio",
+   "label": "upload",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "querier",
+   "to": "index",
+   "label": "lookup",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "querier",
+   "to": "chunks",
+   "label": "fetch",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "grafana",
+   "to": "querier",
+   "label": "LogQL",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  }
+ ],
+ "steps": [
+  {
+   "title": "Emit",
+   "text": "Apps emit logs and spans over OTLP.",
+   "boxes": [
+    "app",
+    "alloy"
+   ],
+   "wires": [
+    [
+     "app",
+     "alloy"
+    ]
+   ]
+  },
+  {
+   "title": "Push",
+   "text": "Alloy pushes logs to Loki, traces to Tempo.",
+   "boxes": [
+    "alloy",
+    "distributor",
+    "tempo"
+   ],
+   "wires": [
+    [
+     "alloy",
+     "distributor"
+    ],
+    [
+     "alloy",
+     "tempo"
+    ]
+   ]
+  },
+  {
+   "title": "Buffer",
+   "text": "The distributor hashes streams onto ingesters.",
+   "boxes": [
+    "distributor",
+    "ingester"
+   ],
+   "wires": [
+    [
+     "distributor",
+     "ingester"
+    ]
+   ]
+  },
+  {
+   "title": "Flush",
+   "text": "Chunks and index land in MinIO.",
+   "boxes": [
+    "ingester",
+    "index",
+    "chunks",
+    "minio"
+   ],
+   "wires": [
+    [
+     "ingester",
+     "index"
+    ],
+    [
+     "ingester",
+     "chunks"
+    ],
+    [
+     "chunks",
+     "minio"
+    ]
+   ]
+  },
+  {
+   "title": "Query",
+   "text": "LogQL reads the index, then chunks.",
+   "boxes": [
+    "grafana",
+    "querier",
+    "index",
+    "chunks"
+   ],
+   "wires": [
+    [
+     "grafana",
+     "querier"
+    ],
+    [
+     "querier",
+     "index"
+    ],
+    [
+     "querier",
+     "chunks"
+    ]
+   ]
+  }
+ ],
+ "run": {
+  "cmd": "logcli query '{app=\"checkout\"} |= \"error\"'",
+  "lines": [
+   "{app=\"checkout\"} level=error msg=\"upstream timeout\" trace_id=4bf92f35",
+   "1 entry from 1 stream"
+  ]
+ },
+ "declarations": [
+  "Loki indexes labels, not text.",
+  "Chunks live in MinIO.",
+  "Alloy pushes logs and traces.",
+  "LogQL filters before it parses."
+ ]
+}

@@ -1,0 +1,160 @@
+{
+ "slug": "kubernetes-okd",
+ "name": "Kubernetes / OKD",
+ "category": "Container Orchestration",
+ "icon": "kubernetes",
+ "level": "hands-on",
+ "tagline": "Schedules containers, heals them and routes traffic to them.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Control plane and node components",
+   "body": "The API server is the only front door to cluster state.\netcd stores desired state; only the API server talks to it.\nThe scheduler binds pods to nodes; controllers reconcile actual to desired.\nThe kubelet runs pods through the container runtime; kube-proxy programs Service rules."
+  },
+  {
+   "title": "Services at L4",
+   "body": "A ClusterIP Service gives pods one stable virtual IP and DNS name.\nNodePort opens a port in 30000-32767 on every node.\nEndpoints follow readiness: unready pods leave the rotation.\nkube-proxy implements this with iptables or IPVS rules."
+  },
+  {
+   "title": "Ingress and Routes at L7",
+   "body": "An Ingress controller terminates TLS and routes by Host and path.\nIt sits behind a Service of type NodePort or LoadBalancer.\nOpenShift and OKD use Routes, served by the HAProxy router.\nRoutes add edge, re-encrypt and passthrough TLS."
+  },
+  {
+   "title": "Isolation: NetworkPolicy, namespaces, RBAC",
+   "body": "Pods accept all traffic until a NetworkPolicy selects them.\nDefault-deny first, then allow by namespace and pod labels.\nNamespaces scope names, quotas and RBAC.\nRole and RoleBinding grant verbs on resources; check with auth can-i.\nEnforcement needs a CNI that implements NetworkPolicy."
+  },
+  {
+   "title": "Scaling, rollouts and OKD",
+   "body": "HPA reads metrics-server and sets replicas between min and max.\nA ConfigMap-driven generator renders one HPA per service from one rule list.\nDeployments roll out with maxSurge and maxUnavailable; rollout undo reverts.\nOKD adds Routes, SCCs and ImageStreams; plan 16+ GB per node.\nOKD is not for a small lab; use kind for practice."
+  }
+ ],
+ "flow": [
+  "kubectl applies a manifest to the API server.",
+  "The API server authenticates, authorizes via RBAC and persists to etcd.",
+  "The Deployment controller creates a ReplicaSet and pods.",
+  "The scheduler binds each pod to a node.",
+  "The kubelet pulls the image and starts containers.",
+  "A readiness probe passes; the pod joins the Service endpoints.",
+  "Ingress or Route sends the request to the Service.",
+  "NetworkPolicy permits the hop; kube-proxy forwards it to a pod.",
+  "HPA adds replicas when CPU crosses the target."
+ ],
+ "deploy": {
+  "summary": "A two-node kind lab: ingress, NetworkPolicy, HPA, RBAC and rollouts.",
+  "prerequisites": [
+   "Linux host with Docker, 4 GB free RAM",
+   "kind 0.24+ and kubectl 1.31+",
+   "Ports 8080 and 8443 free on the host",
+   "OKD needs 16+ GB per node; skip it here"
+  ],
+  "steps": [
+   {
+    "title": "Create the cluster",
+    "lang": "bash",
+    "code": "cat > kind-lab.yaml <<'EOF'\nkind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\nname: lab\nnodes:\n  - role: control-plane\n    image: kindest/node:v1.31.0\n    kubeadmConfigPatches:\n      - |\n        kind: InitConfiguration\n        nodeRegistration:\n          kubeletExtraArgs:\n            node-labels: \"ingress-ready=true\"\n    extraPortMappings:\n      - {containerPort: 80, hostPort: 8080, protocol: TCP}\n      - {containerPort: 443, hostPort: 8443, protocol: TCP}\n  - role: worker\n    image: kindest/node:v1.31.0\nEOF\nkind create cluster --config kind-lab.yaml\nkubectl get nodes -o wide",
+    "note": "Both nodes reach Ready in about two minutes. Match the node image to your kind release notes."
+   },
+   {
+    "title": "Install the ingress controller (L7)",
+    "lang": "bash",
+    "code": "kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.2/deploy/static/provider/kind/deploy.yaml\nkubectl -n ingress-nginx wait --for=condition=ready pod \\\n  --selector=app.kubernetes.io/component=controller --timeout=180s",
+    "note": "This is the kind-specific manifest. It relies on the ingress-ready label set above."
+   },
+   {
+    "title": "Deploy an app: Service (L4) and Ingress (L7)",
+    "lang": "bash",
+    "code": "kubectl create namespace dev\ncat <<'EOF' | kubectl -n dev apply -f -\napiVersion: apps/v1\nkind: Deployment\nmetadata: {name: web}\nspec:\n  replicas: 2\n  selector: {matchLabels: {app: web}}\n  template:\n    metadata: {labels: {app: web}}\n    spec:\n      containers:\n        - name: web\n          image: nginx:1.27.3\n          ports: [{containerPort: 80}]\n          resources:\n            requests: {cpu: 50m, memory: 64Mi}\n            limits: {memory: 128Mi}\n          readinessProbe:\n            httpGet: {path: /, port: 80}\n---\napiVersion: v1\nkind: Service\nmetadata: {name: web}\nspec:\n  selector: {app: web}\n  ports: [{port: 80, targetPort: 80}]\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata: {name: web}\nspec:\n  ingressClassName: nginx\n  rules:\n    - host: web.localtest.me\n      http:\n        paths:\n          - {path: /, pathType: Prefix, backend: {service: {name: web, port: {number: 80}}}}\nEOF\ncurl -s -o /dev/null -w '%{http_code}\\n' http://web.localtest.me:8080/",
+    "note": "The Service defaults to ClusterIP. For NodePort, set spec.type to NodePort. localtest.me resolves to 127.0.0.1."
+   },
+   {
+    "title": "NetworkPolicy: default deny, then allow ingress",
+    "lang": "bash",
+    "code": "cat <<'EOF' | kubectl -n dev apply -f -\napiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata: {name: default-deny}\nspec:\n  podSelector: {}\n  policyTypes: [Ingress]\n---\napiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata: {name: allow-ingress-controller}\nspec:\n  podSelector: {matchLabels: {app: web}}\n  policyTypes: [Ingress]\n  ingress:\n    - from:\n        - namespaceSelector:\n            matchLabels: {kubernetes.io/metadata.name: ingress-nginx}\nEOF\nkubectl -n dev run probe --rm -it --image=busybox:1.36 --restart=Never -- wget -qO- -T 3 http://web",
+    "note": "The probe must time out. If it succeeds, your CNI does not enforce NetworkPolicy; install Calico or Cilium."
+   },
+   {
+    "title": "HPA from a rule list (generator pattern)",
+    "lang": "bash",
+    "code": "kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.7.2/components.yaml\nkubectl -n kube-system patch deploy metrics-server --type=json \\\n  -p '[{\"op\":\"add\",\"path\":\"/spec/template/spec/containers/0/args/-\",\"value\":\"--kubelet-insecure-tls\"}]'\nprintf 'web 2 6 70\\n' > hpa-rules.txt\nwhile read -r name min max cpu; do\ncat <<EOF | kubectl -n dev apply -f -\napiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata: {name: $name}\nspec:\n  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: $name}\n  minReplicas: $min\n  maxReplicas: $max\n  metrics:\n    - type: Resource\n      resource: {name: cpu, target: {type: Utilization, averageUtilization: $cpu}}\nEOF\ndone < hpa-rules.txt\nkubectl -n dev get hpa",
+    "note": "One rule per line renders one HPA. Keep the rule list in a ConfigMap and generate from it. The insecure-tls flag is for kind only."
+   },
+   {
+    "title": "RBAC: a deployer in dev",
+    "lang": "bash",
+    "code": "kubectl -n dev create role deployer --verb=get,list,watch,create,update,patch --resource=deployments,pods\nkubectl -n dev create rolebinding deployer-jane --role=deployer --user=jane\nkubectl -n dev auth can-i create deployments --as=jane\nkubectl -n qa auth can-i create deployments --as=jane",
+    "note": "The first answer is yes, the second is no. Roles are namespaced; use ClusterRole for cluster scope."
+   },
+   {
+    "title": "Roll out and roll back",
+    "lang": "bash",
+    "code": "kubectl -n dev set image deploy/web web=nginx:1.27.4\nkubectl -n dev rollout status deploy/web\nkubectl -n dev rollout history deploy/web\nkubectl -n dev rollout undo deploy/web",
+    "note": "Undo returns to the previous ReplicaSet. Use rollout pause to hold a rollout halfway."
+   },
+   {
+    "title": "Open node ports on real nodes",
+    "lang": "bash",
+    "code": "sudo firewall-cmd --permanent --add-port=6443/tcp --add-port=10250/tcp --add-port=30000-32767/tcp\nsudo firewall-cmd --reload",
+    "note": "On bare-metal nodes: 6443 is the API, 10250 the kubelet, 30000-32767 NodePorts. Control-plane nodes also need 2379-2380 for etcd."
+   }
+  ]
+ },
+ "verify": [
+  "Nodes ready: kubectl get nodes",
+  "Endpoints populated: kubectl -n dev get endpoints web",
+  "Ingress answers: curl -I http://web.localtest.me:8080/",
+  "Policy blocks: kubectl -n dev run probe --rm -it --image=busybox:1.36 --restart=Never -- wget -qO- -T 3 http://web",
+  "HPA reads metrics: kubectl -n dev get hpa"
+ ],
+ "pitfalls": [
+  "No resource requests means HPA shows unknown and the scheduler packs blindly.",
+  "NetworkPolicy does nothing without an enforcing CNI.",
+  "A failing readiness probe keeps the Service endpoints empty.",
+  "Default-deny also blocks DNS; allow egress to kube-dns.",
+  "Memory limit hit means OOMKilled; check with kubectl describe pod.",
+  "NodePort range is 30000-32767; firewalls must allow it.",
+  "OKD needs 16+ GB per node; it is not for a small lab."
+ ],
+ "furtherReading": [
+  {
+   "label": "Kubernetes components",
+   "url": "https://kubernetes.io/docs/concepts/overview/components/"
+  },
+  {
+   "label": "Network policies",
+   "url": "https://kubernetes.io/docs/concepts/services-networking/network-policies/"
+  },
+  {
+   "label": "Horizontal Pod Autoscaling",
+   "url": "https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/"
+  },
+  {
+   "label": "OKD documentation",
+   "url": "https://docs.okd.io/latest/"
+  }
+ ],
+ "keyPoints": [
+  "Control plane decides; kubelets on nodes execute.",
+  "Services balance at L4; Ingress and Routes route at L7.",
+  "NetworkPolicy, namespaces and RBAC isolate teams and traffic.",
+  "HPA scales on metrics; rollouts ship and roll back safely."
+ ],
+ "quickDeploy": [
+  "Create a kind cluster with two nodes.",
+  "Install ingress-nginx and expose an app.",
+  "Lock traffic down with NetworkPolicy and RBAC.",
+  "Autoscale with HPA, then roll out and undo."
+ ],
+ "osi": [
+  "L3",
+  "L4",
+  "L7"
+ ],
+ "osiNote": "Services balance at L4; Ingress and Routes route at L7.",
+ "production": [
+  "Run three control-plane nodes; back up etcd on a schedule.",
+  "Set requests and limits on every pod; enforce ResourceQuota.",
+  "Default-deny NetworkPolicy; least-privilege RBAC per namespace.",
+  "Use readiness probes, PodDisruptionBudgets and rollout undo.",
+  "Alert on pod restarts, pending pods and node pressure."
+ ]
+}

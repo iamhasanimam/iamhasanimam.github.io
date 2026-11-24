@@ -1,0 +1,170 @@
+{
+  "title": "PostgreSQL",
+  "subtitle": "A transactional relational database with replication and point-in-time recovery.",
+  "tabs": [
+    {
+      "id": "overview",
+      "label": "Overview",
+      "layers": [
+        "engine",
+        "replicate",
+        "protect"
+      ]
+    },
+    {
+      "id": "engine",
+      "label": "Engine",
+      "layers": [
+        "engine",
+        "replicate"
+      ]
+    },
+    {
+      "id": "recovery",
+      "label": "Recovery",
+      "layers": [
+        "replicate",
+        "protect"
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "id": "engine",
+      "label": "Engine",
+      "tone": "indigo",
+      "tiles": [
+        {
+          "id": "acid",
+          "label": "ACID transactions",
+          "icon": "postgresql",
+          "says": "PostgreSQL commits transactions atomically and durably.",
+          "detail": "Correctness under concurrency protects money, inventory and customer records."
+        },
+        {
+          "id": "mvcc",
+          "label": "MVCC",
+          "icon": "postgresql",
+          "says": "MVCC lets readers and writers work without blocking.",
+          "detail": "Snapshots keep reads consistent while vacuum reclaims old row versions."
+        },
+        {
+          "id": "planner",
+          "label": "Planner & indexes",
+          "icon": "postgresql",
+          "says": "The planner picks plans using statistics and indexes.",
+          "detail": "B-tree, GIN and partial indexes turn slow scans into fast lookups; EXPLAIN shows why."
+        }
+      ]
+    },
+    {
+      "id": "replicate",
+      "label": "Replication",
+      "tone": "violet",
+      "tiles": [
+        {
+          "id": "wal",
+          "label": "WAL",
+          "icon": "postgresql",
+          "says": "Every change is written to the WAL first.",
+          "detail": "Sequential logging gives crash safety and feeds replication and recovery."
+        },
+        {
+          "id": "streaming",
+          "label": "Streaming replica",
+          "icon": "postgresql",
+          "says": "Standbys replay WAL continuously.",
+          "detail": "Hot standbys serve reads and can be promoted on failure."
+        },
+        {
+          "id": "pooling",
+          "label": "Connection pooling",
+          "icon": "postgresql",
+          "says": "Poolers multiplex clients onto few server connections.",
+          "detail": "PgBouncer cuts per-connection memory and protects the server from spikes."
+        }
+      ]
+    },
+    {
+      "id": "protect",
+      "label": "Backup & recovery",
+      "tone": "orange",
+      "tiles": [
+        {
+          "id": "basebackup",
+          "label": "Base backups",
+          "icon": "postgresql",
+          "says": "Base backups capture a consistent full copy.",
+          "detail": "Scheduled backups to object storage keep restore points off the database host."
+        },
+        {
+          "id": "archive",
+          "label": "WAL archive",
+          "icon": "postgresql",
+          "says": "Archived WAL enables point-in-time recovery.",
+          "detail": "Replaying logs to a timestamp recovers from human error."
+        },
+        {
+          "id": "restore",
+          "label": "Restore drills",
+          "icon": "postgresql",
+          "says": "Restores are rehearsed, not assumed.",
+          "detail": "Tested recovery proves the backup works and makes recovery time predictable."
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "from": "acid",
+      "to": "wal"
+    },
+    {
+      "from": "mvcc",
+      "to": "wal"
+    },
+    {
+      "from": "planner",
+      "to": "pooling"
+    },
+    {
+      "from": "wal",
+      "to": "streaming"
+    },
+    {
+      "from": "wal",
+      "to": "archive"
+    },
+    {
+      "from": "pooling",
+      "to": "streaming"
+    },
+    {
+      "from": "basebackup",
+      "to": "restore"
+    },
+    {
+      "from": "archive",
+      "to": "restore"
+    },
+    {
+      "from": "streaming",
+      "to": "basebackup"
+    }
+  ],
+  "run": {
+    "cmd": "$ psql -c \"SELECT now() - pg_last_xact_replay_timestamp() AS lag;\"",
+    "lines": [
+      "      lag",
+      "-----------------",
+      " 00:00:00.120344",
+      "(1 row)"
+    ]
+  },
+  "declarations": [
+    "Write the log first, then the data.",
+    "Replicas are not backups.",
+    "Pool connections; do not multiply them.",
+    "Restore regularly to prove it works."
+  ]
+}

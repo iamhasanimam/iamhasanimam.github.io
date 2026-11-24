@@ -1,0 +1,349 @@
+{
+ "title": "Redis Cluster",
+ "subtitle": "Hash slots, replicas, failover and client refresh.",
+ "layers": [
+  {
+   "layer": 2,
+   "label": "Client"
+  },
+  {
+   "layer": 1,
+   "label": "Cluster"
+  },
+  {
+   "layer": 0,
+   "label": "Memory and disk"
+  }
+ ],
+ "tabs": [
+  {
+   "id": "shard",
+   "label": "Sharding",
+   "focus": [
+    "client",
+    "slots",
+    "master"
+   ]
+  },
+  {
+   "id": "ha",
+   "label": "Failover",
+   "focus": [
+    "master",
+    "replica",
+    "bus",
+    "refresh",
+    "client"
+   ]
+  },
+  {
+   "id": "mem",
+   "label": "Memory and disk",
+   "focus": [
+    "master",
+    "maxmem",
+    "rdb",
+    "aof"
+   ]
+  }
+ ],
+ "boxes": [
+  {
+   "id": "client",
+   "label": "Session Client",
+   "tech": "Lettuce",
+   "icon": "redis",
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "Lettuce routes by hash slot.",
+   "detail": "The client keeps a slot map and sends each command straight to the owning master."
+  },
+  {
+   "id": "refresh",
+   "label": "Topology Refresh",
+   "tech": "Lettuce adaptive refresh",
+   "icon": null,
+   "layer": 2,
+   "col": 2,
+   "row": 0,
+   "says": "Adaptive refresh follows failover.",
+   "detail": "MOVED, ASK and reconnect triggers reload the slot map without an app restart."
+  },
+  {
+   "id": "slots",
+   "label": "Hash Slots",
+   "tech": "CRC16 mod 16384",
+   "icon": null,
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "CRC16 mod 16384 picks the slot.",
+   "detail": "Each key maps to one of 16384 slots. Hash tags keep related keys together."
+  },
+  {
+   "id": "master",
+   "label": "Master",
+   "tech": "Redis 7.2",
+   "icon": "redis",
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "Masters own slots and serve writes.",
+   "detail": "Three masters give a majority. Each owns a slot range and streams writes to its replica.",
+   "href": "#/tech/redis",
+   "inner": [
+    {
+     "id": "slotmap",
+     "label": "Slot range"
+    },
+    {
+     "id": "loop",
+     "label": "Event loop"
+    },
+    {
+     "id": "backlog",
+     "label": "Repl backlog"
+    },
+    {
+     "id": "aofbuf",
+     "label": "AOF buffer"
+    }
+   ]
+  },
+  {
+   "id": "replica",
+   "label": "Replica",
+   "tech": "Redis 7.2",
+   "icon": "redis",
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "Replicas wait and take over.",
+   "detail": "Asynchronous copy on a different host. The best offset wins the election."
+  },
+  {
+   "id": "bus",
+   "label": "Cluster Bus",
+   "tech": "Gossip, port+10000",
+   "icon": null,
+   "layer": 1,
+   "col": 3,
+   "row": 0,
+   "says": "Gossip detects failed masters.",
+   "detail": "Pings flow on client port plus 10000. A majority turns PFAIL into FAIL."
+  },
+  {
+   "id": "maxmem",
+   "label": "maxmemory",
+   "tech": "maxmemory-policy",
+   "icon": null,
+   "layer": 0,
+   "col": 0,
+   "row": 0,
+   "says": "maxmemory caps RAM.",
+   "detail": "Policy acts at the cap: noeviction rejects writes, allkeys-lru evicts, volatile-lru evicts keys with TTL."
+  },
+  {
+   "id": "rdb",
+   "label": "RDB",
+   "tech": "RDB snapshot",
+   "icon": null,
+   "layer": 0,
+   "col": 1,
+   "row": 0,
+   "says": "RDB snapshots by fork.",
+   "detail": "Compact and fast to restore. Writes since the last dump are lost."
+  },
+  {
+   "id": "aof",
+   "label": "AOF",
+   "tech": "appendfsync everysec",
+   "icon": null,
+   "layer": 0,
+   "col": 2,
+   "row": 0,
+   "says": "AOF logs every write.",
+   "detail": "Loss is bounded to about one second. Rewritten in the background."
+  }
+ ],
+ "wires": [
+  {
+   "from": "client",
+   "to": "slots",
+   "label": "slot lookup",
+   "style": "solid",
+   "flow": true
+  },
+  {
+   "from": "slots",
+   "to": "master",
+   "label": "route",
+   "style": "solid",
+   "flow": true
+  },
+  {
+   "from": "master",
+   "to": "replica",
+   "label": "async copy",
+   "style": "dashed",
+   "flow": true
+  },
+  {
+   "from": "bus",
+   "to": "replica",
+   "label": "votes",
+   "style": "dashed",
+   "flow": true
+  },
+  {
+   "from": "replica",
+   "to": "refresh",
+   "label": "promoted",
+   "style": "dashed",
+   "flow": true
+  },
+  {
+   "from": "refresh",
+   "to": "client",
+   "label": "new map",
+   "style": "solid",
+   "flow": true
+  },
+  {
+   "from": "maxmem",
+   "to": "master",
+   "label": "evicts",
+   "style": "dashed",
+   "flow": true
+  },
+  {
+   "from": "master",
+   "to": "rdb",
+   "label": "snapshot",
+   "style": "dashed",
+   "flow": true
+  },
+  {
+   "from": "master",
+   "to": "aof",
+   "label": "append",
+   "style": "dashed",
+   "flow": true
+  }
+ ],
+ "steps": [
+  {
+   "title": "Route",
+   "text": "Hash the key, pick the master.",
+   "boxes": [
+    "client",
+    "slots",
+    "master"
+   ],
+   "wires": [
+    [
+     "client",
+     "slots"
+    ],
+    [
+     "slots",
+     "master"
+    ]
+   ]
+  },
+  {
+   "title": "Replicate",
+   "text": "Writes stream to the replica.",
+   "boxes": [
+    "master",
+    "replica"
+   ],
+   "wires": [
+    [
+     "master",
+     "replica"
+    ]
+   ]
+  },
+  {
+   "title": "Fail over",
+   "text": "Majority votes; replica takes slots.",
+   "boxes": [
+    "bus",
+    "replica",
+    "refresh"
+   ],
+   "wires": [
+    [
+     "bus",
+     "replica"
+    ],
+    [
+     "replica",
+     "refresh"
+    ]
+   ]
+  },
+  {
+   "title": "Refresh",
+   "text": "Lettuce reloads the topology.",
+   "boxes": [
+    "refresh",
+    "client"
+   ],
+   "wires": [
+    [
+     "refresh",
+     "client"
+    ]
+   ]
+  },
+  {
+   "title": "Bound memory",
+   "text": "maxmemory evicts or rejects.",
+   "boxes": [
+    "maxmem",
+    "master"
+   ],
+   "wires": [
+    [
+     "maxmem",
+     "master"
+    ]
+   ]
+  },
+  {
+   "title": "Persist",
+   "text": "RDB snapshots; AOF appends.",
+   "boxes": [
+    "master",
+    "rdb",
+    "aof"
+   ],
+   "wires": [
+    [
+     "master",
+     "rdb"
+    ],
+    [
+     "master",
+     "aof"
+    ]
+   ]
+  }
+ ],
+ "run": {
+  "cmd": "redis-cli -p 7000 cluster nodes",
+  "lines": [
+   "a1f3 10.0.0.11:7000 master - connected 0-5460",
+   "d4c6 10.0.0.12:7001 slave a1f3 connected"
+  ]
+ },
+ "declarations": [
+  "Hash slots shard the keys.",
+  "Replicas take over masters.",
+  "Clients follow the topology.",
+  "maxmemory protects the host."
+ ]
+}

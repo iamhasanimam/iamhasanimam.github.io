@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hasan Imam | DevOps Engineer</title>
+  <meta name="description" content="Hasan Imam, DevOps Engineer. Kubernetes, Kong, NGINX, observability, AWS and VMware: projects and writing.">
+  <meta name="theme-color" content="#202124">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=20261124p">
+  <link rel="stylesheet" href="hero3d/hero.css?v=20261124p">
+  <link rel="stylesheet" href="hero3d/quest.css?v=20261124p">
+  <link rel="stylesheet" href="hero3d/world.css?v=20261124p">
+  <link rel="stylesheet" href="hero3d/flow3d.css?v=20261124p">
+  <link rel="stylesheet" href="hero3d/techgraph.css?v=20261124p">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#view">Skip to content</a>
+
+  <div class="shell">
+    <aside class="sidebar" id="sidebar" aria-label="Sidebar">
+      <a class="logo" href="#/">
+        <span class="logo-mark" aria-hidden="true">HI</span>
+        <span class="logo-text"><strong>Hasan Imam</strong><small>DevOps Engineer</small></span>
+      </a>
+      <nav id="nav" aria-label="Primary">
+        <a href="#/" data-route="overview"><span class="ni" aria-hidden="true">./</span>Overview</a>
+        <a href="#/career" data-route="career"><span class="ni" aria-hidden="true">./</span>Career</a>
+        <a href="#/work" data-route="work"><span class="ni" aria-hidden="true">./</span>Work</a>
+        <a href="#/writing" data-route="writing"><span class="ni" aria-hidden="true">./</span>Writing</a>
+        <a href="#/technologies" data-route="technologies"><span class="ni" aria-hidden="true">./</span>Technologies</a>
+        <a href="#/connect" data-route="connect"><span class="ni" aria-hidden="true">./</span>Connect</a>
+        <a href="#/lab" data-route="lab" class="soon-item"><span class="ni" aria-hidden="true">./</span>Lab (soon)</a>
+      </nav>
+      
+    </aside>
+    <div class="scrim" id="scrim" hidden></div>
+
+    <div class="main-col">
+      <header class="topbar">
+        <button type="button" class="icon-btn menu-btn" id="menu-btn" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false">&#9776;</button>
+        <form class="search" role="search" id="search-form" onsubmit="return false">
+          <label for="search" class="sr-only">Search technologies</label>
+          <input id="search" type="search" placeholder="Search technologies" autocomplete="off">
+        </form>
+        <button type="button" class="kbd-btn" id="kbd-btn" aria-label="Open command palette (Ctrl K)">Ctrl K</button>
+        <button type="button" class="icon-btn" id="theme-btn" aria-label="Toggle light or dark theme" aria-pressed="false">&#9680;</button>
+        <div class="scroll-progress" aria-hidden="true"><i id="sp"></i></div>
+      </header>
+      <main id="view" tabindex="-1" aria-live="polite"></main>
+      <footer class="statusbar" aria-label="Status bar"><span>main &#10003;</span><span>0 errors</span><span>Noida, IN</span><span>6+ yrs infra</span><span class="sb-r">UTF-8</span><span>Ctrl K</span></footer>
+    </div>
+  </div>
+
+  <noscript><p style="padding:2rem;color:#fff;background:#202124">This site needs JavaScript to load its pages. GitHub: <a href="https://github.com/iamhasanimam" style="color:#fff">iamhasanimam</a>.</p></noscript>
+  <script type="module" src="app.js?v=20261124p" defer></script>
+</body>
+</html>

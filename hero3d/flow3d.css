@@ -1,0 +1,135 @@
+/* flow3d - scoped styles. Glass only on small surfaces (blur <= 12px); text and the 3D canvas are never blurred.
+   Host CSS vars (optional): --surface --text --muted --primary --hair --box-a --box-b */
+.flow3d{--f-surface:var(--surface,rgba(41,42,45,.78));--f-text:var(--text,#e8eaed);--f-muted:var(--muted,#aeb4ba);--f-primary:var(--primary,#8ab4f8);--f-hair:var(--hair,rgba(232,234,237,.2));
+  position:relative;width:100%;height:var(--flow-h,clamp(560px,78vh,820px));min-height:320px;overflow:hidden;color:var(--f-text);font:13px/1.4 Inter,"Segoe UI",system-ui,sans-serif;background:transparent;isolation:isolate}
+.flow3d[data-theme="light"]{--f-surface:var(--surface,rgba(255,255,255,.85));--f-text:var(--text,#202124);--f-muted:var(--muted,#5f6368);--f-primary:var(--primary,#1a73e8);--f-hair:var(--hair,#dadce0)}
+.flow3d *{box-sizing:border-box}
+.flow3d [hidden]{display:none!important}
+.flow3d .flow3d__root{position:absolute;inset:0;outline:none}
+.flow3d .flow3d__canvas{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none;cursor:grab;touch-action:none}
+.flow3d .flow3d__canvas:active{cursor:grabbing}
+.flow3d .flow3d__root:focus-visible{outline:2px solid var(--f-primary);outline-offset:-2px}
+.flow3d button{font-family:inherit}
+.flow3d button:focus-visible{outline:2px solid var(--f-primary);outline-offset:2px}
+.flow3d .flow3d__tags{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+
+/* volume names, on the top-left edge */
+.flow3d .flow3d__vol{position:absolute;left:0;top:0;height:16px;padding:0 2px;border:0;background:none;color:var(--f-muted);font:500 11px/16px Inter,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;cursor:pointer;pointer-events:auto;will-change:transform}
+.flow3d .flow3d__vol--group{opacity:.85;letter-spacing:.06em}
+.flow3d .flow3d__vol:hover{color:var(--f-text)}
+
+/* exploded view chips (appear when zoomed into a box) */
+.flow3d .flow3d__inner{position:absolute;left:0;top:0;display:flex;gap:4px;white-space:nowrap;pointer-events:none;will-change:transform,opacity}
+.flow3d .flow3d__chip{padding:2px 7px;border-radius:99px;border:1px solid var(--f-hair);background:var(--f-surface);font:600 10.5px/1.3 Inter,system-ui,sans-serif;color:var(--f-text)}
+
+/* component labels (always visible) */
+.flow3d .flow3d__lbl{position:absolute;left:0;top:0;height:16px;padding:0 5px;border:0;border-radius:4px;background:var(--f-surface);color:var(--f-text);font:600 11px/16px Inter,system-ui,sans-serif;white-space:nowrap;cursor:pointer;pointer-events:auto;will-change:transform;}
+.flow3d .flow3d__lbl.is-hover,.flow3d .flow3d__lbl:hover{color:var(--f-primary);text-decoration:underline;text-underline-offset:2px;outline:none}
+.flow3d .flow3d__lbl:focus{outline:none}
+.flow3d .flow3d__lbl:focus-visible{outline:2px solid var(--f-primary);outline-offset:2px}
+
+/* title, tabs, controls */
+.flow3d .flow3d__title{position:absolute;left:14px;top:12px;z-index:3;font:600 13px/1.2 Inter,system-ui,sans-serif;color:var(--f-text);pointer-events:none;max-width:40%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flow3d .flow3d__tabs{position:absolute;right:12px;top:8px;z-index:3;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(60% - 12px)}
+.flow3d .flow3d__tab,.flow3d .flow3d__cbtn{height:28px;padding:0 11px;border-radius:99px;border:1px solid var(--f-hair);background:var(--f-surface);color:var(--f-text);font:600 12px/1 Inter,system-ui,sans-serif;cursor:pointer;}
+.flow3d .flow3d__tab:hover,.flow3d .flow3d__cbtn:hover{border-color:var(--f-primary);color:var(--f-primary)}
+.flow3d .flow3d__tab[aria-pressed="true"]{background:var(--f-primary);border-color:var(--f-primary);color:#fff}
+.flow3d[data-theme="dark"] .flow3d__tab[aria-pressed="true"]{color:#202124}
+.flow3d .flow3d__ctl{position:absolute;right:12px;bottom:10px;z-index:3;display:flex;gap:6px}
+.flow3d .flow3d__cbtn{width:28px;padding:0;font-size:15px;display:grid;place-items:center}
+.flow3d .flow3d__cbtn--wide{width:auto;padding:0 11px;font-size:12px}
+.flow3d .flow3d__cap{position:absolute;left:14px;bottom:12px;z-index:3;max-width:calc(100% - 200px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:500 12.5px/1.2 Inter,system-ui,sans-serif;color:var(--f-text);padding:6px 10px;border-radius:8px;border:1px solid var(--f-hair);background:var(--f-surface)}
+
+.flow3d .flow3d__sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);border:0;list-style:none}
+
+/* no-WebGL fallback */
+.flow3d .flow3d__fallback{position:absolute;inset:0;padding:16px;overflow:auto}
+.flow3d .flow3d__fallback h3{margin:0 0 8px;font-size:14px}
+.flow3d .flow3d__fallback ul{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+.flow3d .flow3d__fallback li{padding:4px 10px;border-radius:99px;border:1px solid var(--f-hair);background:var(--f-surface)}
+.flow3d .flow3d__fallback a{color:var(--f-primary);text-decoration:none}
+
+@media (max-width:640px){
+  .flow3d .flow3d__title{max-width:calc(100% - 24px);top:10px}
+  .flow3d .flow3d__tabs{top:34px;left:12px;right:12px;max-width:none;justify-content:flex-start}
+  .flow3d .flow3d__cap{max-width:calc(100% - 150px)}
+}
+@media (prefers-reduced-motion:reduce){.flow3d *{transition:none!important}}
+
+/* immersive additions */
+.flow3d.is-full{position:fixed;inset:0;z-index:2147483000;width:100vw;height:100vh;max-width:none;background:var(--bg,#202124)}
+.flow3d[data-theme="light"].is-full{background:var(--bg,#fff)}
+.flow3d .flow3d__lbl--sub{font-weight:500;font-size:10.5px}
+.flow3d .flow3d__crumb{position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:4;display:flex;align-items:center;gap:10px;height:32px;padding:0 6px 0 14px;border-radius:99px;border:1px solid var(--f-hair);background:var(--f-surface);font:600 12px/1 Inter,system-ui,sans-serif;white-space:nowrap;max-width:calc(100% - 24px);box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.flow3d .flow3d__crumbtxt{overflow:hidden;text-overflow:ellipsis}
+.flow3d .flow3d__back{height:22px;padding:0 10px}
+.flow3d .flow3d__cap.is-info{white-space:normal;max-width:min(560px,calc(100% - 220px));line-height:1.4}
+.flow3d .flow3d__hint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:3;padding:5px 12px;border-radius:99px;border:1px solid var(--f-hair);background:var(--f-surface);color:var(--f-muted);font:500 11.5px/1.2 Inter,system-ui,sans-serif;white-space:nowrap;pointer-events:none;transition:opacity .5s}
+.flow3d .flow3d__hint.is-off{opacity:0}
+@media (max-width:640px){.flow3d .flow3d__crumb{top:36px}.flow3d .flow3d__hint{white-space:normal;text-align:center;width:max-content;max-width:calc(100% - 200px)}}
+
+/* home architecture toolbar (outside the canvas; uses the site's .seg pills and tokens) */
+.flow-bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin:0 0 12px}
+.flow-bar [hidden]{display:none!important}
+.flow-ctl{display:inline-flex;align-items:center;gap:8px}
+.flow-ctl-l{font:500 12px/1 Inter,system-ui,sans-serif;color:var(--muted,#9aa0a6)}
+.flow-bar .seg{height:32px}
+.flow-bar .seg button{font:500 12px/1 Inter,system-ui,sans-serif;padding:0 12px}
+.flow-bar .seg button:focus-visible{outline:2px solid var(--primary,#8ab4f8);outline-offset:-2px}
+
+/* home page: big scene so tiles stay readable */
+.flow-sec.home .flow3d{height:clamp(720px,84vh,960px)}
+@media (max-width:640px){.flow-sec.home .flow3d{height:clamp(520px,80vh,700px)}}
+
+.flow3d .flow3d__cbtn--primary{background:var(--f-primary);border-color:var(--f-primary);color:#fff}
+.flow3d[data-theme="dark"] .flow3d__cbtn--primary,.flow3d[data-theme="dark"] .flow3d__cbtn--primary:hover{color:#202124}
+.flow3d .flow3d__cbtn--primary:hover{color:#fff;opacity:.9}
+.flow-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.flow-chips .chip-l{display:inline-flex;align-items:center;height:32px;padding:0 12px;border:1px solid var(--hair,rgba(128,134,139,.4));border-radius:99px;background:transparent;color:var(--muted,#9aa0a6);font:500 12px/1 Inter,system-ui,sans-serif;cursor:pointer}
+.flow-chips .chip-l:hover{color:var(--text,#e8eaed);border-color:var(--primary,#8ab4f8)}
+.flow-chips .chip-l[aria-pressed="true"]{background:var(--primary-c,#394457);border-color:var(--primary,#8ab4f8);color:var(--primary,#8ab4f8)}
+.flow-chips .chip-l:focus-visible{outline:2px solid var(--primary,#8ab4f8);outline-offset:2px}
+
+/* left detail pane: solid surface, hairline border, no blur */
+.flow3d .flow3d__pane{position:absolute;left:12px;top:48px;z-index:5;width:260px;max-height:calc(100% - 96px);overflow:auto;padding:14px;border:1px solid var(--f-hair);border-radius:12px;background:#292a2d;color:var(--f-text);font:12px/1.45 Inter,system-ui,sans-serif;opacity:0;transform:translateX(-12px);pointer-events:none;transition:opacity .15s,transform .15s}
+.flow3d[data-theme="light"] .flow3d__pane{background:#fff}
+.flow3d .flow3d__pane.is-open{opacity:1;transform:none;pointer-events:auto}
+.flow3d .flow3d__ph{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.flow3d .flow3d__plogo{width:40px;height:40px;flex:none}
+.flow3d .flow3d__pname{font-weight:600;font-size:14px;line-height:1.25}
+.flow3d .flow3d__psays{margin:0 0 6px;font-weight:600;color:var(--f-text)}
+.flow3d .flow3d__pdet{margin:0 0 8px;color:var(--f-muted)}
+.flow3d .flow3d__pmeta{margin:0 0 8px;color:var(--f-muted);font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.flow3d .flow3d__ph2{margin:10px 0 6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--f-muted)}
+.flow3d .flow3d__pcon{list-style:none;margin:0;padding:0}
+.flow3d .flow3d__pcon li{padding:1px 0}
+.flow3d .flow3d__parrow{color:var(--f-primary)}
+.flow3d .flow3d__pverb{color:var(--f-muted)}
+.flow3d .flow3d__pyr{display:flex;flex-direction:column;align-items:center;gap:4px}
+.flow3d .flow3d__pbar{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:26px;padding:3px 8px;border:1px solid var(--f-hair);border-radius:6px;background:transparent;color:var(--f-text);font:600 11px/1.2 Inter,system-ui,sans-serif;cursor:pointer;text-align:left}
+.flow3d .flow3d__pbar:hover{border-color:var(--f-primary)}
+.flow3d .flow3d__pbar.is-on{background:var(--bar,var(--f-primary));border-color:var(--bar,var(--f-primary));color:#fff}
+.flow3d .flow3d__pbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flow3d .flow3d__pdots{display:inline-flex;gap:2px;flex:none}
+.flow3d .flow3d__pdot{display:block;width:5px;height:5px;border-radius:50%;border:1px solid currentColor;opacity:.6}
+.flow3d .flow3d__pdot.is-on{background:currentColor;opacity:1}
+@media (max-width:640px){.flow3d .flow3d__pane{width:220px;top:70px}}
+
+/* round: full-screen CTA, walk-through bar, legible labels without boxes, floor names */
+.flow3d .flow3d__full{position:absolute;right:12px;top:8px;z-index:4;height:32px;padding:0 14px;border-radius:99px;border:1px solid var(--f-primary);background:var(--f-primary);color:#fff;font:600 12px/1 Inter,system-ui,sans-serif;cursor:pointer}
+.flow3d[data-theme="dark"] .flow3d__full{color:#202124}
+.flow3d .flow3d__full:hover{opacity:.9}
+.flow3d .flow3d__tabs{right:196px;max-width:calc(60% - 196px)}
+.flow3d .flow3d__lbl{background:none;padding:0 2px;font:600 11px/16px Inter,system-ui,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.9),0 0 5px rgba(0,0,0,.7)}
+.flow3d[data-theme="light"] .flow3d__lbl{text-shadow:0 0 3px #fff,0 0 6px #fff,0 1px 1px rgba(255,255,255,.9)}
+.flow3d .flow3d__vol{font:600 12px/16px Inter,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--f-text);opacity:.85}
+.flow3d .flow3d__bird{font-size:14px}
+.flow3d .flow3d__bird[aria-pressed="true"]{background:var(--f-primary);border-color:var(--f-primary);color:#fff}
+.flow3d .flow3d__wbar{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:6px;max-width:calc(100% - 24px);padding:6px 8px 6px 14px;border:1px solid var(--f-hair);border-radius:99px;background:#292a2d;color:var(--f-text);font:500 12.5px/1.2 Inter,system-ui,sans-serif}
+.flow3d[data-theme="light"] .flow3d__wbar{background:#fff}
+.flow3d .flow3d__wcap{margin-right:6px;max-width:46ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flow3d .flow3d__wbar .flow3d__tab{height:26px;padding:0 10px}
+.flow-sec.home .flow3d{height:clamp(720px,84vh,960px)}
+.flow3d .flow3d__pane--r{left:auto;right:12px;transform:translateX(12px)}
+.flow3d .flow3d__pane--r.is-open{transform:none}
+.flow3d .flow3d__lbl{font:600 12px/16px Inter,system-ui,sans-serif}

@@ -1,0 +1,464 @@
+{
+  "title": "Istio",
+  "subtitle": "Routes, secures and observes service traffic.",
+  "layers": [
+    {
+      "layer": 0,
+      "label": "Edge"
+    },
+    {
+      "layer": 1,
+      "label": "Control and policy"
+    },
+    {
+      "layer": 2,
+      "label": "Cluster A workloads"
+    },
+    {
+      "layer": 3,
+      "label": "Cluster B"
+    }
+  ],
+  "groups": [
+    {
+      "id": "gb",
+      "label": "Receiving cluster",
+      "boxes": [
+        "ewgw",
+        "recv",
+        "clusterb"
+      ]
+    }
+  ],
+  "tabs": [
+    {
+      "id": "traffic",
+      "label": "Traffic",
+      "focus": [
+        "client",
+        "igw",
+        "vs",
+        "dr",
+        "stable",
+        "canary"
+      ]
+    },
+    {
+      "id": "security",
+      "label": "Security",
+      "focus": [
+        "istiod",
+        "authz",
+        "sidecar",
+        "stable"
+      ]
+    },
+    {
+      "id": "multi",
+      "label": "Multi-cluster",
+      "focus": [
+        "stable",
+        "ewgw",
+        "recv",
+        "clusterb",
+        "istiod"
+      ]
+    }
+  ],
+  "boxes": [
+    {
+      "id": "client",
+      "label": "Client",
+      "tech": "Browser",
+      "icon": null,
+      "layer": 0,
+      "col": 0,
+      "row": 0,
+      "says": "Clients send HTTP and gRPC.",
+      "detail": "Requests enter through the mesh edge, so release and policy rules apply first."
+    },
+    {
+      "id": "igw",
+      "label": "Ingress Gateway",
+      "tech": "Istio Gateway",
+      "icon": "istio",
+      "layer": 0,
+      "col": 1,
+      "row": 0,
+      "says": "The gateway admits traffic.",
+      "detail": "An Envoy at the edge. Gateway opens ports and hosts; VirtualService binds to it."
+    },
+    {
+      "id": "istiod",
+      "label": "istiod",
+      "tech": "Istio istiod",
+      "icon": "istio",
+      "layer": 1,
+      "col": 0,
+      "row": 0,
+      "says": "istiod programs every proxy.",
+      "detail": "Pushes xDS config to sidecars and issues SPIFFE certificates as the CA."
+    },
+    {
+      "id": "vs",
+      "label": "VirtualService",
+      "tech": "Istio VirtualService",
+      "icon": null,
+      "layer": 1,
+      "col": 1,
+      "row": 0,
+      "says": "VirtualService splits traffic by weight.",
+      "detail": "Match host, path or header, then weight subsets 90/10 to 0/100. Blue-green flips it."
+    },
+    {
+      "id": "dr",
+      "label": "DestinationRule",
+      "tech": "Istio DestinationRule",
+      "icon": null,
+      "layer": 1,
+      "col": 2,
+      "row": 0,
+      "says": "DestinationRule names subsets.",
+      "detail": "Subsets by version label, ringHash session affinity, pool limits and outlier detection.",
+      "inner": [
+        {
+          "id": "sub",
+          "label": "Subsets"
+        },
+        {
+          "id": "ring",
+          "label": "ringHash"
+        },
+        {
+          "id": "pool",
+          "label": "Pool limits"
+        },
+        {
+          "id": "out",
+          "label": "Outlier"
+        }
+      ]
+    },
+    {
+      "id": "authz",
+      "label": "AuthZ Policy",
+      "tech": "AuthorizationPolicy",
+      "icon": null,
+      "layer": 1,
+      "col": 3,
+      "row": 0,
+      "says": "AuthorizationPolicy allows named identities.",
+      "detail": "Allow or deny by principal, namespace, method and path. Default-deny first."
+    },
+    {
+      "id": "sidecar",
+      "label": "Sidecar",
+      "tech": "Envoy",
+      "icon": "envoyproxy",
+      "layer": 2,
+      "col": 0,
+      "row": 0,
+      "says": "Envoy proxies every pod.",
+      "detail": "Injected by annotation. Terminates mTLS and enforces routes and policy.",
+      "inner": [
+        {
+          "id": "inj",
+          "label": "Injection"
+        },
+        {
+          "id": "mtls",
+          "label": "mTLS"
+        },
+        {
+          "id": "ret",
+          "label": "Retries"
+        }
+      ]
+    },
+    {
+      "id": "stable",
+      "label": "Stable v1",
+      "tech": "Kubernetes pods",
+      "icon": "kubernetes",
+      "layer": 2,
+      "col": 1,
+      "row": 0,
+      "says": "Stable serves most traffic.",
+      "detail": "The proven release, version v1, behind a sidecar."
+    },
+    {
+      "id": "canary",
+      "label": "Canary v2",
+      "tech": "Kubernetes pods",
+      "icon": "kubernetes",
+      "layer": 2,
+      "col": 2,
+      "row": 0,
+      "says": "Canary serves the slice.",
+      "detail": "The new release gets a small weight. Metrics decide whether it grows."
+    },
+    {
+      "id": "ewgw",
+      "label": "East-west GW",
+      "tech": "Istio east-west gateway",
+      "icon": "istio",
+      "layer": 3,
+      "col": 0,
+      "row": 0,
+      "says": "The east-west gateway takes 15443.",
+      "detail": "Exposed through a NodePort. Passes mTLS by SNI between clusters."
+    },
+    {
+      "id": "recv",
+      "label": "Receiver pod",
+      "tech": "AUTO_PASSTHROUGH pod",
+      "icon": null,
+      "layer": 3,
+      "col": 1,
+      "row": 0,
+      "says": "AUTO_PASSTHROUGH routes by SNI.",
+      "detail": "A pod in the receiving cluster answers without the gateway terminating TLS."
+    },
+    {
+      "id": "clusterb",
+      "label": "Cluster B",
+      "tech": "Kubernetes",
+      "icon": "kubernetes",
+      "layer": 3,
+      "col": 2,
+      "row": 0,
+      "says": "Cluster B joins the same mesh.",
+      "detail": "Shares the root CA and mesh ID. Remote secrets expose its endpoints.",
+      "href": "#/tech/kubernetes-okd"
+    }
+  ],
+  "wires": [
+    {
+      "from": "client",
+      "to": "igw",
+      "label": "HTTP",
+      "style": "solid",
+      "flow": true,
+      "weight": "bold"
+    },
+    {
+      "from": "igw",
+      "to": "vs",
+      "label": "route",
+      "style": "solid",
+      "flow": true,
+      "weight": "bold"
+    },
+    {
+      "from": "vs",
+      "to": "dr",
+      "label": "subsets",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "dr",
+      "to": "stable",
+      "label": "90%",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "dr",
+      "to": "canary",
+      "label": "10%",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "istiod",
+      "to": "sidecar",
+      "label": "xDS",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "istiod",
+      "to": "authz",
+      "label": "policy",
+      "style": "dashed",
+      "flow": false,
+      "weight": "normal"
+    },
+    {
+      "from": "authz",
+      "to": "sidecar",
+      "label": "enforce",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "sidecar",
+      "to": "stable",
+      "label": "proxy",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "sidecar",
+      "to": "canary",
+      "label": "proxy",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "stable",
+      "to": "ewgw",
+      "label": "15443",
+      "style": "solid",
+      "flow": true,
+      "weight": "bold"
+    },
+    {
+      "from": "ewgw",
+      "to": "recv",
+      "label": "SNI",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "recv",
+      "to": "clusterb",
+      "label": "serves",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "istiod",
+      "to": "ewgw",
+      "label": "endpoints",
+      "style": "dashed",
+      "flow": false,
+      "weight": "normal"
+    }
+  ],
+  "steps": [
+    {
+      "title": "Inject",
+      "text": "Annotate the pod template. Envoy joins the pod.",
+      "boxes": [
+        "sidecar",
+        "istiod"
+      ],
+      "wires": [
+        [
+          "istiod",
+          "sidecar"
+        ]
+      ]
+    },
+    {
+      "title": "Define subsets",
+      "text": "DestinationRule sets stable, canary and ringHash.",
+      "boxes": [
+        "dr",
+        "stable",
+        "canary"
+      ],
+      "wires": [
+        [
+          "dr",
+          "stable"
+        ],
+        [
+          "dr",
+          "canary"
+        ]
+      ]
+    },
+    {
+      "title": "Shift weights",
+      "text": "VirtualService moves 90/10 to 0/100.",
+      "boxes": [
+        "vs",
+        "dr",
+        "stable",
+        "canary"
+      ],
+      "wires": [
+        [
+          "vs",
+          "dr"
+        ],
+        [
+          "dr",
+          "stable"
+        ],
+        [
+          "dr",
+          "canary"
+        ]
+      ]
+    },
+    {
+      "title": "Lock identity",
+      "text": "STRICT mTLS and AuthorizationPolicy gate callers.",
+      "boxes": [
+        "authz",
+        "sidecar",
+        "stable"
+      ],
+      "wires": [
+        [
+          "authz",
+          "sidecar"
+        ],
+        [
+          "sidecar",
+          "stable"
+        ]
+      ]
+    },
+    {
+      "title": "Cross clusters",
+      "text": "Traffic hits 15443 and passes through by SNI.",
+      "boxes": [
+        "stable",
+        "ewgw",
+        "recv",
+        "clusterb"
+      ],
+      "wires": [
+        [
+          "stable",
+          "ewgw"
+        ],
+        [
+          "ewgw",
+          "recv"
+        ],
+        [
+          "recv",
+          "clusterb"
+        ]
+      ]
+    }
+  ],
+  "run": {
+    "cmd": "istioctl x describe pod frontend -n shop",
+    "lines": [
+      "Route to subset stable weight 90, canary weight 10",
+      "Effective PeerAuthentication: STRICT"
+    ]
+  },
+  "declarations": [
+    "Istio routes by weight.",
+    "Envoy proxies every pod.",
+    "mTLS authenticates every hop.",
+    "Two clusters become one mesh."
+  ]
+}

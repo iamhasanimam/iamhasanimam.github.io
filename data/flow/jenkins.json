@@ -1,0 +1,407 @@
+{
+ "title": "Jenkins",
+ "subtitle": "Every commit gated, scanned and shipped by GitOps.",
+ "layers": [
+  {
+   "layer": 0,
+   "label": "Deploy"
+  },
+  {
+   "layer": 1,
+   "label": "CI"
+  },
+  {
+   "layer": 2,
+   "label": "Source"
+  }
+ ],
+ "groups": [
+  {
+   "id": "ci",
+   "label": "Pipeline",
+   "boxes": [
+    "controller",
+    "agent",
+    "sonar",
+    "trivy"
+   ]
+  }
+ ],
+ "tabs": [
+  {
+   "id": "ci",
+   "label": "Build and verify",
+   "focus": [
+    "git",
+    "controller",
+    "agent",
+    "sonar",
+    "trivy"
+   ]
+  },
+  {
+   "id": "cd",
+   "label": "Publish and deploy",
+   "focus": [
+    "nexus",
+    "gitops",
+    "argocd",
+    "cluster"
+   ]
+  },
+  {
+   "id": "guard",
+   "label": "Kong guard",
+   "focus": [
+    "controller",
+    "deck",
+    "kong"
+   ]
+  }
+ ],
+ "boxes": [
+  {
+   "id": "git",
+   "label": "Git Repo",
+   "tech": "Git",
+   "icon": "git",
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "Git holds code and the Jenkinsfile.",
+   "detail": "Push fires a webhook. Source, pipeline and manifests are versioned and reviewed."
+  },
+  {
+   "id": "controller",
+   "label": "Controller",
+   "tech": "Jenkins",
+   "icon": "jenkins",
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "Jenkins schedules and records.",
+   "detail": "Reads the Jenkinsfile, queues stages, stores credentials and history. Runs no builds.",
+   "href": "#/tech/jenkins",
+   "inner": [
+    {
+     "id": "q",
+     "label": "Queue"
+    },
+    {
+     "id": "jf",
+     "label": "Jenkinsfile"
+    },
+    {
+     "id": "cr",
+     "label": "Credentials"
+    },
+    {
+     "id": "hist",
+     "label": "History"
+    }
+   ]
+  },
+  {
+   "id": "agent",
+   "label": "SSH Agent",
+   "tech": "Linux VM",
+   "icon": null,
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "Agents run the stages.",
+   "detail": "A Linux VM joined over SSH. Checks out, builds and tests in the workspace."
+  },
+  {
+   "id": "sonar",
+   "label": "SonarQube",
+   "tech": "SonarQube",
+   "icon": "sonarqube",
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "SonarQube enforces the quality gate.",
+   "detail": "Static analysis result gates the pipeline via waitForQualityGate."
+  },
+  {
+   "id": "trivy",
+   "label": "Trivy",
+   "tech": "Trivy",
+   "icon": "trivy",
+   "layer": 1,
+   "col": 3,
+   "row": 0,
+   "says": "Trivy fails on HIGH and CRITICAL.",
+   "detail": "Scans the built image for known CVEs before anything is pushed."
+  },
+  {
+   "id": "nexus",
+   "label": "Nexus",
+   "tech": "Nexus",
+   "icon": "sonatype",
+   "layer": 0,
+   "col": 0,
+   "row": 0,
+   "says": "Nexus stores immutable image tags.",
+   "detail": "Only the scanned image is pushed, tagged by commit."
+  },
+  {
+   "id": "gitops",
+   "label": "GitOps Repo",
+   "tech": "Git",
+   "icon": "git",
+   "layer": 0,
+   "col": 1,
+   "row": 0,
+   "says": "Jenkins commits the new tag.",
+   "detail": "A Kustomize overlay gets the new image tag. No kubectl in the pipeline."
+  },
+  {
+   "id": "argocd",
+   "label": "Argo CD",
+   "tech": "Argo CD",
+   "icon": "argo",
+   "layer": 0,
+   "col": 2,
+   "row": 0,
+   "says": "Argo CD syncs Git to cluster.",
+   "detail": "Detects the commit and reconciles the cluster state."
+  },
+  {
+   "id": "cluster",
+   "label": "Cluster",
+   "tech": "Kubernetes",
+   "icon": "kubernetes",
+   "layer": 0,
+   "col": 3,
+   "row": 0,
+   "says": "Kubernetes runs the release.",
+   "detail": "Pulls the tag from Nexus. Smoke test hits the live endpoint.",
+   "href": "#/tech/kubernetes-okd"
+  },
+  {
+   "id": "deck",
+   "label": "decK Guard",
+   "tech": "decK",
+   "icon": "kong",
+   "layer": 2,
+   "col": 2,
+   "row": 0,
+   "says": "decK diff fails on deletions.",
+   "detail": "Back up, diff, block deleting lines, sync after approval, smoke test."
+  },
+  {
+   "id": "kong",
+   "label": "Kong",
+   "tech": "Kong Gateway",
+   "icon": "kong",
+   "layer": 2,
+   "col": 3,
+   "row": 0,
+   "says": "Kong holds the live gateway config.",
+   "detail": "The Admin API is the target of dump, diff and sync.",
+   "href": "#/tech/kong"
+  }
+ ],
+ "wires": [
+  {
+   "from": "git",
+   "to": "controller",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "webhook"
+  },
+  {
+   "from": "controller",
+   "to": "agent",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "dispatch"
+  },
+  {
+   "from": "agent",
+   "to": "sonar",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "analyse"
+  },
+  {
+   "from": "sonar",
+   "to": "trivy",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "gate"
+  },
+  {
+   "from": "trivy",
+   "to": "nexus",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "push"
+  },
+  {
+   "from": "nexus",
+   "to": "gitops",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "tag"
+  },
+  {
+   "from": "gitops",
+   "to": "argocd",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "sync"
+  },
+  {
+   "from": "argocd",
+   "to": "cluster",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "apply"
+  },
+  {
+   "from": "controller",
+   "to": "deck",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal",
+   "label": "guard"
+  },
+  {
+   "from": "deck",
+   "to": "kong",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "diff, sync"
+  }
+ ],
+ "steps": [
+  {
+   "title": "Trigger",
+   "text": "A push fires a webhook; Jenkins queues the build.",
+   "boxes": [
+    "git",
+    "controller"
+   ],
+   "wires": [
+    [
+     "git",
+     "controller"
+    ]
+   ]
+  },
+  {
+   "title": "Build",
+   "text": "An SSH agent builds and tests the commit.",
+   "boxes": [
+    "controller",
+    "agent"
+   ],
+   "wires": [
+    [
+     "controller",
+     "agent"
+    ]
+   ]
+  },
+  {
+   "title": "Gate",
+   "text": "SonarQube and Trivy must pass.",
+   "boxes": [
+    "agent",
+    "sonar",
+    "trivy"
+   ],
+   "wires": [
+    [
+     "agent",
+     "sonar"
+    ],
+    [
+     "sonar",
+     "trivy"
+    ]
+   ]
+  },
+  {
+   "title": "Publish",
+   "text": "The scanned image goes to Nexus.",
+   "boxes": [
+    "trivy",
+    "nexus"
+   ],
+   "wires": [
+    [
+     "trivy",
+     "nexus"
+    ]
+   ]
+  },
+  {
+   "title": "Deploy",
+   "text": "Tag committed; Argo CD syncs the cluster.",
+   "boxes": [
+    "nexus",
+    "gitops",
+    "argocd",
+    "cluster"
+   ],
+   "wires": [
+    [
+     "nexus",
+     "gitops"
+    ],
+    [
+     "gitops",
+     "argocd"
+    ],
+    [
+     "argocd",
+     "cluster"
+    ]
+   ]
+  },
+  {
+   "title": "Guard Kong",
+   "text": "decK diff blocks deletions before sync.",
+   "boxes": [
+    "controller",
+    "deck",
+    "kong"
+   ],
+   "wires": [
+    [
+     "controller",
+     "deck"
+    ],
+    [
+     "deck",
+     "kong"
+    ]
+   ]
+  }
+ ],
+ "declarations": [
+  "Jenkins runs the gates.",
+  "Agents do the work.",
+  "Argo CD deploys.",
+  "decK diff blocks deletes."
+ ],
+ "run": {
+  "cmd": "deck gateway diff -s kong.yaml --no-color",
+  "lines": [
+   "updating service orders",
+   "Summary: Created: 0 Updated: 1 Deleted: 0"
+  ]
+ }
+}

@@ -1,0 +1,441 @@
+{
+ "title": "OpenBao",
+ "subtitle": "Identity-based secrets with Raft HA",
+ "layers": [
+  {
+   "layer": 2,
+   "label": "Clients"
+  },
+  {
+   "layer": 1,
+   "label": "OpenBao API"
+  },
+  {
+   "layer": 0,
+   "label": "Storage"
+  }
+ ],
+ "groups": [
+  {
+   "id": "engines",
+   "label": "Secrets engines",
+   "boxes": [
+    "kv",
+    "dynamic"
+   ]
+  },
+  {
+   "id": "cluster",
+   "label": "Raft cluster",
+   "boxes": [
+    "leader",
+    "node2",
+    "node3"
+   ]
+  }
+ ],
+ "tabs": [
+  {
+   "id": "access",
+   "label": "Secret access",
+   "focus": [
+    "workload",
+    "agent",
+    "approle",
+    "policy",
+    "kv"
+   ]
+  },
+  {
+   "id": "dynamic",
+   "label": "Dynamic and audit",
+   "focus": [
+    "dynamic",
+    "database",
+    "audit",
+    "kv"
+   ]
+  },
+  {
+   "id": "ha",
+   "label": "HA and backup",
+   "focus": [
+    "leader",
+    "node2",
+    "node3",
+    "snapshot"
+   ]
+  }
+ ],
+ "boxes": [
+  {
+   "id": "workload",
+   "label": "Workload",
+   "tech": "Application",
+   "icon": null,
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "The workload reads a file.",
+   "detail": "The application never calls OpenBao. It reads secrets the agent rendered."
+  },
+  {
+   "id": "agent",
+   "label": "Agent",
+   "tech": "OpenBao Agent",
+   "icon": "openbao",
+   "layer": 2,
+   "col": 1,
+   "row": 0,
+   "says": "Agent logs in and renders secrets.",
+   "detail": "Authenticates with AppRole, renews the token and rewrites templates when secrets change."
+  },
+  {
+   "id": "database",
+   "label": "Database",
+   "tech": "PostgreSQL",
+   "icon": "postgresql",
+   "layer": 2,
+   "col": 3,
+   "row": 0,
+   "says": "Engines create users here.",
+   "detail": "Receives generated accounts with limited grants that expire with their lease.",
+   "href": "#/tech/postgresql"
+  },
+  {
+   "id": "approle",
+   "label": "AppRole",
+   "tech": "AppRole auth",
+   "icon": null,
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "AppRole proves machine identity.",
+   "detail": "A role ID plus a single-use secret ID returns a short-lived token."
+  },
+  {
+   "id": "policy",
+   "label": "Policies",
+   "tech": "ACL policy",
+   "icon": null,
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "Policies grant per-path access.",
+   "detail": "Deny by default. KV v2 paths need data/ and metadata/ prefixes."
+  },
+  {
+   "id": "kv",
+   "label": "KV v2",
+   "tech": "KV v2",
+   "icon": null,
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "KV v2 versions static secrets.",
+   "detail": "Soft delete and rollback per version. Values are encrypted by the barrier."
+  },
+  {
+   "id": "dynamic",
+   "label": "Dynamic",
+   "tech": "Database engine",
+   "icon": null,
+   "layer": 1,
+   "col": 3,
+   "row": 0,
+   "says": "Dynamic engines mint leased credentials.",
+   "detail": "Unique credentials per request. Expiry or revoke removes the user."
+  },
+  {
+   "id": "audit",
+   "label": "Audit",
+   "tech": "Audit device",
+   "icon": null,
+   "layer": 1,
+   "col": 4,
+   "row": 0,
+   "says": "Audit logs every request.",
+   "detail": "File or syslog device. Secret values are HMAC-hashed; failure blocks requests."
+  },
+  {
+   "id": "leader",
+   "label": "Leader",
+   "tech": "OpenBao",
+   "icon": "openbao",
+   "layer": 0,
+   "col": 0,
+   "row": 0,
+   "says": "The leader commits writes.",
+   "detail": "One active node handles writes and replicates to followers over port 8201.",
+   "inner": [
+    {
+     "id": "barrier",
+     "label": "Barrier"
+    },
+    {
+     "id": "seal",
+     "label": "Seal"
+    },
+    {
+     "id": "raft-log",
+     "label": "Raft log"
+    }
+   ]
+  },
+  {
+   "id": "node2",
+   "label": "Follower",
+   "tech": "Raft node",
+   "icon": "openbao",
+   "layer": 0,
+   "col": 1,
+   "row": 0,
+   "says": "Followers hold full copies.",
+   "detail": "Standbys forward requests and take over if the leader fails."
+  },
+  {
+   "id": "node3",
+   "label": "Follower",
+   "tech": "Raft node",
+   "icon": "openbao",
+   "layer": 0,
+   "col": 2,
+   "row": 0,
+   "says": "Quorum survives one failure.",
+   "detail": "Three nodes tolerate one loss; five tolerate two."
+  },
+  {
+   "id": "snapshot",
+   "label": "Snapshot",
+   "tech": "raft snapshot",
+   "icon": null,
+   "layer": 0,
+   "col": 3,
+   "row": 0,
+   "says": "Snapshots restore the cluster.",
+   "detail": "bao operator raft snapshot save, run from cron, copied off-host."
+  }
+ ],
+ "wires": [
+  {
+   "from": "workload",
+   "to": "agent",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "needs secret"
+  },
+  {
+   "from": "agent",
+   "to": "approle",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "login"
+  },
+  {
+   "from": "approle",
+   "to": "policy",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "token"
+  },
+  {
+   "from": "policy",
+   "to": "kv",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "read"
+  },
+  {
+   "from": "policy",
+   "to": "dynamic",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "creds"
+  },
+  {
+   "from": "dynamic",
+   "to": "database",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "creates user"
+  },
+  {
+   "from": "kv",
+   "to": "leader",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "commit"
+  },
+  {
+   "from": "leader",
+   "to": "node2",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "replicate"
+  },
+  {
+   "from": "leader",
+   "to": "node3",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "replicate"
+  },
+  {
+   "from": "leader",
+   "to": "snapshot",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "save"
+  },
+  {
+   "from": "kv",
+   "to": "audit",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal",
+   "label": "logged"
+  },
+  {
+   "from": "agent",
+   "to": "workload",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal",
+   "label": "renders file"
+  }
+ ],
+ "steps": [
+  {
+   "title": "Login",
+   "text": "Agent presents role ID and secret ID.",
+   "boxes": [
+    "workload",
+    "agent",
+    "approle"
+   ],
+   "wires": [
+    [
+     "workload",
+     "agent"
+    ],
+    [
+     "agent",
+     "approle"
+    ]
+   ]
+  },
+  {
+   "title": "Authorise",
+   "text": "A token is issued; policy checks the path.",
+   "boxes": [
+    "approle",
+    "policy"
+   ],
+   "wires": [
+    [
+     "approle",
+     "policy"
+    ]
+   ]
+  },
+  {
+   "title": "Read",
+   "text": "KV v2 returns the secret version.",
+   "boxes": [
+    "policy",
+    "kv",
+    "audit"
+   ],
+   "wires": [
+    [
+     "policy",
+     "kv"
+    ],
+    [
+     "kv",
+     "audit"
+    ]
+   ]
+  },
+  {
+   "title": "Mint",
+   "text": "Dynamic engine creates a leased database user.",
+   "boxes": [
+    "policy",
+    "dynamic",
+    "database"
+   ],
+   "wires": [
+    [
+     "policy",
+     "dynamic"
+    ],
+    [
+     "dynamic",
+     "database"
+    ]
+   ]
+  },
+  {
+   "title": "Replicate",
+   "text": "Leader commits to a Raft quorum.",
+   "boxes": [
+    "kv",
+    "leader",
+    "node2",
+    "node3"
+   ],
+   "wires": [
+    [
+     "kv",
+     "leader"
+    ],
+    [
+     "leader",
+     "node2"
+    ],
+    [
+     "leader",
+     "node3"
+    ]
+   ]
+  },
+  {
+   "title": "Back up",
+   "text": "A snapshot is saved from the leader.",
+   "boxes": [
+    "leader",
+    "snapshot"
+   ],
+   "wires": [
+    [
+     "leader",
+     "snapshot"
+    ]
+   ]
+  }
+ ],
+ "declarations": [
+  "OpenBao encrypts at rest.",
+  "Policies deny by default.",
+  "Dynamic secrets expire.",
+  "Raft replicates by quorum."
+ ],
+ "run": {
+  "cmd": "bao operator raft snapshot save b.snap",
+  "lines": [
+   "Raft peers: bao-1 leader, bao-2, bao-3",
+   "Snapshot saved: b.snap"
+  ]
+ }
+}

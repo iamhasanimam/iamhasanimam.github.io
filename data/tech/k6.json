@@ -1,0 +1,157 @@
+{
+ "slug": "k6",
+ "name": "k6",
+ "category": "Testing",
+ "icon": "k6",
+ "level": "hands-on",
+ "tagline": "Scripted load tests with pass/fail thresholds, gating releases on p95.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Scenarios and VUs",
+   "body": "A scenario picks an executor, load shape and duration.\nramping-vus changes concurrent virtual users over stages.\nconstant-arrival-rate holds requests per second regardless of response time.\nSeveral scenarios run in parallel to mix traffic."
+  },
+  {
+   "title": "Thresholds",
+   "body": "Thresholds are pass or fail rules on metrics, such as http_req_duration p(95)<500.\nhttp_req_failed rate<0.01 caps errors at one percent.\nTags scope a threshold to one request name.\nAny failure makes k6 exit with code 99."
+  },
+  {
+   "title": "Metrics and remote write",
+   "body": "k6 records http_req_duration, http_reqs and dropped_iterations for every run.\nThe experimental-prometheus-rw output pushes them to Prometheus.\nPrometheus needs --web.enable-remote-write-receiver enabled.\nTREND_STATS turns trends into series like k6_http_req_duration_p95."
+  },
+  {
+   "title": "Grafana dashboard",
+   "body": "Grafana reads the k6_ series from the Prometheus data source.\nPanels show p95 latency, requests per second and error rate.\nA testid variable separates one run from another."
+  },
+  {
+   "title": "Load test before release",
+   "body": "The pipeline runs k6 as a gate after deploy to staging.\nA failed threshold fails the stage and blocks promotion.\nCompare p95 against the previous release in Grafana."
+  }
+ ],
+ "flow": [
+  "Pipeline starts k6 with a script and a testid tag.",
+  "Scenario ramps virtual users or holds an arrival rate.",
+  "Each VU sends requests to the target through the gateway.",
+  "k6 records http_req_duration for every request.",
+  "Thresholds are evaluated continuously during the run.",
+  "Metrics are pushed to Prometheus by remote write.",
+  "Grafana plots p95, throughput and errors per testid.",
+  "Exit code gates the release."
+ ],
+ "deploy": {
+  "summary": "Run k6 on a Linux VM with Docker against a target, ship metrics to Prometheus, chart in Grafana.",
+  "prerequisites": [
+   "Linux VM with Docker 24+",
+   "Prometheus with --web.enable-remote-write-receiver",
+   "Grafana with the Prometheus data source",
+   "A target URL you own (placeholder)"
+  ],
+  "steps": [
+   {
+    "title": "Allow the load generator through the firewall",
+    "lang": "bash",
+    "code": "# on the Prometheus host: accept remote write from the k6 VM (placeholder IP)\nsudo ufw allow from 192.0.2.20 to any port 9090 proto tcp\n# Prometheus must run with: --web.enable-remote-write-receiver",
+    "note": "Without the flag Prometheus answers 404 on /api/v1/write."
+   },
+   {
+    "title": "Test script with scenario and thresholds",
+    "lang": "javascript",
+    "code": "import http from 'k6/http';\nimport { check, sleep } from 'k6';\n\nexport const options = {\n  scenarios: {\n    ramp: {\n      executor: 'ramping-vus',\n      startVUs: 0,\n      stages: [\n        { duration: '30s', target: 20 },\n        { duration: '2m',  target: 20 },\n        { duration: '15s', target: 0 },\n      ],\n      gracefulRampDown: '10s',\n    },\n  },\n  thresholds: {\n    http_req_failed: ['rate<0.01'],\n    http_req_duration: ['p(95)<500', 'p(99)<1000'],\n  },\n};\n\nconst BASE = __ENV.TARGET || 'http://localhost:8081';\n\nexport default function () {\n  const res = http.get(`${BASE}/get`, { tags: { name: 'get' } });\n  check(res, { 'status is 200': (r) => r.status === 200 });\n  sleep(1);\n}",
+    "note": "Save as script.js. Set TARGET to your service."
+   },
+   {
+    "title": "Run it with pinned k6",
+    "lang": "bash",
+    "code": "docker run --rm -i --network host -e TARGET=http://localhost:8081 grafana/k6:0.52.0 run - < script.js\necho \"exit code: $?\"",
+    "note": "Exit 0 means thresholds passed; 99 means one failed."
+   },
+   {
+    "title": "Constant arrival rate scenario",
+    "lang": "javascript",
+    "code": "export const options = {\n  scenarios: {\n    fixed_rate: {\n      executor: 'constant-arrival-rate',\n      rate: 100,\n      timeUnit: '1s',\n      duration: '5m',\n      preAllocatedVUs: 50,\n      maxVUs: 200,\n    },\n  },\n  thresholds: {\n    http_req_duration: ['p(95)<300'],\n    dropped_iterations: ['count==0'],\n  },\n};",
+    "note": "Replace the options block to hold 100 requests per second."
+   },
+   {
+    "title": "Remote write to Prometheus",
+    "lang": "bash",
+    "code": "docker run --rm -i --network host \\\n  -e TARGET=http://localhost:8081 \\\n  -e K6_PROMETHEUS_RW_SERVER_URL=http://127.0.0.1:9090/api/v1/write \\\n  -e K6_PROMETHEUS_RW_TREND_STATS='p(95),p(99),avg,max' \\\n  grafana/k6:0.52.0 run -o experimental-prometheus-rw --tag testid=release-001 - < script.js",
+    "note": "Use the Prometheus host address when it is not local."
+   },
+   {
+    "title": "Grafana dashboard provisioning",
+    "lang": "json",
+    "code": "{\n  \"title\": \"k6 load test\",\n  \"uid\": \"k6-lab\",\n  \"schemaVersion\": 39,\n  \"panels\": [\n    { \"type\": \"timeseries\", \"title\": \"http_req_duration p95\", \"gridPos\": {\"h\": 8, \"w\": 12, \"x\": 0, \"y\": 0},\n      \"targets\": [ { \"expr\": \"k6_http_req_duration_p95{testid=\\\"$testid\\\"}\" } ] },\n    { \"type\": \"timeseries\", \"title\": \"Requests per second\", \"gridPos\": {\"h\": 8, \"w\": 12, \"x\": 12, \"y\": 0},\n      \"targets\": [ { \"expr\": \"sum(rate(k6_http_reqs_total{testid=\\\"$testid\\\"}[30s]))\" } ] }\n  ],\n  \"templating\": { \"list\": [ { \"name\": \"testid\", \"type\": \"textbox\", \"query\": \"release\" } ] }\n}",
+    "note": "Save as /var/lib/grafana/dashboards/k6.json. Provide it with a file provider in /etc/grafana/provisioning/dashboards/k6.yaml, then restart Grafana."
+   },
+   {
+    "title": "Nightly run as a systemd unit",
+    "lang": "ini",
+    "code": "[Unit]\nDescription=Nightly k6 load test\nAfter=network-online.target\n\n[Service]\nType=oneshot\nEnvironment=K6_PROMETHEUS_RW_SERVER_URL=http://127.0.0.1:9090/api/v1/write\nEnvironment=K6_PROMETHEUS_RW_TREND_STATS=p(95),p(99),avg,max\nExecStart=/usr/bin/k6 run -o experimental-prometheus-rw --tag testid=nightly /opt/k6/script.js",
+    "note": "Save as /etc/systemd/system/k6-nightly.service, add a timer, then systemctl daemon-reload. Needs k6 installed from the k6 package."
+   },
+   {
+    "title": "Gate a release in Jenkins",
+    "lang": "groovy",
+    "code": "stage('Load test') {\n  steps { sh 'docker run --rm -i --network host -e TARGET=https://staging.example.com grafana/k6:0.52.0 run - < script.js' }\n}",
+    "note": "A threshold failure returns exit 99 and fails the stage."
+   }
+  ]
+ },
+ "verify": [
+  "Thresholds: k6 exit code 0 after run (echo $?)",
+  "Series exist: curl -s 'http://localhost:9090/api/v1/query?query=k6_http_req_duration_p95'",
+  "Throughput: PromQL sum(rate(k6_http_reqs_total[30s]))",
+  "Remote write accepted: curl -s -o /dev/null -w '%{http_code}' http://localhost:9090/-/ready",
+  "Dashboard loads: Grafana > Dashboards > k6 load test, set testid"
+ ],
+ "pitfalls": [
+  "Load generator saturates its own CPU and reports false latency; watch it.",
+  "Closed models with VUs hide overload; use constant-arrival-rate for throughput targets.",
+  "Testing through a CDN or cache measures the cache, not your service.",
+  "Forgetting the remote-write receiver flag gives 404 and no series.",
+  "Unscoped thresholds average away a slow endpoint; tag requests and scope them.",
+  "Think time missing from the script makes unrealistic traffic; add sleep().",
+  "Output names and metric naming change by version; pin k6 and check docs."
+ ],
+ "furtherReading": [
+  {
+   "label": "k6 documentation",
+   "url": "https://grafana.com/docs/k6/latest/"
+  },
+  {
+   "label": "Scenarios",
+   "url": "https://grafana.com/docs/k6/latest/using-k6/scenarios/"
+  },
+  {
+   "label": "Thresholds",
+   "url": "https://grafana.com/docs/k6/latest/using-k6/thresholds/"
+  },
+  {
+   "label": "Prometheus remote write output",
+   "url": "https://grafana.com/docs/k6/latest/results-output/real-time/prometheus-remote-write/"
+  }
+ ],
+ "keyPoints": [
+  "Scenarios define who arrives: VUs ramping, or a constant arrival rate.",
+  "Thresholds turn p95 and error rate into a pass or fail.",
+  "Metrics stream to Prometheus by remote write for Grafana.",
+  "Run the test before release; a failed threshold blocks it."
+ ],
+ "quickDeploy": [
+  "Install k6 or pull the pinned Docker image.",
+  "Write a script with a scenario and thresholds.",
+  "Run it with Prometheus remote write output.",
+  "Wire it into the pipeline before release."
+ ],
+ "osi": [
+  "L7"
+ ],
+ "osiNote": "Generates HTTP, gRPC and WebSocket load at the application layer.",
+ "production": [
+  "Test a production-like environment, never a shared dev box.",
+  "Run load generators on separate VMs from the target.",
+  "Use constant-arrival-rate to hold throughput when latency rises.",
+  "Tag every run with testid and compare against the last release.",
+  "Alert on dropped_iterations; the generator itself may be the limit."
+ ]
+}

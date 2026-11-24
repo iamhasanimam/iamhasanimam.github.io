@@ -1,0 +1,233 @@
+{
+  "title": "Grafana Provisioning and Alerting",
+  "summary": "Grafana reads datasources and dashboards from provisioned files, queries Prometheus and Loki, and routes alerts through contact points.",
+  "nodes": [
+    {
+      "id": "git",
+      "label": "Git Repo",
+      "sub": "Dashboards as code",
+      "kind": "store",
+      "icon": "git",
+      "detail": "Datasource and dashboard definitions are kept as YAML and JSON in version control and reviewed like code."
+    },
+    {
+      "id": "prov",
+      "label": "Provisioning",
+      "sub": "Files read at startup",
+      "kind": "control",
+      "icon": "grafana",
+      "detail": "Grafana loads datasource and dashboard providers from its provisioning directory and keeps dashboards in sync with the files.",
+      "group": "Grafana"
+    },
+    {
+      "id": "ds_prom",
+      "label": "Prometheus DS",
+      "sub": "Metrics datasource",
+      "kind": "service",
+      "icon": "prometheus",
+      "detail": "A datasource of type Prometheus. Panels send PromQL queries to it.",
+      "group": "Datasources"
+    },
+    {
+      "id": "ds_loki",
+      "label": "Loki DS",
+      "sub": "Logs datasource",
+      "kind": "service",
+      "icon": "grafana",
+      "detail": "A datasource of type Loki. Panels and Explore send LogQL queries to it.",
+      "group": "Datasources"
+    },
+    {
+      "id": "dash",
+      "label": "Dashboards",
+      "sub": "Panels and variables",
+      "kind": "observe",
+      "icon": "grafana",
+      "detail": "Dashboards combine panels from different datasources. Variables allow one dashboard to serve many services.",
+      "group": "Grafana"
+    },
+    {
+      "id": "alert",
+      "label": "Alert Rules",
+      "sub": "Unified alerting",
+      "kind": "process",
+      "icon": "grafana",
+      "detail": "Rules run queries on a schedule and move between normal, pending and firing states.",
+      "group": "Grafana"
+    },
+    {
+      "id": "contact",
+      "label": "Contact Points",
+      "sub": "Email, chat, webhook",
+      "kind": "network",
+      "icon": "grafana",
+      "detail": "Notification policies route firing alerts to contact points based on labels."
+    },
+    {
+      "id": "users",
+      "label": "Users and Teams",
+      "sub": "RBAC and orgs",
+      "kind": "client",
+      "icon": null,
+      "detail": "Users sign in through local accounts or SSO. Roles and folder permissions control who can view or edit."
+    }
+  ],
+  "links": [
+    {
+      "from": "git",
+      "to": "prov",
+      "label": "mounted files",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "prov",
+      "to": "ds_prom",
+      "label": "creates",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "prov",
+      "to": "ds_loki",
+      "label": "creates",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "prov",
+      "to": "dash",
+      "label": "loads",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "dash",
+      "to": "ds_prom",
+      "label": "PromQL",
+      "style": "dashed",
+      "flow": true
+    },
+    {
+      "from": "dash",
+      "to": "ds_loki",
+      "label": "LogQL",
+      "style": "dashed",
+      "flow": true
+    },
+    {
+      "from": "alert",
+      "to": "ds_prom",
+      "label": "query",
+      "style": "dashed",
+      "flow": true
+    },
+    {
+      "from": "alert",
+      "to": "contact",
+      "label": "notify",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "users",
+      "to": "dash",
+      "label": "view",
+      "style": "solid",
+      "flow": true
+    }
+  ],
+  "steps": [
+    {
+      "title": "Config lives in Git",
+      "text": "Datasources and dashboards are stored as code, so changes are reviewed and reproducible.",
+      "nodes": [
+        "git",
+        "prov"
+      ],
+      "links": [
+        [
+          "git",
+          "prov"
+        ]
+      ]
+    },
+    {
+      "title": "Provisioning loads them",
+      "text": "At startup and on interval Grafana reads the files and creates datasources and dashboards.",
+      "nodes": [
+        "prov",
+        "ds_prom",
+        "ds_loki",
+        "dash"
+      ],
+      "links": [
+        [
+          "prov",
+          "ds_prom"
+        ],
+        [
+          "prov",
+          "ds_loki"
+        ],
+        [
+          "prov",
+          "dash"
+        ]
+      ]
+    },
+    {
+      "title": "Panels query datasources",
+      "text": "Each panel sends PromQL to Prometheus or LogQL to Loki and renders the result.",
+      "nodes": [
+        "dash",
+        "ds_prom",
+        "ds_loki"
+      ],
+      "links": [
+        [
+          "dash",
+          "ds_prom"
+        ],
+        [
+          "dash",
+          "ds_loki"
+        ]
+      ]
+    },
+    {
+      "title": "Alert rules evaluate",
+      "text": "Alert rules run queries and fire when thresholds hold for the configured duration.",
+      "nodes": [
+        "alert",
+        "ds_prom"
+      ],
+      "links": [
+        [
+          "alert",
+          "ds_prom"
+        ]
+      ]
+    },
+    {
+      "title": "Notifications are routed",
+      "text": "Firing alerts follow notification policies to contact points; users see state in dashboards.",
+      "nodes": [
+        "alert",
+        "contact",
+        "users",
+        "dash"
+      ],
+      "links": [
+        [
+          "alert",
+          "contact"
+        ],
+        [
+          "users",
+          "dash"
+        ]
+      ]
+    }
+  ]
+}

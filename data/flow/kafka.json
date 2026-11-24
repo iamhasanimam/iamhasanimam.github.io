@@ -1,0 +1,311 @@
+{
+ "title": "Kafka",
+ "subtitle": "Partitioned log between a frontend and a backend.",
+ "layers": [
+  {
+   "layer": 0,
+   "label": "Clients"
+  },
+  {
+   "layer": 1,
+   "label": "Kafka broker"
+  },
+  {
+   "layer": 2,
+   "label": "Storage and quorum"
+  }
+ ],
+ "groups": [
+  {
+   "id": "broker",
+   "label": "Broker",
+   "boxes": [
+    "listener",
+    "broker",
+    "topic"
+   ]
+  }
+ ],
+ "tabs": [
+  {
+   "id": "produce",
+   "label": "Produce",
+   "focus": [
+    "frontend",
+    "listener",
+    "broker",
+    "topic"
+   ]
+  },
+  {
+   "id": "consume",
+   "label": "Consume",
+   "focus": [
+    "topic",
+    "backend",
+    "offsets"
+   ]
+  },
+  {
+   "id": "store",
+   "label": "Store",
+   "focus": [
+    "topic",
+    "log",
+    "controller"
+   ]
+  }
+ ],
+ "boxes": [
+  {
+   "id": "frontend",
+   "label": "Frontend",
+   "tech": "Producer service",
+   "icon": null,
+   "layer": 0,
+   "col": 0,
+   "row": 0,
+   "says": "The frontend produces keyed events.",
+   "detail": "Serialises an event, picks a key, and sends it without waiting for the backend."
+  },
+  {
+   "id": "backend",
+   "label": "Backend",
+   "tech": "Consumer group",
+   "icon": null,
+   "layer": 0,
+   "col": 2,
+   "row": 0,
+   "says": "Backend consumers share partitions.",
+   "detail": "One group member per partition; add members up to the partition count."
+  },
+  {
+   "id": "listener",
+   "label": "Listener",
+   "tech": "TCP 9092 / 29092",
+   "icon": null,
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "Listeners speak TCP and advertise names.",
+   "detail": "Clients reconnect to the advertised host. It must resolve from every client."
+  },
+  {
+   "id": "broker",
+   "label": "Broker",
+   "tech": "Apache Kafka",
+   "icon": "apachekafka",
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "The broker leads partitions.",
+   "detail": "Accepts writes on the leader and serves fetches to consumers."
+  },
+  {
+   "id": "topic",
+   "label": "Topic",
+   "tech": "Partitions",
+   "icon": "apachekafka",
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "A topic is a set of partitions.",
+   "detail": "Order holds within a partition. The key picks the partition.",
+   "inner": [
+    {
+     "id": "p0",
+     "label": "P0"
+    },
+    {
+     "id": "p1",
+     "label": "P1"
+    },
+    {
+     "id": "p2",
+     "label": "P2"
+    }
+   ]
+  },
+  {
+   "id": "offsets",
+   "label": "Offsets",
+   "tech": "Consumer group offsets",
+   "icon": null,
+   "layer": 1,
+   "col": 3,
+   "row": 0,
+   "says": "Offsets and lag track progress.",
+   "detail": "Each group commits an offset per partition. Lag is log end minus committed."
+  },
+  {
+   "id": "log",
+   "label": "Log",
+   "tech": "Segments",
+   "icon": null,
+   "layer": 2,
+   "col": 2,
+   "row": 0,
+   "says": "Segments hold the log on disk.",
+   "detail": "Retention deletes whole segments by time or size."
+  },
+  {
+   "id": "controller",
+   "label": "Controller",
+   "tech": "KRaft quorum",
+   "icon": null,
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "KRaft keeps cluster metadata.",
+   "detail": "Controllers replicate metadata in a Raft quorum; no ZooKeeper."
+  }
+ ],
+ "wires": [
+  {
+   "from": "frontend",
+   "to": "listener",
+   "label": "produce",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "listener",
+   "to": "broker",
+   "label": "TCP",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "broker",
+   "to": "topic",
+   "label": "append",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "topic",
+   "to": "log",
+   "label": "write",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "topic",
+   "to": "backend",
+   "label": "fetch",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "backend",
+   "to": "offsets",
+   "label": "commit",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "controller",
+   "to": "broker",
+   "label": "metadata",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  }
+ ],
+ "steps": [
+  {
+   "title": "Produce",
+   "text": "The frontend sends a keyed event.",
+   "boxes": [
+    "frontend",
+    "listener"
+   ],
+   "wires": [
+    [
+     "frontend",
+     "listener"
+    ]
+   ]
+  },
+  {
+   "title": "Append",
+   "text": "The leader appends to one partition.",
+   "boxes": [
+    "listener",
+    "broker",
+    "topic"
+   ],
+   "wires": [
+    [
+     "listener",
+     "broker"
+    ],
+    [
+     "broker",
+     "topic"
+    ]
+   ]
+  },
+  {
+   "title": "Persist",
+   "text": "Segments retain data until retention expires.",
+   "boxes": [
+    "topic",
+    "log"
+   ],
+   "wires": [
+    [
+     "topic",
+     "log"
+    ]
+   ]
+  },
+  {
+   "title": "Consume",
+   "text": "Backend consumers fetch their partitions.",
+   "boxes": [
+    "topic",
+    "backend"
+   ],
+   "wires": [
+    [
+     "topic",
+     "backend"
+    ]
+   ]
+  },
+  {
+   "title": "Commit",
+   "text": "Offsets show lag per partition.",
+   "boxes": [
+    "backend",
+    "offsets"
+   ],
+   "wires": [
+    [
+     "backend",
+     "offsets"
+    ]
+   ]
+  }
+ ],
+ "run": {
+  "cmd": "kafka-topics.sh --describe --topic orders",
+  "lines": [
+   "Topic: orders PartitionCount: 6 ReplicationFactor: 1",
+   "Partition: 0 Leader: 1 Replicas: 1 Isr: 1"
+  ]
+ },
+ "declarations": [
+  "Partitions keep order per key.",
+  "Consumer groups split partitions.",
+  "Lag measures how far behind.",
+  "Advertised listeners must resolve."
+ ]
+}

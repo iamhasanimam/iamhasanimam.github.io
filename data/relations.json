@@ -1,0 +1,128 @@
+{
+  "_doc": "dir = bubble flow relative to the owning node: out = owner -> to, in = to -> owner, both = two-way. verb reads 'owner <verb> to'. Only own links are drawn when a node is hovered.",
+  "nodes": {
+    "kong": { "name": "Kong", "brand": "#1155cb", "icon": "kong", "route": "kong", "links": [
+      { "to": "kubernetes", "verb": "routes to", "dir": "out" },
+      { "to": "keycloak", "verb": "verifies via", "dir": "out" },
+      { "to": "nginx", "verb": "built on", "dir": "in" },
+      { "to": "prometheus", "verb": "exports metrics", "dir": "out" },
+      { "to": "redis", "verb": "rate limits", "dir": "out" } ] },
+    "nginx": { "name": "NGINX", "brand": "#009639", "icon": "nginx", "route": "nginx", "links": [
+      { "to": "kong", "verb": "powers", "dir": "out" },
+      { "to": "kubernetes", "verb": "ingress for", "dir": "out" },
+      { "to": "linux", "verb": "runs on", "dir": "in" },
+      { "to": "docker", "verb": "runs in", "dir": "in" },
+      { "to": "prometheus", "verb": "exports metrics", "dir": "out" } ] },
+    "kubernetes": { "name": "Kubernetes", "brand": "#326ce5", "icon": "kubernetes", "route": "kubernetes-okd", "links": [
+      { "to": "docker", "verb": "runs", "dir": "out" },
+      { "to": "istio", "verb": "hosts", "dir": "out" },
+      { "to": "kong", "verb": "fronted by", "dir": "in" },
+      { "to": "jenkins", "verb": "deployed by", "dir": "in" },
+      { "to": "prometheus", "verb": "scraped by", "dir": "out" },
+      { "to": "aws", "verb": "runs on", "dir": "in" } ] },
+    "docker": { "name": "Docker", "brand": "#2496ed", "icon": "docker", "route": "docker", "links": [
+      { "to": "kubernetes", "verb": "runs on", "dir": "out" },
+      { "to": "linux", "verb": "runs on", "dir": "out" },
+      { "to": "jenkins", "verb": "built by", "dir": "in" },
+      { "to": "nodejs", "verb": "packages", "dir": "in" },
+      { "to": "python", "verb": "packages", "dir": "in" } ] },
+    "aws": { "name": "AWS", "brand": "#ff9900", "icon": "amazonaws", "route": "aws", "links": [
+      { "to": "kubernetes", "verb": "runs", "dir": "out" },
+      { "to": "postgresql", "verb": "hosts", "dir": "out" },
+      { "to": "python", "verb": "automated by", "dir": "in" },
+      { "to": "linux", "verb": "hosts", "dir": "out" },
+      { "to": "ansible", "verb": "provisioned by", "dir": "in" } ] },
+    "vmware": { "name": "VMware", "brand": "#607078", "icon": "vmware", "route": "vmware-esxi", "links": [
+      { "to": "linux", "verb": "hosts", "dir": "out" },
+      { "to": "kubernetes", "verb": "hosts", "dir": "out" },
+      { "to": "ansible", "verb": "configured by", "dir": "in" } ] },
+    "linux": { "name": "Linux", "brand": "#fcc624", "icon": "linux", "route": "linux-networking", "links": [
+      { "to": "docker", "verb": "hosts", "dir": "out" },
+      { "to": "kubernetes", "verb": "hosts", "dir": "out" },
+      { "to": "vmware", "verb": "runs on", "dir": "in" },
+      { "to": "ansible", "verb": "configured by", "dir": "in" },
+      { "to": "prometheus", "verb": "node metrics", "dir": "out" },
+      { "to": "nginx", "verb": "hosts", "dir": "out" } ] },
+    "redis": { "name": "Redis", "brand": "#dc382d", "icon": "redis", "route": "redis", "links": [
+      { "to": "kong", "verb": "rate limits", "dir": "in" },
+      { "to": "python", "verb": "caches for", "dir": "out" },
+      { "to": "nodejs", "verb": "caches for", "dir": "out" },
+      { "to": "prometheus", "verb": "exports metrics", "dir": "out" },
+      { "to": "kubernetes", "verb": "runs on", "dir": "in" } ] },
+    "istio": { "name": "Istio", "brand": "#466bb0", "icon": "istio", "route": "istio", "links": [
+      { "to": "kubernetes", "verb": "runs on", "dir": "in" },
+      { "to": "prometheus", "verb": "exports metrics", "dir": "out" },
+      { "to": "keycloak", "verb": "validates JWTs", "dir": "in" },
+      { "to": "nodejs", "verb": "mTLS for", "dir": "out" },
+      { "to": "python", "verb": "mTLS for", "dir": "out" } ] },
+    "keycloak": { "name": "Keycloak", "brand": "#4d6fa8", "icon": "keycloak", "route": "keycloak", "links": [
+      { "to": "kong", "verb": "issues tokens", "dir": "out" },
+      { "to": "postgresql", "verb": "stores in", "dir": "out" },
+      { "to": "istio", "verb": "issues JWTs", "dir": "out" },
+      { "to": "grafana", "verb": "SSO for", "dir": "out" },
+      { "to": "jenkins", "verb": "SSO for", "dir": "out" },
+      { "to": "kubernetes", "verb": "runs on", "dir": "in" } ] },
+    "grafana": { "name": "Grafana", "brand": "#f46800", "icon": "grafana", "route": "grafana", "links": [
+      { "to": "prometheus", "verb": "visualises", "dir": "in" },
+      { "to": "elasticsearch", "verb": "visualises", "dir": "in" },
+      { "to": "postgresql", "verb": "queries", "dir": "out" },
+      { "to": "keycloak", "verb": "SSO from", "dir": "in" } ] },
+    "prometheus": { "name": "Prometheus", "brand": "#e6522c", "icon": "prometheus", "route": "prometheus", "links": [
+      { "to": "kubernetes", "verb": "scrapes", "dir": "in" },
+      { "to": "linux", "verb": "node metrics", "dir": "in" },
+      { "to": "kong", "verb": "scrapes", "dir": "in" },
+      { "to": "postgresql", "verb": "scrapes", "dir": "in" },
+      { "to": "kafka", "verb": "scrapes", "dir": "in" },
+      { "to": "grafana", "verb": "feeds", "dir": "out" } ] },
+    "ansible": { "name": "Ansible", "brand": "#ee0000", "icon": "ansible", "route": "ansible", "links": [
+      { "to": "linux", "verb": "configures", "dir": "out" },
+      { "to": "vmware", "verb": "configures", "dir": "out" },
+      { "to": "aws", "verb": "provisions", "dir": "out" },
+      { "to": "jenkins", "verb": "run by", "dir": "in" },
+      { "to": "python", "verb": "written in", "dir": "in" } ] },
+    "jenkins": { "name": "Jenkins", "brand": "#d24939", "icon": "jenkins", "route": "jenkins", "links": [
+      { "to": "kubernetes", "verb": "deploys to", "dir": "out" },
+      { "to": "docker", "verb": "builds", "dir": "out" },
+      { "to": "openbao", "verb": "reads secrets", "dir": "in" },
+      { "to": "ansible", "verb": "runs", "dir": "out" },
+      { "to": "keycloak", "verb": "SSO via", "dir": "in" },
+      { "to": "python", "verb": "runs", "dir": "out" } ] },
+    "openbao": { "name": "OpenBao", "brand": "#ffd814", "icon": "vault", "route": "openbao", "links": [
+      { "to": "kubernetes", "verb": "secrets to", "dir": "out" },
+      { "to": "jenkins", "verb": "secrets to", "dir": "out" },
+      { "to": "postgresql", "verb": "dynamic creds", "dir": "out" },
+      { "to": "aws", "verb": "issues creds", "dir": "out" } ] },
+    "kafka": { "name": "Kafka", "brand": "#8a8a8a", "icon": "apachekafka", "route": "kafka", "links": [
+      { "to": "kubernetes", "verb": "runs on", "dir": "in" },
+      { "to": "python", "verb": "events for", "dir": "out" },
+      { "to": "nodejs", "verb": "events for", "dir": "out" },
+      { "to": "postgresql", "verb": "CDC from", "dir": "in" },
+      { "to": "elasticsearch", "verb": "sinks to", "dir": "out" } ] },
+    "postgresql": { "name": "PostgreSQL", "brand": "#4169e1", "icon": "postgresql", "route": "postgresql", "links": [
+      { "to": "keycloak", "verb": "stores for", "dir": "in" },
+      { "to": "kafka", "verb": "streams CDC", "dir": "out" },
+      { "to": "python", "verb": "queried by", "dir": "in" },
+      { "to": "nodejs", "verb": "queried by", "dir": "in" },
+      { "to": "grafana", "verb": "queried by", "dir": "in" },
+      { "to": "prometheus", "verb": "scraped by", "dir": "out" } ] },
+    "python": { "name": "Python", "brand": "#3776ab", "icon": "python", "route": "python", "links": [
+      { "to": "aws", "verb": "automates", "dir": "out" },
+      { "to": "jenkins", "verb": "automates", "dir": "out" },
+      { "to": "kafka", "verb": "consumes", "dir": "in" },
+      { "to": "postgresql", "verb": "queries", "dir": "out" },
+      { "to": "redis", "verb": "caches in", "dir": "out" },
+      { "to": "docker", "verb": "packaged in", "dir": "out" } ] },
+    "elasticsearch": { "name": "Elasticsearch", "brand": "#00bfb3", "icon": "elasticsearch", "route": "elasticsearch", "links": [
+      { "to": "kubernetes", "verb": "logs from", "dir": "in" },
+      { "to": "kafka", "verb": "ingests from", "dir": "in" },
+      { "to": "grafana", "verb": "visualised in", "dir": "out" },
+      { "to": "nodejs", "verb": "indexed by", "dir": "in" } ] },
+    "nodejs": { "name": "Node.js", "brand": "#5fa04e", "icon": "nodedotjs", "route": "nodejs", "links": [
+      { "to": "docker", "verb": "packaged in", "dir": "out" },
+      { "to": "kubernetes", "verb": "runs on", "dir": "in" },
+      { "to": "keycloak", "verb": "verifies via", "dir": "out" },
+      { "to": "redis", "verb": "caches in", "dir": "out" },
+      { "to": "postgresql", "verb": "queries", "dir": "out" },
+      { "to": "kafka", "verb": "produces to", "dir": "out" } ] }
+  }
+}

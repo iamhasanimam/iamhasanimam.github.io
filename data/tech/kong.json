@@ -1,0 +1,157 @@
+{
+ "slug": "kong",
+ "name": "Kong Gateway",
+ "category": "API Gateway",
+ "icon": "kong",
+ "level": "hands-on",
+ "tagline": "Declarative API gateway: routes, plugins and upstreams in front of every service.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Entities",
+   "body": "Service is the upstream.\nRoute matches host, path, method or header.\nPlugin attaches behaviour at global, service, route or consumer scope.\nUpstream and Targets add health checks and balancing."
+  },
+  {
+   "title": "Request phases",
+   "body": "Kong listens on 8000 and 8443.\nThe router picks the best Route.\nThe access phase runs auth, then rate limits.\nThe balancer picks a healthy Target and reuses keepalive."
+  },
+  {
+   "title": "Config modes",
+   "body": "DB-backed stores entities in PostgreSQL.\nDB-less loads one declarative file.\nHybrid pushes config from a control plane to data planes.\nData planes keep serving from cache if the control plane drops."
+  },
+  {
+   "title": "decK diff-guard",
+   "body": "Git holds kong.yaml as the source of truth.\nJenkins runs deck gateway diff on every pull request.\nThe guard fails the build on any deleting line.\nSync runs only after merge to main."
+  },
+  {
+   "title": "Client IP preservation",
+   "body": "The balancer sends the PROXY protocol header.\nKong accepts it only from trusted_ips.\nreal_ip_header proxy_protocol restores the client address.\nIP-based rate limits then count real clients."
+  }
+ ],
+ "flow": [
+  "Client opens TLS to the Kong listener on 8443.",
+  "Kong parses the PROXY header if the source is in trusted_ips.",
+  "The router matches a Route by host, path and method.",
+  "The plugin chain for the Route, Service and Consumer is resolved.",
+  "Access phase runs authentication, then rate limiting.",
+  "The balancer picks a healthy Target and reuses a keepalive connection.",
+  "The response returns through header and body filters; logs and metrics ship."
+ ],
+ "deploy": {
+  "summary": "On-prem edge: hardened host, DNS, firewall, Kong with PostgreSQL, decK pipeline, client IP.",
+  "prerequisites": [
+   "Linux VM with Docker Engine 24+ and Compose",
+   "decK and curl installed",
+   "DNS zone you control and a free VIP or address",
+   "Ports 8000 and 8443 free; 8001 localhost only"
+  ],
+  "steps": [
+   {
+    "title": "SSH key and sshd hardening",
+    "lang": "bash",
+    "code": "ssh-keygen -t ed25519 -C \"ops@edge\"\nssh-copy-id -i ~/.ssh/id_ed25519.pub ops@EDGE_HOST\nsudo tee /etc/ssh/sshd_config.d/10-hardening.conf <<'EOF'\nPermitRootLogin no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nAllowUsers ops\nEOF\nsudo sshd -t && sudo systemctl reload ssh",
+    "note": "Replace ops and EDGE_HOST. Keep a second session open until key login works."
+   },
+   {
+    "title": "DNS record and firewall",
+    "lang": "bash",
+    "code": "dig +short api.example.test\nsudo ufw default deny incoming\nsudo ufw allow from ADMIN_CIDR to any port 22 proto tcp\nsudo ufw allow 8000,8443/tcp\nsudo ufw enable\nsudo ufw status verbose",
+    "note": "Create the A record first and replace ADMIN_CIDR. Port 8001 stays closed."
+   },
+   {
+    "title": "Compose file with PostgreSQL and Kong",
+    "lang": "yaml",
+    "code": "services:\n  kong-db:\n    image: postgres:16.4\n    environment:\n      POSTGRES_USER: kong\n      POSTGRES_DB: kong\n      POSTGRES_PASSWORD: kongpass\n    healthcheck:\n      test: [\"CMD\", \"pg_isready\", \"-U\", \"kong\"]\n      interval: 5s\n      retries: 10\n    volumes:\n      - kong-pg:/var/lib/postgresql/data\n  kong-migrations:\n    image: kong:3.8.0\n    command: kong migrations bootstrap\n    environment: &kongenv\n      KONG_DATABASE: postgres\n      KONG_PG_HOST: kong-db\n      KONG_PG_USER: kong\n      KONG_PG_PASSWORD: kongpass\n    depends_on:\n      kong-db:\n        condition: service_healthy\n  kong:\n    image: kong:3.8.0\n    environment:\n      <<: *kongenv\n      KONG_PROXY_LISTEN: 0.0.0.0:8000, 0.0.0.0:8443 ssl\n      KONG_ADMIN_LISTEN: 0.0.0.0:8001\n      KONG_PROXY_ACCESS_LOG: /dev/stdout\n      KONG_ADMIN_ACCESS_LOG: /dev/stdout\n      KONG_PROXY_ERROR_LOG: /dev/stderr\n      KONG_ADMIN_ERROR_LOG: /dev/stderr\n    depends_on:\n      kong-migrations:\n        condition: service_completed_successfully\n    ports:\n      - \"8000:8000\"\n      - \"8443:8443\"\n      - \"127.0.0.1:8001:8001\"\n    healthcheck:\n      test: [\"CMD\", \"kong\", \"health\"]\n      interval: 10s\n      retries: 5\nvolumes:\n  kong-pg:\n",
+    "note": "Migrations run once, then Kong starts. Change the password; 8001 binds to localhost only."
+   },
+   {
+    "title": "Start the stack and check status",
+    "lang": "bash",
+    "code": "docker compose up -d\ndocker compose ps\ncurl -s localhost:8001/status | head -c 400",
+    "note": "/status shows database reachability and connection counters."
+   },
+   {
+    "title": "Declare service, route and plugin",
+    "lang": "yaml",
+    "code": "_format_version: \"3.0\"\nservices:\n  - name: httpbin\n    url: http://httpbin.org\n    routes:\n      - name: httpbin-route\n        paths:\n          - /anything\n        strip_path: false\n    plugins:\n      - name: rate-limiting\n        config:\n          minute: 60\n          policy: local\n",
+    "note": "Save as kong.yaml. Use policy redis for a cluster-wide limit."
+   },
+   {
+    "title": "Diff-guard that fails on deletes",
+    "lang": "bash",
+    "code": "#!/usr/bin/env bash\nset -euo pipefail\nOUT=$(deck gateway diff -s kong.yaml --kong-addr \"$KONG_ADDR\" --no-color)\necho \"$OUT\"\nif echo \"$OUT\" | grep -E '^deleting '; then\n  echo \"ERROR: diff contains deletions; review manually and set ALLOW_DELETE=1 to override\" >&2\n  [ \"${ALLOW_DELETE:-0}\" = \"1\" ] || exit 1\nfi\ndeck gateway sync -s kong.yaml --kong-addr \"$KONG_ADDR\"",
+    "note": "Run the diff on pull requests, the sync on merge to main. Check line prefixes on your decK version."
+   },
+   {
+    "title": "Preserve the client IP behind a balancer",
+    "lang": "yaml",
+    "code": "    environment:\n      KONG_TRUSTED_IPS: 10.0.0.0/8,172.16.0.0/12\n      KONG_REAL_IP_HEADER: proxy_protocol\n      KONG_REAL_IP_RECURSIVE: \"on\"\n      KONG_PROXY_LISTEN: 0.0.0.0:8000 proxy_protocol, 0.0.0.0:8443 ssl proxy_protocol\n",
+    "note": "Merge into the kong environment. Trust only your balancer CIDRs."
+   },
+   {
+    "title": "Install on Kubernetes with Helm",
+    "lang": "bash",
+    "code": "helm repo add kong https://charts.konghq.com\nhelm repo update\nkubectl create namespace kong\nhelm install kong kong/kong -n kong \\\n  --set image.tag=3.8 \\\n  --set ingressController.enabled=true \\\n  --set proxy.type=NodePort \\\n  --set env.database=off\nkubectl -n kong rollout status deploy/kong-kong",
+    "note": "DB-less with the ingress controller. Pin the chart with --version."
+   }
+  ]
+ },
+ "verify": [
+  "curl -s localhost:8001/status shows database.reachable true",
+  "curl -s localhost:8001/services lists the declared service",
+  "curl -i localhost:8000/anything/get returns 200 with X-RateLimit headers",
+  "deck gateway diff -s kong.yaml reports no changes after sync",
+  "docker compose logs kong shows no unexpected errors"
+ ],
+ "pitfalls": [
+  "deck sync deletes what is missing from the file; always diff first.",
+  "proxy_protocol on the listener without a sending balancer breaks every request.",
+  "A broad trusted_ips lets clients spoof X-Forwarded-For and dodge IP limits.",
+  "Rate limiting with policy local multiplies the limit by node count.",
+  "Exposing the Admin API on 8001 gives full control of the gateway.",
+  "Run migrations up before rolling nodes; finish only after all nodes upgrade.",
+  "DB-less mode: check every plugin supports it before choosing it."
+ ],
+ "furtherReading": [
+  {
+   "label": "Kong Gateway documentation",
+   "url": "https://docs.konghq.com/gateway/latest/"
+  },
+  {
+   "label": "decK documentation",
+   "url": "https://docs.konghq.com/deck/latest/"
+  },
+  {
+   "label": "Kong Helm chart",
+   "url": "https://github.com/Kong/charts"
+  },
+  {
+   "label": "Kong Docker install",
+   "url": "https://docs.konghq.com/gateway/latest/install/docker/"
+  }
+ ],
+ "keyPoints": [
+  "Kong matches Routes, runs plugins, then proxies to Services at L7.",
+  "Config is code: decK diffs and syncs a YAML file.",
+  "A diff-guard stage blocks deletes before any sync reaches production.",
+  "Behind a load balancer, trusted_ips plus PROXY protocol keep the client IP."
+ ],
+ "quickDeploy": [
+  "Start Kong and PostgreSQL with Docker Compose.",
+  "Declare service, route and plugin in kong.yaml.",
+  "Run decK diff, guard against deletes, then sync.",
+  "Set trusted_ips and proxy_protocol behind the balancer."
+ ],
+ "osi": [
+  "L4",
+  "L7"
+ ],
+ "osiNote": "Routes by Host and path at L7; proxies TCP and TLS at L4.",
+ "production": [
+  "Run three or more data-plane nodes behind a VIP or load balancer.",
+  "Back up PostgreSQL; roll back by syncing the previous Git tag with decK.",
+  "Bind the Admin API to localhost and protect it with RBAC or mTLS.",
+  "Set per-Service timeouts and retries; use Redis for cluster-wide rate limits.",
+  "Alert on 5xx rate, upstream latency p95 and plugin errors from Prometheus."
+ ]
+}

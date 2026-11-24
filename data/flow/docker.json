@@ -1,0 +1,326 @@
+{
+ "title": "Docker",
+ "subtitle": "Kernel features, an engine and layered images.",
+ "layers": [
+  {
+   "layer": 0,
+   "label": "Linux kernel"
+  },
+  {
+   "layer": 1,
+   "label": "Engine"
+  },
+  {
+   "layer": 2,
+   "label": "Images and apps"
+  }
+ ],
+ "boxes": [
+  {
+   "id": "ns",
+   "label": "Namespaces",
+   "tech": "Linux namespaces",
+   "icon": "linux",
+   "layer": 0,
+   "col": 0,
+   "row": 0,
+   "href": "#/tech/linux-networking",
+   "says": "Namespaces isolate what a process sees.",
+   "detail": "pid, net, mnt, uts, ipc and user give each container a private view."
+  },
+  {
+   "id": "cgroups",
+   "label": "cgroups",
+   "tech": "Linux cgroups",
+   "icon": null,
+   "layer": 0,
+   "col": 1,
+   "row": 0,
+   "says": "cgroups cap CPU, memory and pids.",
+   "detail": "Over the memory cap the kernel OOM-kills: OOMKilled true, exit 137."
+  },
+  {
+   "id": "overlay",
+   "label": "overlayfs",
+   "tech": "overlay2",
+   "icon": null,
+   "layer": 0,
+   "col": 2,
+   "row": 0,
+   "says": "overlayfs stacks layers.",
+   "detail": "Read-only lowerdirs plus one writable upperdir, with copy-on-write."
+  },
+  {
+   "id": "bridge",
+   "label": "Bridge veth",
+   "tech": "Linux bridge",
+   "icon": null,
+   "layer": 0,
+   "col": 3,
+   "row": 0,
+   "href": "#/tech/linux-networking",
+   "says": "Bridges switch container frames.",
+   "detail": "A veth pair joins each container to docker0 or a user-defined bridge. iptables adds NAT."
+  },
+  {
+   "id": "dockerd",
+   "label": "dockerd",
+   "tech": "Docker Engine",
+   "icon": "docker",
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "dockerd serves the API.",
+   "detail": "The CLI talks to dockerd, which delegates to containerd, which calls runc.",
+   "inner": [
+    {
+     "id": "cli",
+     "label": "CLI"
+    },
+    {
+     "id": "engine",
+     "label": "dockerd"
+    },
+    {
+     "id": "containerd",
+     "label": "containerd"
+    },
+    {
+     "id": "runc",
+     "label": "runc"
+    }
+   ]
+  },
+  {
+   "id": "registry",
+   "label": "Registry",
+   "tech": "OCI registry",
+   "icon": null,
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "A registry stores images.",
+   "detail": "Push after the build, pull on the host. Scan before promote."
+  },
+  {
+   "id": "image",
+   "label": "Image",
+   "tech": "OCI image",
+   "icon": null,
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "An image is immutable layers.",
+   "detail": "Content-addressed layers plus metadata. Order instructions stable to volatile."
+  },
+  {
+   "id": "container",
+   "label": "Container",
+   "tech": "Container",
+   "icon": null,
+   "layer": 2,
+   "col": 1,
+   "row": 0,
+   "says": "A container is one isolated process.",
+   "detail": "Image layers plus a writable layer. PID 1 is the entrypoint."
+  },
+  {
+   "id": "compose",
+   "label": "Compose",
+   "tech": "Docker Compose",
+   "icon": null,
+   "layer": 2,
+   "col": 2,
+   "row": 0,
+   "says": "Compose runs profile-based stacks.",
+   "detail": "Services, networks and volumes in one file. Profiles start services on demand."
+  }
+ ],
+ "wires": [
+  {
+   "from": "compose",
+   "to": "dockerd",
+   "label": "API",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "registry",
+   "to": "dockerd",
+   "label": "pull",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "dockerd",
+   "to": "image",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "dockerd",
+   "to": "container",
+   "label": "runc",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "dockerd",
+   "to": "ns",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "dockerd",
+   "to": "cgroups",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "dockerd",
+   "to": "overlay",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "dockerd",
+   "to": "bridge",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  }
+ ],
+ "tabs": [
+  {
+   "id": "isolate",
+   "label": "Isolate",
+   "focus": [
+    "ns",
+    "cgroups",
+    "container"
+   ]
+  },
+  {
+   "id": "build",
+   "label": "Images",
+   "focus": [
+    "image",
+    "overlay",
+    "registry",
+    "dockerd"
+   ]
+  },
+  {
+   "id": "network",
+   "label": "Run and network",
+   "focus": [
+    "compose",
+    "dockerd",
+    "bridge",
+    "container"
+   ]
+  }
+ ],
+ "steps": [
+  {
+   "title": "Request",
+   "text": "Compose or the CLI calls dockerd.",
+   "boxes": [
+    "compose",
+    "dockerd"
+   ],
+   "wires": [
+    [
+     "compose",
+     "dockerd"
+    ]
+   ]
+  },
+  {
+   "title": "Pull",
+   "text": "dockerd pulls missing layers from the registry.",
+   "boxes": [
+    "registry",
+    "dockerd",
+    "image"
+   ],
+   "wires": [
+    [
+     "registry",
+     "dockerd"
+    ],
+    [
+     "dockerd",
+     "image"
+    ]
+   ]
+  },
+  {
+   "title": "Create",
+   "text": "runc starts the process in new namespaces.",
+   "boxes": [
+    "dockerd",
+    "ns",
+    "container"
+   ],
+   "wires": [
+    [
+     "dockerd",
+     "ns"
+    ],
+    [
+     "dockerd",
+     "container"
+    ]
+   ]
+  },
+  {
+   "title": "Limit",
+   "text": "cgroups cap memory and CPU.",
+   "boxes": [
+    "dockerd",
+    "cgroups"
+   ],
+   "wires": [
+    [
+     "dockerd",
+     "cgroups"
+    ]
+   ]
+  },
+  {
+   "title": "Connect",
+   "text": "A veth pair joins the bridge.",
+   "boxes": [
+    "dockerd",
+    "bridge",
+    "container"
+   ],
+   "wires": [
+    [
+     "dockerd",
+     "bridge"
+    ]
+   ]
+  }
+ ],
+ "declarations": [
+  "Namespaces isolate.",
+  "cgroups limit.",
+  "Layers stack read-only.",
+  "Bridges switch frames."
+ ],
+ "run": {
+  "cmd": "docker run --memory 64m python:3.12-slim",
+  "lines": [
+   "exit 137 OOMKilled=true"
+  ]
+ }
+}

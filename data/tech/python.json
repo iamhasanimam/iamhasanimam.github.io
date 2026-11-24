@@ -1,0 +1,157 @@
+{
+ "slug": "python",
+ "name": "Python",
+ "category": "Automation",
+ "icon": "python",
+ "level": "hands-on",
+ "tagline": "Tested automation that calls APIs, SDKs and CLIs, then reports.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Environment",
+   "body": "A venv per project isolates dependencies.\nrequirements.txt pins exact versions.\nThe standard library covers most ops scripts: argparse, json, subprocess, pathlib.\nLocked-down hosts install from an internal mirror."
+  },
+  {
+   "title": "API clients",
+   "body": "requests.Session reuses connections.\nEvery call sets timeout=; retries only for idempotent GET and HEAD.\nPaginate until the page is empty.\nTokens come from the environment, never arguments."
+  },
+  {
+   "title": "SDKs and CLIs",
+   "body": "boto3 paginators list cloud resources read-only.\nThe Docker SDK inspects and prunes containers and images.\nsubprocess.run takes a list, check=True and a timeout.\nMutations hide behind --apply."
+  },
+  {
+   "title": "Dashboard pipeline",
+   "body": "Collectors pull version-control and project-management REST APIs.\nRows are normalised and upserted into PostgreSQL.\nApache Superset on Kubernetes queries PostgreSQL for charts.\nThe dashboard shows delivery and ticket flow in one place."
+  },
+  {
+   "title": "Scheduling and gates",
+   "body": "A systemd timer runs the oneshot service; Persistent=true catches missed runs.\nThe exit code feeds alerting.\nCI runs ruff and pytest before every merge.\nLogs go to journald, structured as JSON lines."
+  }
+ ],
+ "flow": [
+  "systemd timer or CI job starts the script.",
+  "argparse reads options; secrets come from the environment.",
+  "Collectors call REST APIs, boto3 and Docker with timeouts.",
+  "Responses are paginated and normalised into records.",
+  "Records are upserted into PostgreSQL in one transaction.",
+  "Superset on Kubernetes queries PostgreSQL and renders charts.",
+  "Exit code and journald log feed alerting."
+ ],
+ "deploy": {
+  "summary": "Build a hardened ops collector: REST client, SDK reports, PostgreSQL upsert, systemd timer, CI gate, Superset.",
+  "prerequisites": [
+   "Linux host with Python 3.10+ and python3-venv",
+   "PostgreSQL reachable, with a database and user",
+   "Kubernetes cluster and Helm 3 for Superset"
+  ],
+  "steps": [
+   {
+    "title": "1. Service user and pinned venv",
+    "lang": "bash",
+    "code": "sudo useradd --system --create-home --home-dir /opt/ops-toolkit --shell /usr/sbin/nologin opsbot\nsudo -u opsbot python3 -m venv /opt/ops-toolkit/.venv\ncat <<'EOF' | sudo -u opsbot tee /opt/ops-toolkit/requirements.txt\nrequests==2.32.3\nboto3==1.35.36\ndocker==7.1.0\npsycopg[binary]==3.2.3\npytest==8.3.3\nruff==0.7.1\nEOF\nsudo -u opsbot /opt/ops-toolkit/.venv/bin/pip install -r /opt/ops-toolkit/requirements.txt",
+    "note": "System user has no login shell. Bump pins deliberately."
+   },
+   {
+    "title": "2. Paginated REST client (client.py)",
+    "lang": "python",
+    "code": "\"\"\"client.py: paginated REST client. API_URL and API_TOKEN come from the environment.\"\"\"\nimport os\nimport requests\nfrom requests.adapters import HTTPAdapter\nfrom urllib3.util.retry import Retry\n\n\ndef session() -> requests.Session:\n    retry = Retry(total=3, backoff_factor=0.5, status_forcelist=(502, 503, 504),\n                  allowed_methods=(\"GET\", \"HEAD\"))\n    s = requests.Session()\n    s.mount(\"https://\", HTTPAdapter(max_retries=retry))\n    s.headers[\"Authorization\"] = \"Bearer \" + os.environ[\"API_TOKEN\"]\n    return s\n\n\ndef pages(path: str, per_page: int = 100):\n    s, page = session(), 1\n    while True:\n        r = s.get(os.environ[\"API_URL\"] + path, params={\"page\": page, \"per_page\": per_page}, timeout=10)\n        r.raise_for_status()\n        rows = r.json()\n        if not rows:\n            return\n        yield from rows\n        page += 1",
+    "note": "Timeout on every call. Retries only for GET and HEAD."
+   },
+   {
+    "title": "3. Docker SDK housekeeping (docker_tidy.py)",
+    "lang": "python",
+    "code": "\"\"\"docker_tidy.py: report stopped containers and dangling images; prune only with --apply.\"\"\"\nimport argparse\nimport docker\n\np = argparse.ArgumentParser()\np.add_argument(\"--apply\", action=\"store_true\")\nargs = p.parse_args()\nc = docker.from_env(timeout=10)\nfor ct in c.containers.list(all=True, filters={\"status\": \"exited\"}):\n    print(\"exited:\", ct.name, ct.image.tags)\nfor im in c.images.list(filters={\"dangling\": True}):\n    print(\"dangling:\", im.short_id)\nif args.apply:\n    print(c.containers.prune(filters={\"until\": \"24h\"}))\n    print(c.images.prune(filters={\"dangling\": True}))",
+    "note": "Reports by default. Docker group access equals root, so scope it tightly."
+   },
+   {
+    "title": "4. Read-only boto3 report (ebs_report.py)",
+    "lang": "python",
+    "code": "\"\"\"ebs_report.py: read-only list of unattached EBS volumes.\"\"\"\nimport boto3\n\nec2 = boto3.client(\"ec2\")\ntotal = 0\nfor page in ec2.get_paginator(\"describe_volumes\").paginate(\n        Filters=[{\"Name\": \"status\", \"Values\": [\"available\"]}]):\n    for v in page[\"Volumes\"]:\n        total += v[\"Size\"]\n        print(v[\"VolumeId\"], v[\"Size\"], \"GiB\", v[\"VolumeType\"])\nprint(\"unattached GiB:\", total)",
+    "note": "Needs ec2:DescribeVolumes only. Set AWS_PROFILE and AWS_REGION."
+   },
+   {
+    "title": "5. PostgreSQL upsert (collect.py)",
+    "lang": "python",
+    "code": "\"\"\"collect.py: pull records from a REST API and upsert them into PostgreSQL.\"\"\"\nimport os\nimport sys\nimport psycopg\nfrom client import pages\n\nDDL = \"\"\"CREATE TABLE IF NOT EXISTS work_items (\n  id bigint PRIMARY KEY, title text, state text, created_at timestamptz, closed_at timestamptz)\"\"\"\nUPSERT = \"\"\"INSERT INTO work_items (id, title, state, created_at, closed_at)\nVALUES (%(id)s, %(title)s, %(state)s, %(created_at)s, %(closed_at)s)\nON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, state = EXCLUDED.state,\n  closed_at = EXCLUDED.closed_at\"\"\"\n\n\ndef main() -> int:\n    rows = [{k: r.get(k) for k in (\"id\", \"title\", \"state\", \"created_at\", \"closed_at\")}\n            for r in pages(\"/work-items\")]\n    with psycopg.connect(os.environ[\"PG_DSN\"]) as conn:  # one transaction, commits on exit\n        conn.execute(DDL)\n        with conn.cursor() as cur:\n            cur.executemany(UPSERT, rows)\n    print(f\"upserted {len(rows)} rows\")\n    return 0\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())",
+    "note": "Upsert makes reruns safe. Map the placeholder fields to your API."
+   },
+   {
+    "title": "6. systemd service and timer",
+    "lang": "bash",
+    "code": "sudo install -m 0600 -o root -g root /dev/null /etc/ops-toolkit.env\nsudoedit /etc/ops-toolkit.env   # API_URL=<https://api.example.com/v1>  API_TOKEN=<token>  PG_DSN=<postgresql://user:pass@host/db>\nsudo tee /etc/systemd/system/ops-collect.service >/dev/null <<'EOF'\n[Unit]\nDescription=Collect ops data into PostgreSQL\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nType=oneshot\nUser=opsbot\nWorkingDirectory=/opt/ops-toolkit\nEnvironmentFile=/etc/ops-toolkit.env\nExecStart=/opt/ops-toolkit/.venv/bin/python collect.py\nTimeoutStartSec=300\nNoNewPrivileges=true\nProtectSystem=strict\nProtectHome=true\nPrivateTmp=true\nEOF\nsudo tee /etc/systemd/system/ops-collect.timer >/dev/null <<'EOF'\n[Unit]\nDescription=Run ops-collect every 15 minutes\n\n[Timer]\nOnCalendar=*:0/15\nPersistent=true\nRandomizedDelaySec=60\n\n[Install]\nWantedBy=timers.target\nEOF\nsudo systemctl daemon-reload && sudo systemctl enable --now ops-collect.timer",
+    "note": "Secrets live in a root-only env file. Replace placeholders in angle brackets."
+   },
+   {
+    "title": "7. Tests and CI gate",
+    "lang": "python",
+    "code": "# test_client.py\nimport client\n\n\ndef test_pages_stops_on_empty(monkeypatch):\n    monkeypatch.setenv(\"API_URL\", \"http://x\")\n    monkeypatch.setenv(\"API_TOKEN\", \"t\")\n    data = iter([[{\"id\": 1}], [{\"id\": 2}], []])\n\n    class R:\n        def __init__(self, rows): self.rows = rows\n        def raise_for_status(self): pass\n        def json(self): return self.rows\n\n    class S:\n        def get(self, *a, **k): return R(next(data))\n\n    monkeypatch.setattr(client, \"session\", lambda: S())\n    assert [r[\"id\"] for r in client.pages(\"/x\")] == [1, 2]\n\n# run in CI:  ruff check . && python -m pytest -q",
+    "note": "Save as test_client.py. Run ruff and pytest as a pipeline stage."
+   },
+   {
+    "title": "8. Superset on Kubernetes",
+    "lang": "bash",
+    "code": "helm repo add superset https://apache.github.io/superset && helm repo update\nhelm install superset superset/superset --version <CHART_VERSION> -n superset --create-namespace -f values.yaml\nkubectl -n superset rollout status deploy/superset\nkubectl -n superset port-forward svc/superset 8088:8088\n# Superset UI: Settings > Database Connections > + Database > PostgreSQL <SQLALCHEMY_URI>",
+    "note": "Set the chart version and metadata DB in values.yaml. Point the chart at PostgreSQL, not SQLite."
+   }
+  ]
+ },
+ "verify": [
+  "systemctl list-timers ops-collect.timer shows the next elapse time.",
+  "journalctl -u ops-collect -n 20 shows 'upserted N rows'.",
+  "systemctl show ops-collect -p Result -p ExecMainStatus reports success and 0.",
+  "psql \"$PG_DSN\" -c 'select count(*) from work_items' returns rows.",
+  "python -m pytest -q && ruff check . passes with no errors."
+ ],
+ "pitfalls": [
+  "requests has no default timeout; a missing timeout= hangs the job forever.",
+  "pip into system Python breaks OS tooling; always use a venv.",
+  "shell=True with untrusted input is command injection; pass an argument list.",
+  "Tokens in arguments leak via ps and shell history; use an env file.",
+  "Plain INSERT duplicates rows on rerun; upsert on a primary key.",
+  "Docker group membership grants root; keep prune behind --apply.",
+  "Timer without Persistent=true skips runs missed while the host was down."
+ ],
+ "labVideos": [],
+ "furtherReading": [
+  {
+   "label": "requests: timeouts",
+   "url": "https://requests.readthedocs.io/en/latest/user/quickstart/#timeouts"
+  },
+  {
+   "label": "boto3 documentation",
+   "url": "https://docs.aws.amazon.com/boto3/latest/"
+  },
+  {
+   "label": "Docker SDK for Python",
+   "url": "https://docker-py.readthedocs.io/en/stable/"
+  },
+  {
+   "label": "systemd.timer",
+   "url": "https://www.freedesktop.org/software/systemd/man/latest/systemd.timer.html"
+  }
+ ],
+ "keyPoints": [
+  "Every network call gets a timeout, bounded retries and an exit code.",
+  "Pin dependencies in a virtualenv; run the same on laptop, CI and host.",
+  "Read-only by default; mutate only behind an explicit --apply flag.",
+  "Collectors write to PostgreSQL; Superset turns the history into decisions."
+ ],
+ "quickDeploy": [
+  "Create a venv and pin requirements",
+  "Write collectors for REST, boto3 and Docker",
+  "Run them from a hardened systemd timer",
+  "Gate changes with pytest and ruff in CI"
+ ],
+ "osi": [
+  "L4",
+  "L7"
+ ],
+ "osiNote": "Speaks HTTPS to REST APIs; drives local sockets and CLIs.",
+ "production": [
+  "Run as a dedicated user with a systemd-hardened unit.",
+  "Keep tokens in an env file, mode 0600, never in arguments.",
+  "Alert on non-zero exit and on stale last-success timestamps.",
+  "Upsert idempotently so reruns and backfills are safe.",
+  "Pin versions and run pytest plus ruff on every merge."
+ ]
+}

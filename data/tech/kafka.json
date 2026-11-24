@@ -1,0 +1,158 @@
+{
+ "slug": "kafka",
+ "name": "Apache Kafka",
+ "category": "Messaging",
+ "icon": "apachekafka",
+ "level": "hands-on",
+ "tagline": "A replicated commit log that decouples producers from consumers, in order per partition.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "KRaft brokers",
+   "body": "KRaft replaces ZooKeeper; controllers keep metadata in a Raft quorum.\nA node runs as broker, controller, or both.\nEach partition has one leader and follower replicas.\nProducers and consumers talk to the partition leader."
+  },
+  {
+   "title": "Topics and partitions",
+   "body": "A topic is split into partitions, each an append-only log.\nThe record key hashes to a partition; same key, same order.\nPartition count caps consumer parallelism in a group.\nPartitions can be added later, never removed."
+  },
+  {
+   "title": "Consumer groups, offsets and lag",
+   "body": "Consumers in one group split the partitions between them.\nEach group commits its own offset per partition.\nLag is log end offset minus committed offset.\nExtra consumers beyond the partition count sit idle."
+  },
+  {
+   "title": "Latency tuning method",
+   "body": "Measure end-to-end latency and per-partition lag first.\nRaise partitions, then consumers, until lag stops growing under load.\nRe-test with the real key distribution; hot keys stay on one partition.\nStop when added partitions no longer cut latency."
+  },
+  {
+   "title": "Listeners and retention",
+   "body": "Clients connect to the bootstrap address, then to advertised listeners.\nListeners are plain TCP, so L4 balancers must not hide broker addresses.\nAdvertise a DNS name every client can resolve.\nRetention deletes old segments by time or size, not by consumption."
+  }
+ ],
+ "flow": [
+  "The frontend serialises an event and picks a key.",
+  "The producer connects to the bootstrap address over TCP.",
+  "The broker returns metadata with advertised listeners.",
+  "The producer sends the batch to the partition leader.",
+  "The leader appends to the log and replicates to followers.",
+  "Backend consumers in one group fetch from their assigned partitions.",
+  "Each consumer commits its offset after processing.",
+  "Lag per partition shows whether consumers keep up."
+ ],
+ "deploy": {
+  "summary": "A single-node KRaft Kafka 3.7 broker in Docker on Linux with a DNS name and systemd.",
+  "prerequisites": [
+   "Linux VM with Docker Engine 24+ and Compose v2",
+   "Static IP and a DNS record for the broker",
+   "Port 29092 open to client subnets",
+   "Data disk with room for retention"
+  ],
+  "steps": [
+   {
+    "title": "Prepare the host",
+    "lang": "bash",
+    "code": "sudo mkdir -p /opt/kafka && cd /opt/kafka\necho 'KAFKA_HOST=kafka.lab.internal' | sudo tee .env\necho '10.0.0.20 kafka.lab.internal' | sudo tee -a /etc/hosts   # or add an A record in DNS\nsudo ufw allow from 10.0.0.0/24 to any port 29092 proto tcp",
+    "note": "Placeholders: name, IP and subnet. Every client must resolve the name you advertise."
+   },
+   {
+    "title": "Compose file",
+    "lang": "yaml",
+    "code": "services:\n  kafka:\n    image: apache/kafka:3.7.0\n    container_name: kafka\n    restart: unless-stopped\n    ports:\n      - \"29092:29092\"\n    environment:\n      KAFKA_NODE_ID: 1\n      KAFKA_PROCESS_ROLES: broker,controller\n      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093\n      KAFKA_LISTENERS: INTERNAL://:9092,EXTERNAL://:29092,CONTROLLER://:9093\n      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://${KAFKA_HOST:?set in .env}:29092\n      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT\n      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL\n      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER\n      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1\n      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1\n      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1\n      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0\n    volumes:\n      - kafka-data:/var/lib/kafka/data\nvolumes:\n  kafka-data: {}",
+    "note": "Save as compose.yaml. One node, replication factor 1, PLAINTEXT: lab only."
+   },
+   {
+    "title": "Run under systemd",
+    "lang": "bash",
+    "code": "sudo tee /etc/systemd/system/kafka.service >/dev/null <<'UNIT'\n[Unit]\nDescription=Kafka KRaft broker\nRequires=docker.service\nAfter=docker.service network-online.target\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\nWorkingDirectory=/opt/kafka\nExecStart=/usr/bin/docker compose up -d\nExecStop=/usr/bin/docker compose down\n\n[Install]\nWantedBy=multi-user.target\nUNIT\nsudo systemctl daemon-reload\nsudo systemctl enable --now kafka.service",
+    "note": "The broker now starts at boot."
+   },
+   {
+    "title": "Create a topic",
+    "lang": "bash",
+    "code": "docker exec -i kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --topic orders.events \\\n  --partitions 6 --replication-factor 1 --config retention.ms=604800000",
+    "note": "Six partitions, seven-day retention."
+   },
+   {
+    "title": "Produce keyed events",
+    "lang": "bash",
+    "code": "printf 'o-1:created\\no-2:created\\no-1:paid\\n' | docker exec -i kafka /opt/kafka/bin/kafka-console-producer.sh \\\n  --bootstrap-server kafka:9092 --topic orders.events \\\n  --property parse.key=true --property key.separator=:",
+    "note": "Events with key o-1 land in the same partition, in order."
+   },
+   {
+    "title": "Consume in a group",
+    "lang": "bash",
+    "code": "docker exec -i kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 \\\n  --topic orders.events --group billing --from-beginning --max-messages 3 \\\n  --property print.key=true --property print.partition=true",
+    "note": "The group billing now owns committed offsets."
+   },
+   {
+    "title": "Read offsets and lag",
+    "lang": "bash",
+    "code": "docker exec -i kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server kafka:9092 \\\n  --describe --group billing",
+    "note": "Read CURRENT-OFFSET, LOG-END-OFFSET and LAG per partition."
+   },
+   {
+    "title": "Match partitions to consumers",
+    "lang": "bash",
+    "code": "docker exec -i kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --alter \\\n  --topic orders.events --partitions 12\ndocker exec -i kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --describe --topic orders.events",
+    "note": "Adding partitions changes key mapping for new records. Add consumers in the group until lag stops growing."
+   }
+  ]
+ },
+ "verify": [
+  "Broker up: docker exec kafka /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server kafka:9092 | head -1",
+  "Topic: docker exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list",
+  "Group lag: docker exec kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server kafka:9092 --describe --group billing",
+  "External listener: kcat -b kafka.lab.internal:29092 -L",
+  "Firewall: ss -ltn | grep 29092"
+ ],
+ "pitfalls": [
+  "A wrong advertised listener connects, then fails; clients follow the advertised host.",
+  "A plain L4 load balancer in front hides brokers; advertise each broker's own address.",
+  "More consumers than partitions leaves the extra consumers idle.",
+  "Partitions can grow but never shrink, and growth re-maps keys.",
+  "Retention deletes by time or size even if nobody consumed the data.",
+  "Replication factor 1 loses data when the broker disk fails.",
+  "Consumers that process slowly trigger rebalances; tune max.poll.interval.ms."
+ ],
+ "furtherReading": [
+  {
+   "label": "Kafka documentation",
+   "url": "https://kafka.apache.org/documentation/"
+  },
+  {
+   "label": "KRaft operations",
+   "url": "https://kafka.apache.org/documentation/#kraft"
+  },
+  {
+   "label": "Consumer position and offsets",
+   "url": "https://kafka.apache.org/documentation/#design_consumerposition"
+  },
+  {
+   "label": "Apache Kafka Docker image",
+   "url": "https://hub.docker.com/r/apache/kafka"
+  }
+ ],
+ "keyPoints": [
+  "Topics split into partitions; order holds only within one partition.",
+  "Consumer groups share partitions; one partition feeds one consumer.",
+  "Offsets and lag show how far consumers trail the log.",
+  "Advertised listeners must resolve and route from every client."
+ ],
+ "quickDeploy": [
+  "Run a KRaft broker with internal and external listeners",
+  "Create a topic with six partitions",
+  "Produce keyed events and consume them in a group",
+  "Read lag, then match partitions to consumers"
+ ],
+ "osi": [
+  "L4",
+  "L7"
+ ],
+ "osiNote": "A binary protocol over TCP; clients reconnect to advertised hosts.",
+ "production": [
+  "Run three KRaft nodes, replication factor 3, min.insync.replicas 2.",
+  "Size partitions for target throughput and consumer parallelism.",
+  "Set retention.ms and retention.bytes per topic; watch disk headroom.",
+  "Secure listeners with TLS and SASL; restrict with ACLs.",
+  "Alert on consumer lag, under-replicated partitions and offline partitions."
+ ]
+}

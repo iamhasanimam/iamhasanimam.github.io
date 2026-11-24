@@ -1,0 +1,183 @@
+{
+  "trajectory": [
+    {
+      "stage": "Cloud and virtualisation",
+      "years": "2020 - 2021",
+      "focus": "Built a secure remote-desktop platform from bare metal on VMware ESXi, learning infrastructure from the hardware up."
+    },
+    {
+      "stage": "System administration",
+      "years": "2022 - 2023",
+      "focus": "Windows Server, Active Directory, Microsoft 365, Entra ID and Intune, with PowerShell automation for onboarding, patching and backups."
+    },
+    {
+      "stage": "Technical and product support",
+      "years": "2023 - 2025",
+      "focus": "L2 diagnostics and integration troubleshooting; turned recurring incidents into runbooks, reduced escalations and mentored a small L2 team."
+    },
+    {
+      "stage": "Platform and DevOps engineering",
+      "years": "2025 - present",
+      "focus": "Sole platform owner for an OpenShift 4.x platform: API gateway, identity, GitOps delivery, observability and reliability runbooks."
+    }
+  ],
+  "roles": [
+    {
+      "company": "CIPL",
+      "title": "Platform Engineer & DevOps Engineer",
+      "location": "Noida, India",
+      "start": "Nov 2025",
+      "end": "Present",
+      "summary": "Sole platform owner of an OpenShift 4.x platform for a large public-sector platform, running at about 400 req/s at p95 under 50 ms.",
+      "highlights": [
+        "Own the OpenShift 4.x platform end to end as the sole platform owner",
+        "Observability with OpenTelemetry, Prometheus, Loki, Tempo and Grafana",
+        "Authored a 44-page production readiness and rollback runbook"
+      ],
+      "stack": [
+        "OpenShift 4.x",
+        "Kong",
+        "Keycloak",
+        "mTLS",
+        "Jenkins",
+        "ArgoCD",
+        "OpenTelemetry",
+        "Prometheus",
+        "Loki",
+        "Tempo",
+        "Grafana",
+        "Redis",
+        "Kafka",
+        "PostgreSQL"
+      ],
+      "headline": "Sole owner of a production OpenShift platform",
+      "impact": {
+        "value": "400 req/s",
+        "label": "p95 under 50 ms"
+      }
+    },
+    {
+      "company": "Wingify (VWO)",
+      "title": "Technical Support Engineer",
+      "location": "New Delhi, India",
+      "start": "Mar 2025",
+      "end": "Jun 2025",
+      "summary": "Level 2 technical diagnostics and runbook authoring.",
+      "highlights": [
+        "Performed L2 diagnostics on customer issues",
+        "Wrote runbooks that cut average resolution time by 40%"
+      ],
+      "stack": [
+        "L2 diagnostics",
+        "Runbooks"
+      ],
+      "headline": "L2 diagnostics and resolution runbooks",
+      "impact": {
+        "value": "40%",
+        "label": "faster resolution via runbooks"
+      }
+    },
+    {
+      "company": "IT By Design / Liongard",
+      "title": "Senior Product Support Engineer",
+      "location": "Noida, India",
+      "start": "Oct 2023",
+      "end": "Mar 2025",
+      "summary": "Supported integrations for a platform used by managed service providers.",
+      "highlights": [
+        "Handled integrations across 100+ MSP environments",
+        "Reduced escalations by 25%",
+        "Mentored a 4-member L2 team"
+      ],
+      "stack": [
+        "Integrations",
+        "Troubleshooting",
+        "Mentoring"
+      ],
+      "headline": "Integration support across 100+ MSP environments",
+      "impact": {
+        "value": "-25%",
+        "label": "escalations"
+      }
+    },
+    {
+      "company": "IT By Design / System Solutions Inc",
+      "title": "Senior System Administrator",
+      "location": "Noida, India",
+      "start": "Jan 2022",
+      "end": "Oct 2023",
+      "summary": "Administered Microsoft-centred infrastructure and automated routine operations.",
+      "highlights": [
+        "Windows Server, Active Directory, Microsoft 365, Entra ID and Intune administration",
+        "PowerShell automation reduced onboarding time by 30%",
+        "Improved backup success rate by 35%"
+      ],
+      "stack": [
+        "Windows Server",
+        "Active Directory",
+        "Microsoft 365",
+        "Entra ID",
+        "Intune",
+        "PowerShell"
+      ],
+      "headline": "Microsoft infrastructure administration and PowerShell automation",
+      "impact": {
+        "value": "30%",
+        "label": "less patching downtime"
+      }
+    },
+    {
+      "company": "RealTimeDataServices",
+      "title": "Cloud Service Engineer",
+      "location": "Gurugram, India",
+      "start": "Jan 2020",
+      "end": "Dec 2021",
+      "summary": "Built infrastructure for a remote-desktop service from the hardware up.",
+      "highlights": [
+        "Built a secure remote-desktop platform from bare metal on VMware ESXi"
+      ],
+      "stack": [
+        "VMware ESXi",
+        "Remote desktop",
+        "Virtualisation"
+      ],
+      "headline": "Built a remote-desktop platform from bare metal"
+    }
+  ],
+  "education": [
+    {
+      "institution": "Galgotias University",
+      "location": "Greater Noida, India",
+      "degree": "B.Tech in Computer Science and Engineering",
+      "start": "2016",
+      "end": "2020"
+    }
+  ],
+  "certs": [
+    {
+      "name": "AWS Certified Cloud Practitioner",
+      "issuer": "Amazon Web Services",
+      "date": "Sep 2025"
+    },
+    {
+      "name": "Liongard Administrator",
+      "issuer": "Liongard",
+      "date": null
+    },
+    {
+      "name": "ConnectWise Manage",
+      "issuer": "ConnectWise",
+      "date": null
+    },
+    {
+      "name": "ConnectWise Automate",
+      "issuer": "ConnectWise",
+      "date": null
+    },
+    {
+      "name": "HackerRank JavaScript",
+      "issuer": "HackerRank",
+      "date": null
+    }
+  ]
+}

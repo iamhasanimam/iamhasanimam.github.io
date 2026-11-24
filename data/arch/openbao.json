@@ -1,0 +1,221 @@
+{
+  "title": "OpenBao Secret Access Flow",
+  "summary": "Applications authenticate with an auth method, receive a token bound to policies, read secrets from engines, and every request is audited.",
+  "nodes": [
+    {
+      "id": "app",
+      "label": "Client / App",
+      "sub": "Needs a secret",
+      "kind": "client",
+      "icon": null,
+      "detail": "Authenticates, then uses the returned token on subsequent API calls. Tokens are short-lived and renewable."
+    },
+    {
+      "id": "auth",
+      "label": "AppRole Auth",
+      "sub": "Role ID and secret ID",
+      "kind": "control",
+      "icon": "vault",
+      "detail": "AppRole is a machine auth method. Role ID identifies the app, secret ID is the credential, delivered separately and often single-use.",
+      "group": "OpenBao server"
+    },
+    {
+      "id": "policy",
+      "label": "Policy",
+      "sub": "Path-based ACL",
+      "kind": "control",
+      "icon": "vault",
+      "detail": "HCL rules grant capabilities such as read or list on secret paths. Tokens receive only the policies attached to their role.",
+      "group": "OpenBao server"
+    },
+    {
+      "id": "token",
+      "label": "Token",
+      "sub": "Scoped, TTL-bound",
+      "kind": "process",
+      "icon": "vault",
+      "detail": "Issued after login with a TTL and policy set. Requests without a valid token are denied by default.",
+      "group": "OpenBao server"
+    },
+    {
+      "id": "kv",
+      "label": "KV Secrets Engine",
+      "sub": "Versioned secrets",
+      "kind": "service",
+      "icon": "vault",
+      "detail": "Key-value engine mounted at a path. KV v2 keeps versions, so secrets can be rolled back or destroyed.",
+      "group": "OpenBao server"
+    },
+    {
+      "id": "barrier",
+      "label": "Encryption Barrier",
+      "sub": "Data encrypted at rest",
+      "kind": "process",
+      "icon": "vault",
+      "detail": "All data is encrypted before reaching storage. The barrier is opened only when the instance is unsealed.",
+      "group": "OpenBao server"
+    },
+    {
+      "id": "raft",
+      "label": "Raft Storage",
+      "sub": "Integrated HA storage",
+      "kind": "store",
+      "icon": null,
+      "detail": "Integrated Raft storage replicates encrypted data across nodes with one active leader and standbys.",
+      "group": "Storage"
+    },
+    {
+      "id": "audit",
+      "label": "Audit Device",
+      "sub": "Request and response log",
+      "kind": "observe",
+      "icon": null,
+      "detail": "Logs every request and response with sensitive values hashed. Typically written to a file or syslog for review."
+    }
+  ],
+  "links": [
+    {
+      "from": "app",
+      "to": "auth",
+      "label": "login",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "auth",
+      "to": "policy",
+      "label": "maps to",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "policy",
+      "to": "token",
+      "label": "attach",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "token",
+      "to": "app",
+      "label": "returns",
+      "style": "dashed",
+      "flow": true
+    },
+    {
+      "from": "app",
+      "to": "kv",
+      "label": "read secret",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "kv",
+      "to": "barrier",
+      "label": "encrypt",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "barrier",
+      "to": "raft",
+      "label": "store",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "kv",
+      "to": "audit",
+      "label": "log",
+      "style": "dashed",
+      "flow": true
+    }
+  ],
+  "steps": [
+    {
+      "title": "App logs in",
+      "text": "The app presents its AppRole role ID and secret ID to the auth method.",
+      "nodes": [
+        "app",
+        "auth"
+      ],
+      "links": [
+        [
+          "app",
+          "auth"
+        ]
+      ]
+    },
+    {
+      "title": "Policies are attached",
+      "text": "The role maps to policies that define which paths and operations are allowed.",
+      "nodes": [
+        "auth",
+        "policy",
+        "token"
+      ],
+      "links": [
+        [
+          "auth",
+          "policy"
+        ],
+        [
+          "policy",
+          "token"
+        ]
+      ]
+    },
+    {
+      "title": "Token returned",
+      "text": "The app receives a short-lived token and uses it for later calls, renewing as needed.",
+      "nodes": [
+        "token",
+        "app"
+      ],
+      "links": [
+        [
+          "token",
+          "app"
+        ]
+      ]
+    },
+    {
+      "title": "Secret is read",
+      "text": "The app reads a path in the KV engine; the policy check passes or the call is denied.",
+      "nodes": [
+        "app",
+        "kv"
+      ],
+      "links": [
+        [
+          "app",
+          "kv"
+        ]
+      ]
+    },
+    {
+      "title": "Encrypted storage and audit",
+      "text": "Data passes through the barrier into Raft storage, and the request is written to the audit device.",
+      "nodes": [
+        "kv",
+        "barrier",
+        "raft",
+        "audit"
+      ],
+      "links": [
+        [
+          "kv",
+          "barrier"
+        ],
+        [
+          "barrier",
+          "raft"
+        ],
+        [
+          "kv",
+          "audit"
+        ]
+      ]
+    }
+  ]
+}

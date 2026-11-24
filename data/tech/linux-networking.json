@@ -1,0 +1,159 @@
+{
+ "slug": "linux-networking",
+ "name": "Linux Networking",
+ "category": "Foundations",
+ "icon": "linux",
+ "level": "hands-on",
+ "tagline": "Namespaces, veth, bridges, routing, NAT, VRRP, SSH and DNS: the on-prem plumbing.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Namespaces",
+   "body": "A namespace is an isolated network stack.\nIt owns its interfaces, routes, ARP table and firewall.\nA container is a process inside one."
+  },
+  {
+   "title": "veth pairs and bridges",
+   "body": "A veth pair is a virtual cable: frames entering one end exit the other.\nAttach one end to a bridge and it switches by MAC.\nbridge fdb show lists the learned addresses."
+  },
+  {
+   "title": "Routing and forwarding",
+   "body": "The kernel picks the longest prefix match, then ARPs for the next hop.\nA host routes between subnets only when net.ipv4.ip_forward=1.\nReturn traffic needs a route back."
+  },
+  {
+   "title": "NAT and netfilter",
+   "body": "MASQUERADE in nat POSTROUTING rewrites private sources to the uplink address.\nconntrack remembers each flow and un-NATs replies.\nThe FORWARD chain decides what may cross."
+  },
+  {
+   "title": "VRRP, SSH and DNS",
+   "body": "VRRP gives the higher priority node the VIP; a track_script drives failover.\nsshd takes keys only, no root, named users.\ndnsmasq serves A and PTR records and forwards the rest."
+  }
+ ],
+ "flow": [
+  "Process in namespace a1 sends a packet to 10.0.2.11, another subnet.",
+  "a1 uses its default route to 10.0.1.1 and ARPs for the gateway.",
+  "The frame crosses the veth pair into bridge br-a and is switched by MAC.",
+  "The router sees a non-local destination; ip_forward=1 sends it to the route lookup.",
+  "FORWARD permits it; the kernel emits it on br-b towards b1.",
+  "Internet-bound traffic is rewritten by POSTROUTING MASQUERADE; conntrack tracks it.",
+  "Replies are un-NATed and routed back across the bridge to a1."
+ ],
+ "deploy": {
+  "summary": "Build a routed network from namespaces, add VRRP, then harden SSH and serve DNS.",
+  "prerequisites": [
+   "Linux VM or host with root, iproute2 and iptables",
+   "Disposable machine: the lab changes forwarding and firewall rules",
+   "Two hosts on one L2 segment for the VRRP step",
+   "Ubuntu 22.04 or 24.04 for the SSH and DNS steps"
+  ],
+  "steps": [
+   {
+    "title": "1. A veth pair between two namespaces",
+    "lang": "bash",
+    "code": "sudo ip netns add x\nsudo ip netns add y\nsudo ip link add vx type veth peer name vy\nsudo ip link set vx netns x\nsudo ip link set vy netns y\nsudo ip -n x addr add 10.99.0.1/24 dev vx\nsudo ip -n y addr add 10.99.0.2/24 dev vy\nsudo ip -n x link set vx up\nsudo ip -n y link set vy up\nsudo ip netns exec x ping -c 2 10.99.0.2\nsudo ip netns del x; sudo ip netns del y",
+    "note": "Deleting a namespace destroys its veth end and the peer with it. This is the virtual cable in isolation."
+   },
+   {
+    "title": "2. Bridges, two subnets and routing",
+    "lang": "bash",
+    "code": "sudo ip link add br-a type bridge\nsudo ip addr add 10.0.1.1/24 dev br-a\nsudo ip link set br-a up\nfor n in a1 a2; do\n  i=$([ \"$n\" = a1 ] && echo 11 || echo 12)\n  sudo ip netns add $n\n  sudo ip link add veth-$n type veth peer name eth0 netns $n\n  sudo ip link set veth-$n master br-a up\n  sudo ip -n $n addr add 10.0.1.$i/24 dev eth0\n  sudo ip -n $n link set eth0 up\n  sudo ip -n $n link set lo up\n  sudo ip -n $n route add default via 10.0.1.1\ndone\nsudo ip netns exec a1 ping -c 2 10.0.1.12\nbridge fdb show br br-a\n\nsudo ip link add br-b type bridge\nsudo ip addr add 10.0.2.1/24 dev br-b\nsudo ip link set br-b up\nsudo ip netns add b1\nsudo ip link add veth-b1 type veth peer name eth0 netns b1\nsudo ip link set veth-b1 master br-b up\nsudo ip -n b1 addr add 10.0.2.11/24 dev eth0\nsudo ip -n b1 link set eth0 up\nsudo ip -n b1 link set lo up\nsudo ip -n b1 route add default via 10.0.2.1\n\nsudo sysctl -w net.ipv4.ip_forward=0\nsudo ip netns exec a1 ping -c 1 -W 1 10.0.2.11 || echo \"fails: forwarding off\"\nsudo sysctl -w net.ipv4.ip_forward=1\nsudo ip netns exec a1 ping -c 2 10.0.2.11",
+    "note": "The root namespace owns 10.0.1.1 and 10.0.2.1 and is the router. If the last ping fails, check for a Docker FORWARD DROP policy."
+   },
+   {
+    "title": "3. NAT to the outside with MASQUERADE",
+    "lang": "bash",
+    "code": "UPLINK=$(ip route show default | awk '{print $5; exit}')\necho \"uplink: $UPLINK\"\nsudo iptables -t nat -A POSTROUTING -s 10.0.1.0/24 -o \"$UPLINK\" -j MASQUERADE\nsudo iptables -I FORWARD -i br-a -o \"$UPLINK\" -j ACCEPT\nsudo iptables -I FORWARD -i \"$UPLINK\" -o br-a -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\nsudo ip netns exec a1 ping -c 2 1.1.1.1\nsudo iptables -t nat -L POSTROUTING -n -v",
+    "note": "The MASQUERADE packet counter must rise. These rules do not survive a reboot, which suits a lab."
+   },
+   {
+    "title": "4. Inspect like an operator",
+    "lang": "bash",
+    "code": "ip -br addr\nip route\nsudo ip netns exec a1 ip route get 10.0.2.11\nip neigh show dev br-a\nsudo ip netns exec b1 tcpdump -ni eth0 icmp &\nsudo ip netns exec a1 ping -c 2 10.0.2.11\nsudo kill %1\nsudo conntrack -L 2>/dev/null | head",
+    "note": "ip route get shows the route and source the kernel would pick. tcpdump shows 10.0.1.11 unchanged between internal subnets: no NAT."
+   },
+   {
+    "title": "5. VRRP floating IP with keepalived (two hosts)",
+    "lang": "bash",
+    "code": "# /etc/keepalived/keepalived.conf on the PRIMARY node\nglobal_defs {\n    enable_script_security\n    script_user keepalived_script\n}\nvrrp_script chk_service {\n    script \"/usr/bin/systemctl is-active --quiet nginx\"\n    interval 2\n    fall 2\n    rise 2\n}\nvrrp_instance VI_1 {\n    state MASTER\n    interface eth0              # replace with your NIC name\n    virtual_router_id 51\n    priority 150                # BACKUP node: state BACKUP, priority 100\n    advert_int 1\n    authentication {\n        auth_type PASS\n        auth_pass changeme1     # max 8 characters; use a unique value\n    }\n    virtual_ipaddress {\n        192.0.2.100/24          # replace with a free address in your subnet\n    }\n    track_script {\n        chk_service\n    }\n}\n# then on both nodes:\n#   sudo useradd -r -s /sbin/nologin keepalived_script\n#   sudo systemctl enable --now keepalived",
+    "note": "The BACKUP uses state BACKUP and a lower priority. Cloud networks usually drop VRRP; use the provider floating IP there."
+   },
+   {
+    "title": "6. Clean up the lab",
+    "lang": "bash",
+    "code": "sudo iptables -t nat -D POSTROUTING -s 10.0.1.0/24 -o \"$UPLINK\" -j MASQUERADE\nsudo iptables -D FORWARD -i br-a -o \"$UPLINK\" -j ACCEPT\nsudo iptables -D FORWARD -i \"$UPLINK\" -o br-a -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT\nfor n in a1 a2 b1; do sudo ip netns del $n; done\nsudo ip link del br-a; sudo ip link del br-b\nsudo sysctl -w net.ipv4.ip_forward=0",
+    "note": "Run in the shell from step 3 so $UPLINK is set. Remove any FORWARD ACCEPT rules you added by hand."
+   },
+   {
+    "title": "7. SSH setup and hardening",
+    "lang": "bash",
+    "code": "# On your workstation: create a key and install it\nssh-keygen -t ed25519 -C \"ops@site\"\nssh-copy-id -i ~/.ssh/id_ed25519.pub ops@10.0.0.10\nssh ops@10.0.0.10 true        # prove key login BEFORE hardening\n\n# On the server: drop-in config, test, then reload\nsudo tee /etc/ssh/sshd_config.d/10-hardening.conf >/dev/null <<'EOF'\nPermitRootLogin no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nPubkeyAuthentication yes\nAllowUsers ops\nMaxAuthTries 3\nLoginGraceTime 30\nX11Forwarding no\nEOF\nsudo sshd -t && sudo systemctl reload ssh\nsudo sshd -T | grep -Ei 'permitrootlogin|passwordauthentication|allowusers'\n\n# Brute-force bans\nsudo apt-get install -y fail2ban\nprintf '[sshd]\\nenabled = true\\nmaxretry = 5\\nbantime = 1h\\n' | sudo tee /etc/fail2ban/jail.d/sshd.local\nsudo systemctl enable --now fail2ban\nsudo fail2ban-client status sshd",
+    "note": "Keep a second session open until key login is proven. Service name is sshd on RHEL; replace ops and the IP."
+   },
+   {
+    "title": "8. DNS bring-up with dnsmasq",
+    "lang": "bash",
+    "code": "# Free port 53 (Ubuntu: disable the systemd-resolved stub listener)\nsudo sed -i 's/^#\\?DNSStubListener=.*/DNSStubListener=no/' /etc/systemd/resolved.conf\nsudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf\nsudo systemctl restart systemd-resolved\nsudo apt-get install -y dnsmasq dnsutils\n\nsudo tee /etc/dnsmasq.d/lab.conf >/dev/null <<'EOF'\nlisten-address=127.0.0.1,10.0.0.2\nbind-interfaces\ndomain-needed\nbogus-priv\ndomain=lab.local\nlocal=/lab.local/\nno-resolv\nserver=1.1.1.1\nserver=9.9.9.9\ncache-size=1000\nhost-record=node1.lab.local,10.0.0.10\naddress=/node2.lab.local/10.0.0.20\nptr-record=20.0.0.10.in-addr.arpa,node2.lab.local\nEOF\nsudo dnsmasq --test && sudo systemctl restart dnsmasq\n\ndig @10.0.0.2 node1.lab.local +short\ndig @10.0.0.2 node2.lab.local +short\ndig @10.0.0.2 -x 10.0.0.10 +short\ndig @10.0.0.2 -x 10.0.0.20 +short\ndig @10.0.0.2 example.com | grep -E 'status|Query time'\ndig @10.0.0.2 example.com | grep 'Query time'   # second run: cached",
+    "note": "host-record creates A and PTR; address plus ptr-record shows them separately. Replace 10.0.0.x and lab.local with your plan."
+   }
+  ]
+ },
+ "verify": [
+  "Bridge: ip netns exec a1 ping -c2 10.0.1.12 works; bridge fdb show br br-a lists both MACs.",
+  "Routing: ping a1 to b1 fails with ip_forward=0 and passes with 1.",
+  "NAT: iptables -t nat -L POSTROUTING -n -v shows a rising MASQUERADE counter.",
+  "SSH: sshd -T | grep -Ei 'passwordauthentication|permitrootlogin' and ssh root@host is refused.",
+  "DNS: dig @10.0.0.2 -x 10.0.0.10 +short returns node1.lab.local."
+ ],
+ "pitfalls": [
+  "No return or default route in the namespace: packets leave, replies never arrive.",
+  "Docker or firewalld FORWARD DROP silently breaks routed lab traffic.",
+  "sysctl -w is not persistent; write /etc/sysctl.d/ files on real routers.",
+  "Overlapping CIDRs across lab, VPN and cloud give odd routes; check ip route get.",
+  "VRRP blocked on protocol 112 makes both nodes claim the VIP.",
+  "Locking yourself out: disable password login only after key login works.",
+  "dnsmasq fails to start while systemd-resolved still holds port 53."
+ ],
+ "furtherReading": [
+  {
+   "label": "ip-netns(8) manual page",
+   "url": "https://man7.org/linux/man-pages/man8/ip-netns.8.html"
+  },
+  {
+   "label": "keepalived documentation",
+   "url": "https://keepalived.readthedocs.io/en/latest/"
+  },
+  {
+   "label": "sshd_config(5) manual page",
+   "url": "https://man.openbsd.org/sshd_config"
+  },
+  {
+   "label": "dnsmasq manual",
+   "url": "https://thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html"
+  }
+ ],
+ "keyPoints": [
+  "Namespaces isolate stacks; veth pairs are cables; bridges are L2 switches.",
+  "ip_forward plus MASQUERADE turns a host into a NAT router.",
+  "keepalived VRRP floats one IP between two nodes.",
+  "Key-only sshd and dnsmasq records make a bare VM reachable and named."
+ ],
+ "quickDeploy": [
+  "Create a veth pair between two namespaces.",
+  "Add a bridge, a second subnet and routing.",
+  "Enable NAT with MASQUERADE.",
+  "Harden sshd, then serve DNS with dnsmasq."
+ ],
+ "osi": [
+  "L1",
+  "L2",
+  "L3",
+  "L4"
+ ],
+ "osiNote": "L1 NIC, L2 bridge, L3 routing and NAT, L4 conntrack and ports.",
+ "production": [
+  "Persist sysctls in /etc/sysctl.d and rules in nftables.conf.",
+  "Document the IP plan; check overlaps with ip route get.",
+  "Default-deny firewall; allow SSH only from the admin subnet.",
+  "Run two keepalived nodes; test failover under ping.",
+  "Alert on link errors, conntrack table usage and VRRP state changes."
+ ]
+}

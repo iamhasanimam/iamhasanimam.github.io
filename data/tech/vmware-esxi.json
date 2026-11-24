@@ -1,0 +1,149 @@
+{
+ "slug": "vmware-esxi",
+ "name": "VMware ESXi",
+ "category": "Virtualization",
+ "icon": "vmware",
+ "level": "hands-on",
+ "tagline": "Bare-metal ESXi hosting a private domain, NAT gateway and remote desktops.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Hypervisor (L1)",
+   "body": "ESXi boots from a small device and runs the VMkernel on hardware.\nPhysical NICs (vmnic) are the only L1 link to the outside.\nDatastores hold each VM as a folder of .vmx and .vmdk files."
+  },
+  {
+   "title": "vSwitches (L2)",
+   "body": "vSwitch0 carries the uplink vmnic and the management network.\nvSwitch1 has no uplink: a private switch for lab VMs only.\nPort groups set VLAN and security policy per VM network."
+  },
+  {
+   "title": "Gateway VM (L3)",
+   "body": "One NIC sits on vSwitch0 (WAN), the other on vSwitch1 (LAN).\nip_forward and a MASQUERADE rule NAT private hosts to the WAN address.\nPort forwards (DNAT) publish 443 to the RD Gateway."
+  },
+  {
+   "title": "Active Directory services",
+   "body": "DC01 runs AD DS, DNS and DHCP for the private subnet.\nClients get DHCP scope, DNS suffix and the gateway VM as default route.\nDC02 joins as a second DC and takes over all five FSMO roles."
+  },
+  {
+   "title": "Remote desktops (L7)",
+   "body": "RD Gateway wraps RDP in HTTPS on 443 with a certificate.\nThe Connection Broker sends users to a session host in the collection.\nUsers reach file shares on the file server through DFS or SMB paths.\nA jumpbox is the single admin entry; RDP and SSH to servers start there."
+  }
+ ],
+ "flow": [
+  "A user connects to the RD Gateway name over HTTPS on 443.",
+  "The frame enters vSwitch0 through the physical uplink.",
+  "The gateway VM forwards 443 to the RD Gateway with DNAT.",
+  "RD Gateway authenticates against AD DS and checks its policies.",
+  "The Connection Broker picks a session host from the collection.",
+  "The session host maps file shares from the file server over SMB.",
+  "Return traffic leaves through the gateway VM, translated by NAT."
+ ],
+ "deploy": {
+  "summary": "On-prem bring-up on a single host: network first, then domain, then desktops and migration.",
+  "prerequisites": [
+   "A server on the ESXi 8.0 hardware compatibility list",
+   "Windows Server 2022 ISO and a Linux ISO for the gateway",
+   "Placeholders: 192.168.1.0/24 (WAN), 192.168.10.0/24 (LAN), lab.local",
+   "A workstation with an SSH key pair"
+  ],
+  "steps": [
+   {
+    "title": "1. Static management address, DNS and hostname",
+    "lang": "bash",
+    "code": "esxcli network ip interface ipv4 set -i vmk0 -t static -I 192.168.1.10 -N 255.255.255.0\nesxcli network ip route ipv4 add --network default --gateway 192.168.1.1\nesxcli network ip dns server add --server 192.168.1.1\nesxcli system hostname set --host esx01 --domain lab.local",
+    "note": "Run in the console shell after install. Placeholders match your WAN subnet."
+   },
+   {
+    "title": "2. SSH with keys, scoped by firewall",
+    "lang": "bash",
+    "code": "vim-cmd hostsvc/enable_ssh && vim-cmd hostsvc/start_ssh\nssh-keygen -t ed25519 -f ~/.ssh/esx01\nssh-copy-id -f -i ~/.ssh/esx01.pub root@192.168.1.10\nesxcli network firewall ruleset set --ruleset-id sshServer --allowed-all false\nesxcli network firewall ruleset allowedip add --ruleset-id sshServer --ip-address 192.168.1.0/24\nssh -i ~/.ssh/esx01 root@192.168.1.10",
+    "note": "If ssh-copy-id fails, append the key to /etc/ssh/keys-root/authorized_keys. Run vim-cmd hostsvc/stop_ssh when done."
+   },
+   {
+    "title": "3. Private vSwitch1 with no uplink",
+    "lang": "bash",
+    "code": "esxcli network vswitch standard add -v vSwitch1\nesxcli network vswitch standard portgroup add -v vSwitch1 -p LAN-Private\nesxcli network vswitch standard policy security set -v vSwitch1 --allow-promiscuous=false --allow-forged-transmits=false --allow-mac-change=false\nesxcli network vswitch standard list",
+    "note": "vSwitch1 has no vmnic, so frames never leave the host. vSwitch0 keeps vmnic0."
+   },
+   {
+    "title": "4. Gateway VM: two NICs, forwarding and NAT",
+    "lang": "bash",
+    "code": "# eth0 = WAN on vSwitch0 (192.168.1.5), eth1 = LAN on vSwitch1\nsudo ip addr add 192.168.10.1/24 dev eth1 && sudo ip link set eth1 up\necho 'net.ipv4.ip_forward=1' | sudo tee /etc/sysctl.d/99-forward.conf && sudo sysctl --system\nsudo iptables -t nat -A POSTROUTING -s 192.168.10.0/24 -o eth0 -j MASQUERADE\nsudo iptables -A FORWARD -i eth1 -o eth0 -j ACCEPT\nsudo iptables -A FORWARD -i eth0 -o eth1 -m state --state ESTABLISHED,RELATED -j ACCEPT\nsudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 443 -j DNAT --to-destination 192.168.10.20:443",
+    "note": "Persist the addresses in netplan or NetworkManager and the rules with iptables-persistent. 192.168.10.20 is the RD Gateway."
+   },
+   {
+    "title": "5. DC01: AD DS, DNS and DHCP",
+    "lang": "powershell",
+    "code": "New-NetIPAddress -InterfaceAlias Ethernet0 -IPAddress 192.168.10.10 -PrefixLength 24 -DefaultGateway 192.168.10.1\nRename-Computer DC01 -Restart\nInstall-WindowsFeature AD-Domain-Services,DNS,DHCP -IncludeManagementTools\nInstall-ADDSForest -DomainName lab.local -DomainNetbiosName LAB -InstallDns\nAdd-DhcpServerInDC -DnsName dc01.lab.local\nAdd-DhcpServerv4Scope -Name LAN -StartRange 192.168.10.100 -EndRange 192.168.10.200 -SubnetMask 255.255.255.0\nSet-DhcpServerv4OptionValue -ScopeId 192.168.10.0 -Router 192.168.10.1 -DnsServer 192.168.10.10 -DnsDomain lab.local",
+    "note": "Run in two stages around the restart. Install-ADDSForest prompts for the DSRM password."
+   },
+   {
+    "title": "6. RD Gateway, Connection Broker, session hosts, file server",
+    "lang": "powershell",
+    "code": "New-RDSessionDeployment -ConnectionBroker rdcb.lab.local -WebAccessServer rdcb.lab.local -SessionHost rdsh1.lab.local\nNew-RDSessionCollection -CollectionName Desktops -SessionHost rdsh1.lab.local -ConnectionBroker rdcb.lab.local\nAdd-RDServer -Server rdgw.lab.local -Role RDS-GATEWAY -ConnectionBroker rdcb.lab.local -GatewayExternalFqdn rdgw.example.com\nInstall-WindowsFeature FS-FileServer -ComputerName fs01.lab.local\nInvoke-Command -ComputerName fs01.lab.local { New-Item -ItemType Directory D:\\Shares\\Data; New-SmbShare -Name Data -Path D:\\Shares\\Data -ChangeAccess 'LAB\\Domain Users' }",
+    "note": "Install the RD Gateway certificate with its public FQDN (placeholder rdgw.example.com) via Set-RDCertificate."
+   },
+   {
+    "title": "7. Migrate DC01 to DC02 and move FSMO roles",
+    "lang": "powershell",
+    "code": "# On the new server: join the domain, then (only if schema upgrade needed) from the install media\nD:\\support\\adprep\\adprep.exe /forestprep\nD:\\support\\adprep\\adprep.exe /domainprep\nInstall-WindowsFeature AD-Domain-Services,DNS -IncludeManagementTools\nInstall-ADDSDomainController -DomainName lab.local -InstallDns -Credential (Get-Credential LAB\\Administrator)\nrepadmin /replsummary\ndcdiag /v\nMove-ADDirectoryServerOperationMasterRole -Identity DC02 -OperationMasterRole SchemaMaster,DomainNamingMaster,PDCEmulator,RIDMaster,InfrastructureMaster\nnetdom query fsmo",
+    "note": "Point DHCP option 006 and client DNS at DC02, then demote DC01 with Uninstall-ADDSDomainController."
+   }
+  ]
+ },
+ "verify": [
+  "esxcli network vswitch standard list shows vSwitch1 with no uplinks.",
+  "From a private VM: ping 8.8.8.8 works; on the gateway, iptables -t nat -L -n -v counts hits.",
+  "dcdiag /v and repadmin /replsummary report no errors.",
+  "netdom query fsmo lists DC02 for all five roles.",
+  "Connect through RD Gateway on 443; Get-RDUserSession lists the session."
+ ],
+ "pitfalls": [
+  "vSwitch1 is isolated only until a VM bridges it; the gateway VM is that bridge.",
+  "Forgetting ip_forward or the FORWARD rules makes the gateway drop transit traffic silently.",
+  "AD breaks when clients use the gateway as DNS; point DHCP at the DC.",
+  "Seizing FSMO roles instead of transferring them risks USN rollback if the old DC returns.",
+  "Demote DC01 only after replication is clean and DNS and DHCP no longer point at it.",
+  "RD Gateway needs a certificate whose name matches the public FQDN.",
+  "Thin-provisioned datastores can fill without warning; alert on free space."
+ ],
+ "furtherReading": [
+  {
+   "label": "VMware vSphere 8.0 documentation (Broadcom TechDocs)",
+   "url": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0.html"
+  },
+  {
+   "label": "Upgrade domain controllers (Microsoft Learn)",
+   "url": "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/deploy/upgrade-domain-controllers"
+  },
+  {
+   "label": "Deploy the RDS infrastructure (Microsoft Learn)",
+   "url": "https://learn.microsoft.com/en-us/windows-server/remote/remote-desktop-services/rds-deploy-infrastructure"
+  }
+ ],
+ "keyPoints": [
+  "ESXi 8.0 runs on bare metal; vSwitch0 uplinks, vSwitch1 stays private.",
+  "A dual-NIC gateway VM routes and NATs the private network.",
+  "Windows Server 2022 DC provides AD DS, DNS and DHCP.",
+  "RD Gateway, Connection Broker and session hosts deliver desktops over HTTPS."
+ ],
+ "quickDeploy": [
+  "Install ESXi; set a static management IP.",
+  "Create the private vSwitch and gateway VM.",
+  "Promote DC01; add RDS roles and file server.",
+  "Migrate to DC02: adprep, replicate, move FSMO roles."
+ ],
+ "osi": [
+  "L1",
+  "L2",
+  "L3",
+  "L7"
+ ],
+ "osiNote": "vSwitch switches frames, gateway NATs, RD Gateway proxies HTTPS.",
+ "production": [
+  "Run two domain controllers; check repadmin /replsummary daily.",
+  "Back up VM folders and AD system state before every change.",
+  "Disable SSH after use; restrict the sshServer ruleset to the admin subnet.",
+  "Set vSwitch security policy to Reject for promiscuous, MAC change and forged transmits.",
+  "Watch datastore free space and VM CPU ready time."
+ ]
+}

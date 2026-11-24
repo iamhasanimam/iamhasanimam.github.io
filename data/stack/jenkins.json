@@ -1,0 +1,170 @@
+{
+  "title": "Jenkins",
+  "subtitle": "An extensible automation server for building, testing and delivering software.",
+  "tabs": [
+    {
+      "id": "overview",
+      "label": "Overview",
+      "layers": [
+        "trigger",
+        "stages",
+        "ship"
+      ]
+    },
+    {
+      "id": "pipeline",
+      "label": "Pipeline",
+      "layers": [
+        "trigger",
+        "stages"
+      ]
+    },
+    {
+      "id": "delivery",
+      "label": "Delivery",
+      "layers": [
+        "stages",
+        "ship"
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "id": "trigger",
+      "label": "Orchestration",
+      "tone": "indigo",
+      "tiles": [
+        {
+          "id": "webhook",
+          "label": "SCM triggers",
+          "icon": "jenkins",
+          "says": "Webhooks start pipelines on every push or pull request.",
+          "detail": "Immediate feedback shortens the loop between a change and its verdict."
+        },
+        {
+          "id": "controller",
+          "label": "Controller",
+          "icon": "jenkins",
+          "says": "The controller schedules, stores config and manages credentials.",
+          "detail": "It queues builds and delegates the work, keeping state in one place."
+        },
+        {
+          "id": "agents",
+          "label": "Agents",
+          "icon": "jenkins",
+          "says": "Ephemeral agents execute stages in clean workspaces.",
+          "detail": "Container or pod agents scale on demand and keep builds reproducible."
+        }
+      ]
+    },
+    {
+      "id": "stages",
+      "label": "Pipeline stages",
+      "tone": "violet",
+      "tiles": [
+        {
+          "id": "build",
+          "label": "Build & test",
+          "icon": "jenkins",
+          "says": "Build and unit tests gate every change.",
+          "detail": "Fast failure stops broken code early."
+        },
+        {
+          "id": "scan",
+          "label": "Quality & security",
+          "icon": "sonarqube",
+          "says": "Static analysis and image scans enforce quality gates.",
+          "detail": "Vulnerabilities and code smells are blocked before release, lowering risk."
+        },
+        {
+          "id": "sharedlib",
+          "label": "Shared libraries",
+          "icon": "jenkins",
+          "says": "Shared libraries reuse pipeline code across teams.",
+          "detail": "Standard stages keep hundreds of repositories consistent."
+        }
+      ]
+    },
+    {
+      "id": "ship",
+      "label": "Release",
+      "tone": "orange",
+      "tiles": [
+        {
+          "id": "artifacts",
+          "label": "Artifacts",
+          "icon": "docker",
+          "says": "Versioned artifacts are pushed to registries.",
+          "detail": "Immutable, traceable builds link every deployment to a commit."
+        },
+        {
+          "id": "deploy",
+          "label": "Deploy",
+          "icon": "kubernetes",
+          "says": "Deploy stages update environments or GitOps repositories.",
+          "detail": "Automated promotion with approvals makes releases routine."
+        },
+        {
+          "id": "smoke",
+          "label": "Smoke tests",
+          "icon": "jenkins",
+          "says": "Post-deploy checks verify the release.",
+          "detail": "Automated verification triggers rollback before customers notice."
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "from": "webhook",
+      "to": "controller"
+    },
+    {
+      "from": "controller",
+      "to": "agents"
+    },
+    {
+      "from": "agents",
+      "to": "build"
+    },
+    {
+      "from": "build",
+      "to": "scan"
+    },
+    {
+      "from": "sharedlib",
+      "to": "build"
+    },
+    {
+      "from": "scan",
+      "to": "artifacts"
+    },
+    {
+      "from": "artifacts",
+      "to": "deploy"
+    },
+    {
+      "from": "deploy",
+      "to": "smoke"
+    },
+    {
+      "from": "agents",
+      "to": "sharedlib"
+    }
+  ],
+  "run": {
+    "cmd": "$ jenkins-cli build release-pipeline -s -v",
+    "lines": [
+      "Started release-pipeline #128",
+      "[Build] ok  [Test] ok  [Scan] ok",
+      "[Push] ok  [Deploy] ok  [Smoke] ok",
+      "Finished: SUCCESS"
+    ]
+  },
+  "declarations": [
+    "Pipelines are code, stored beside the application.",
+    "Agents are disposable; the controller is precious.",
+    "Fail fast, fail loudly.",
+    "Every deployment traces back to a commit."
+  ]
+}

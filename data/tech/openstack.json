@@ -1,0 +1,154 @@
+{
+ "slug": "openstack",
+ "name": "OpenStack",
+ "category": "Infrastructure",
+ "icon": "openstack",
+ "level": "working",
+ "tagline": "Private IaaS: identity, KVM compute, virtual networks and block storage.",
+ "whatItIs": "",
+ "keyPoints": [
+  "Keystone issues tokens; every service call is authenticated against it.",
+  "Nova schedules instances onto KVM hosts; Glance supplies the images.",
+  "Neutron builds L2 networks, L3 routers, security groups and floating IPs.",
+  "Cinder attaches persistent block volumes; Horizon is the web console."
+ ],
+ "quickDeploy": [
+  "Harden SSH and set a static IP.",
+  "Create the stack user and clone DevStack.",
+  "Write local.conf; run stack.sh.",
+  "Source openrc; launch a server."
+ ],
+ "osi": ["L2", "L3", "L7"],
+ "osiNote": "Neutron bridges L2 and routes L3; service APIs speak HTTP.",
+ "production": [
+  "Run three controllers behind HAProxy and keepalived; cluster the database and RabbitMQ.",
+  "Back up the database and Glance images; test restores.",
+  "Put Cinder on replicated storage; snapshot before every change.",
+  "Rotate Keystone credentials; restrict API endpoints to management networks.",
+  "Alert on down agents, RabbitMQ queue depth and hypervisor free memory."
+ ],
+ "howItWorks": [
+  {
+   "title": "Identity (Keystone, L7)",
+   "body": "Users authenticate once and receive a scoped token.\nThe catalog lists every service endpoint by region.\nRoles on a project decide what each token can do.\nEvery API checks the token before acting."
+  },
+  {
+   "title": "Compute and images (Nova, Glance)",
+   "body": "Nova API queues the request; the scheduler picks a KVM host.\nnova-compute drives libvirt to boot the instance.\nGlance serves the image the instance boots from.\nFlavors fix vCPU, RAM and disk."
+  },
+  {
+   "title": "Networking (Neutron, L2/L3)",
+   "body": "Self-service networks are tenant overlays; provider networks map to a physical network.\nOVN or OVS wires instance ports into bridges.\nRouters give NAT; floating IPs map a public address in.\nSecurity groups filter per port."
+  },
+  {
+   "title": "Block storage (Cinder)",
+   "body": "Cinder creates volumes on a backend such as LVM or Ceph.\nA volume attaches to an instance as a virtual disk.\nSnapshots and backups protect the data.\nVolumes outlive the instance."
+  },
+  {
+   "title": "Control plane",
+   "body": "Services talk through REST APIs, a message queue and a database.\nHorizon calls the same APIs as the openstack CLI.\nCompute hosts run agents; controllers run the APIs.\nHA means a clustered queue and database."
+  }
+ ],
+ "flow": [
+  "The client requests a token from Keystone.",
+  "Nova API validates the token and queues the boot request.",
+  "The scheduler selects a compute host with free resources.",
+  "Nova fetches the image from Glance.",
+  "Neutron creates the port and security group rules on the host bridge.",
+  "Cinder attaches the volume if requested.",
+  "libvirt starts the KVM guest; a floating IP exposes it."
+ ],
+ "deploy": {
+  "summary": "Single-node lab on Ubuntu 24.04 with DevStack. Harden the host first, then stack.",
+  "prerequisites": [
+   "Ubuntu 24.04 VM or bare metal, 8 GB RAM minimum, 60 GB disk",
+   "A workstation with an SSH key pair",
+   "Placeholders: 192.168.1.50/24, gateway 192.168.1.1, interface enp1s0",
+   "A second NIC if you want a real provider network"
+  ],
+  "steps": [
+   {
+    "title": "1. SSH key login and sshd hardening",
+    "lang": "bash",
+    "code": "ssh-copy-id -i ~/.ssh/id_ed25519.pub ubuntu@192.168.1.50\nsudo tee /etc/ssh/sshd_config.d/99-hardening.conf <<'CF'\nPasswordAuthentication no\nPermitRootLogin no\nMaxAuthTries 3\nCF\nsudo sshd -t && sudo systemctl reload ssh",
+    "note": "Run ssh-copy-id from your workstation. Keep a second session open until a key login succeeds."
+   },
+   {
+    "title": "2. Static address with netplan",
+    "lang": "bash",
+    "code": "sudo tee /etc/netplan/01-static.yaml <<'CF'\nnetwork:\n  version: 2\n  ethernets:\n    enp1s0:\n      dhcp4: false\n      addresses: [192.168.1.50/24]\n      routes:\n        - to: default\n          via: 192.168.1.1\n      nameservers:\n        addresses: [192.168.1.1]\nCF\nsudo chmod 600 /etc/netplan/01-static.yaml\nsudo netplan try",
+    "note": "netplan try rolls back after 120 seconds unless you confirm. Remove any conflicting cloud-init network file."
+   },
+   {
+    "title": "3. Hostname and firewall",
+    "lang": "bash",
+    "code": "sudo hostnamectl set-hostname os01\necho '192.168.1.50 os01' | sudo tee -a /etc/hosts\nsudo ufw allow from 192.168.1.0/24 to any port 22 proto tcp\nsudo ufw allow from 192.168.1.0/24 to any port 80 proto tcp\nsudo ufw --force enable",
+    "note": "Allow only your admin subnet. Port 80 serves Horizon."
+   },
+   {
+    "title": "4. Create the stack user",
+    "lang": "bash",
+    "code": "sudo useradd -s /bin/bash -d /opt/stack -m stack\nsudo chmod +x /opt/stack\necho 'stack ALL=(ALL) NOPASSWD: ALL' | sudo tee /etc/sudoers.d/stack\nsudo -u stack -i",
+    "note": "From the DevStack guide. The chmod avoids a permissions failure on Ubuntu 21.04 and later."
+   },
+   {
+    "title": "5. Clone DevStack and write local.conf",
+    "lang": "bash",
+    "code": "git clone https://opendev.org/openstack/devstack\ncd devstack\ncat > local.conf <<'CF'\n[[local|localrc]]\nADMIN_PASSWORD=ChangeMe123\nDATABASE_PASSWORD=$ADMIN_PASSWORD\nRABBIT_PASSWORD=$ADMIN_PASSWORD\nSERVICE_PASSWORD=$ADMIN_PASSWORD\nHOST_IP=192.168.1.50\nCF",
+    "note": "Use alphanumeric passwords only. Add PUBLIC_INTERFACE=<second NIC> to bridge guests to a physical network."
+   },
+   {
+    "title": "6. Run the installer",
+    "lang": "bash",
+    "code": "./stack.sh\nsource openrc admin admin\nopenstack service list",
+    "note": "Takes 15 to 30 minutes. It prints the Horizon URL and credentials at the end."
+   },
+   {
+    "title": "7. Image, keypair and security group rules",
+    "lang": "bash",
+    "code": "curl -LO https://download.cirros-cloud.net/0.6.2/cirros-0.6.2-x86_64-disk.img\nopenstack image create cirros-lab --file cirros-0.6.2-x86_64-disk.img --disk-format qcow2 --container-format bare --public\nssh-keygen -t ed25519 -f ~/.ssh/lab -N ''\nopenstack keypair create --public-key ~/.ssh/lab.pub lab\nopenstack security group rule create --proto icmp default\nopenstack security group rule create --proto tcp --dst-port 22 default",
+    "note": "DevStack already ships a CirrOS image; this shows the Glance upload. The private and public networks exist by default."
+   },
+   {
+    "title": "8. Boot, attach a volume, add a floating IP",
+    "lang": "bash",
+    "code": "openstack server create --flavor m1.tiny --image cirros-lab --network private --key-name lab test-server\nopenstack volume create --size 1 data01\nopenstack server add volume test-server data01\nFIP=$(openstack floating ip create public -f value -c floating_ip_address)\nopenstack server add floating ip test-server $FIP\necho $FIP",
+    "note": "Wait for ACTIVE first: openstack server show test-server -c status."
+   }
+  ]
+ },
+ "verify": [
+  "openstack token issue returns a token for the admin project.",
+  "openstack compute service list shows nova-compute up.",
+  "openstack network agent list shows all agents alive.",
+  "openstack server list shows test-server ACTIVE with a floating IP.",
+  "openstack volume list shows data01 in-use."
+ ],
+ "pitfalls": [
+  "Passwords with special characters break DevStack services; use alphanumeric only.",
+  "Running stack.sh as root instead of the stack user fails early.",
+  "Without nested virtualization the guests fall back to slow QEMU emulation.",
+  "A reboot stops DevStack services; run stack.sh again for a lab rebuild.",
+  "Missing security group rules for ICMP and 22 look like a networking fault.",
+  "Provider networks need a NIC with no host IP; never reuse your SSH interface.",
+  "DevStack is for labs only; production uses kolla-ansible or OpenStack-Ansible."
+ ],
+ "furtherReading": [
+  {
+   "label": "DevStack quick start",
+   "url": "https://docs.openstack.org/devstack/latest/"
+  },
+  {
+   "label": "DevStack single machine guide",
+   "url": "https://docs.openstack.org/devstack/latest/guides/single-machine.html"
+  },
+  {
+   "label": "Neutron OVN driver",
+   "url": "https://docs.openstack.org/neutron/latest/admin/ovn/index.html"
+  },
+  {
+   "label": "Keystone documentation",
+   "url": "https://docs.openstack.org/keystone/latest/"
+  }
+ ]
+}

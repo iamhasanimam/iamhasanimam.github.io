@@ -1,0 +1,149 @@
+[
+ {
+  "slug": "ansible",
+  "glbBytes": 364756,
+  "posterBytes": 57659,
+  "nodes": 9,
+  "links": 9
+ },
+ {
+  "slug": "aws",
+  "glbBytes": 357192,
+  "posterBytes": 59717,
+  "nodes": 10,
+  "links": 9
+ },
+ {
+  "slug": "docker",
+  "glbBytes": 262596,
+  "posterBytes": 58905,
+  "nodes": 9,
+  "links": 8
+ },
+ {
+  "slug": "grafana",
+  "glbBytes": 381172,
+  "posterBytes": 51543,
+  "nodes": 8,
+  "links": 9
+ },
+ {
+  "slug": "haproxy",
+  "glbBytes": 274980,
+  "posterBytes": 51655,
+  "nodes": 9,
+  "links": 8
+ },
+ {
+  "slug": "istio",
+  "glbBytes": 314720,
+  "posterBytes": 59140,
+  "nodes": 9,
+  "links": 9
+ },
+ {
+  "slug": "jenkins",
+  "glbBytes": 212808,
+  "posterBytes": 50993,
+  "nodes": 8,
+  "links": 7
+ },
+ {
+  "slug": "k6",
+  "glbBytes": 225436,
+  "posterBytes": 46745,
+  "nodes": 8,
+  "links": 8
+ },
+ {
+  "slug": "kafka",
+  "glbBytes": 268736,
+  "posterBytes": 56252,
+  "nodes": 8,
+  "links": 9
+ },
+ {
+  "slug": "keycloak",
+  "glbBytes": 254528,
+  "posterBytes": 48767,
+  "nodes": 8,
+  "links": 9
+ },
+ {
+  "slug": "kong",
+  "glbBytes": 321888,
+  "posterBytes": 58178,
+  "nodes": 9,
+  "links": 9
+ },
+ {
+  "slug": "kubernetes-okd",
+  "glbBytes": 281312,
+  "posterBytes": 45317,
+  "nodes": 10,
+  "links": 9
+ },
+ {
+  "slug": "linux-networking",
+  "glbBytes": 313204,
+  "posterBytes": 54714,
+  "nodes": 9,
+  "links": 8
+ },
+ {
+  "slug": "loki-minio",
+  "glbBytes": 337824,
+  "posterBytes": 59565,
+  "nodes": 8,
+  "links": 9
+ },
+ {
+  "slug": "nginx",
+  "glbBytes": 472236,
+  "posterBytes": 53030,
+  "nodes": 13,
+  "links": 14
+ },
+ {
+  "slug": "openbao",
+  "glbBytes": 259316,
+  "posterBytes": 58492,
+  "nodes": 8,
+  "links": 8
+ },
+ {
+  "slug": "postgresql",
+  "glbBytes": 259944,
+  "posterBytes": 51734,
+  "nodes": 8,
+  "links": 8
+ },
+ {
+  "slug": "prometheus",
+  "glbBytes": 229916,
+  "posterBytes": 59066,
+  "nodes": 8,
+  "links": 7
+ },
+ {
+  "slug": "python",
+  "glbBytes": 272160,
+  "posterBytes": 49585,
+  "nodes": 8,
+  "links": 9
+ },
+ {
+  "slug": "redis",
+  "glbBytes": 312912,
+  "posterBytes": 55890,
+  "nodes": 9,
+  "links": 9
+ },
+ {
+  "slug": "vmware-esxi",
+  "glbBytes": 263384,
+  "posterBytes": 55017,
+  "nodes": 9,
+  "links": 9
+ }
+]

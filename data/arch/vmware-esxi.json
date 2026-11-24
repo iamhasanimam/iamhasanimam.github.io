@@ -1,0 +1,243 @@
+{
+  "title": "ESXi Host with Isolated Private Network",
+  "summary": "A bare-metal ESXi host separates a public vSwitch from a private one; a dual-NIC gateway VM bridges them for AD, brokers and session hosts.",
+  "nodes": [
+    {
+      "id": "users",
+      "label": "Remote Users",
+      "sub": "Internet clients",
+      "kind": "client",
+      "icon": null,
+      "detail": "Connect to the published public address using a remote desktop client."
+    },
+    {
+      "id": "esxi",
+      "label": "ESXi Host",
+      "sub": "Bare-metal hypervisor",
+      "kind": "process",
+      "icon": "vmware",
+      "detail": "Type-1 hypervisor installed directly on hardware. Allocates CPU, memory, storage and virtual networks to VMs.",
+      "group": "ESXi host"
+    },
+    {
+      "id": "vsw0",
+      "label": "vSwitch0",
+      "sub": "Public uplink",
+      "kind": "network",
+      "icon": "vmware",
+      "detail": "Virtual switch with a physical uplink NIC. Only the gateway VM's public interface attaches here.",
+      "group": "ESXi host"
+    },
+    {
+      "id": "gw",
+      "label": "Gateway VM",
+      "sub": "Dual NIC router/firewall",
+      "kind": "proxy",
+      "icon": null,
+      "detail": "One NIC on vSwitch0, one on vSwitch1. Routes and filters traffic, and publishes selected ports inward.",
+      "group": "ESXi host"
+    },
+    {
+      "id": "vsw1",
+      "label": "vSwitch1",
+      "sub": "Private, no uplink",
+      "kind": "network",
+      "icon": "vmware",
+      "detail": "Internal-only switch with no physical uplink, so VMs on it are unreachable from outside except via the gateway.",
+      "group": "ESXi host"
+    },
+    {
+      "id": "dc",
+      "label": "Domain Controller",
+      "sub": "AD, DNS, DHCP",
+      "kind": "service",
+      "icon": "windows",
+      "detail": "Provides authentication, name resolution and addresses for all private VMs.",
+      "group": "Private network"
+    },
+    {
+      "id": "broker",
+      "label": "Connection Broker",
+      "sub": "Session routing",
+      "kind": "service",
+      "icon": "windows",
+      "detail": "Authenticates users and directs each connection to an available session host.",
+      "group": "Private network"
+    },
+    {
+      "id": "sh",
+      "label": "Session Hosts",
+      "sub": "Remote desktop servers",
+      "kind": "service",
+      "icon": "windows",
+      "detail": "Servers where user desktops or apps run, joined to the domain.",
+      "group": "Private network"
+    },
+    {
+      "id": "fs",
+      "label": "File Server",
+      "sub": "User data shares",
+      "kind": "store",
+      "icon": "windows",
+      "detail": "Hosts shared folders and profile data on private storage, with permissions from AD groups.",
+      "group": "Private network"
+    }
+  ],
+  "links": [
+    {
+      "from": "users",
+      "to": "vsw0",
+      "label": "RDP/HTTPS",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "esxi",
+      "to": "vsw0",
+      "label": "hosts",
+      "style": "dashed",
+      "flow": false
+    },
+    {
+      "from": "vsw0",
+      "to": "gw",
+      "label": "public NIC",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "gw",
+      "to": "vsw1",
+      "label": "private NIC",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "vsw1",
+      "to": "broker",
+      "label": "connect",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "broker",
+      "to": "sh",
+      "label": "assign",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "sh",
+      "to": "fs",
+      "label": "shares",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "dc",
+      "to": "sh",
+      "label": "auth, DNS",
+      "style": "dashed",
+      "flow": true
+    },
+    {
+      "from": "vsw1",
+      "to": "dc",
+      "label": "DHCP, DNS",
+      "style": "dashed",
+      "flow": true
+    }
+  ],
+  "steps": [
+    {
+      "title": "Hypervisor owns hardware",
+      "text": "ESXi runs on bare metal and defines two virtual switches for the VMs.",
+      "nodes": [
+        "esxi",
+        "vsw0"
+      ],
+      "links": [
+        [
+          "esxi",
+          "vsw0"
+        ]
+      ]
+    },
+    {
+      "title": "Public traffic enters",
+      "text": "Users reach the gateway VM's public NIC through vSwitch0, the only switch with an uplink.",
+      "nodes": [
+        "users",
+        "vsw0",
+        "gw"
+      ],
+      "links": [
+        [
+          "users",
+          "vsw0"
+        ],
+        [
+          "vsw0",
+          "gw"
+        ]
+      ]
+    },
+    {
+      "title": "Gateway bridges inward",
+      "text": "The dual-NIC gateway forwards permitted traffic to the private vSwitch1.",
+      "nodes": [
+        "gw",
+        "vsw1"
+      ],
+      "links": [
+        [
+          "gw",
+          "vsw1"
+        ]
+      ]
+    },
+    {
+      "title": "Broker places the session",
+      "text": "The connection broker authenticates the user and assigns a session host.",
+      "nodes": [
+        "vsw1",
+        "broker",
+        "sh"
+      ],
+      "links": [
+        [
+          "vsw1",
+          "broker"
+        ],
+        [
+          "broker",
+          "sh"
+        ]
+      ]
+    },
+    {
+      "title": "Domain services support it",
+      "text": "The domain controller supplies AD, DNS and DHCP, and the file server stores user data.",
+      "nodes": [
+        "dc",
+        "sh",
+        "fs",
+        "vsw1"
+      ],
+      "links": [
+        [
+          "dc",
+          "sh"
+        ],
+        [
+          "sh",
+          "fs"
+        ],
+        [
+          "vsw1",
+          "dc"
+        ]
+      ]
+    }
+  ]
+}

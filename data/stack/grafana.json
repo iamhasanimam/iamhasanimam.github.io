@@ -1,0 +1,169 @@
+{
+  "title": "Grafana",
+  "subtitle": "Unified dashboards, queries and alerts across metrics, logs and traces.",
+  "tabs": [
+    {
+      "id": "overview",
+      "label": "Overview",
+      "layers": [
+        "source",
+        "visual",
+        "govern"
+      ]
+    },
+    {
+      "id": "data",
+      "label": "Data",
+      "layers": [
+        "source",
+        "visual"
+      ]
+    },
+    {
+      "id": "govern",
+      "label": "Governance",
+      "layers": [
+        "visual",
+        "govern"
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "id": "source",
+      "label": "Data sources",
+      "tone": "indigo",
+      "tiles": [
+        {
+          "id": "ds_prom",
+          "label": "Metrics source",
+          "icon": "prometheus",
+          "says": "Grafana queries Prometheus with PromQL.",
+          "detail": "Time-series panels, variables and annotations turn metrics into understanding."
+        },
+        {
+          "id": "ds_logs",
+          "label": "Logs source",
+          "icon": "grafana",
+          "says": "Grafana queries Loki with LogQL.",
+          "detail": "Logs sit beside metrics, so a spike links to its cause with one click."
+        },
+        {
+          "id": "ds_traces",
+          "label": "Traces source",
+          "icon": "grafana",
+          "says": "Grafana queries Tempo for distributed traces.",
+          "detail": "Trace-to-log and trace-to-metric links shorten incident triage."
+        }
+      ]
+    },
+    {
+      "id": "visual",
+      "label": "Visualisation",
+      "tone": "violet",
+      "tiles": [
+        {
+          "id": "dashboards",
+          "label": "Dashboards",
+          "icon": "grafana",
+          "says": "Dashboards compose panels from many sources.",
+          "detail": "Template variables let one dashboard serve every service and environment."
+        },
+        {
+          "id": "explore",
+          "label": "Explore",
+          "icon": "grafana",
+          "says": "Explore runs ad-hoc queries during incidents.",
+          "detail": "Engineers pivot between metrics, logs and traces without building a dashboard first."
+        },
+        {
+          "id": "provisioning",
+          "label": "Provisioning",
+          "icon": "grafana",
+          "says": "Dashboards and datasources load from files in Git.",
+          "detail": "Dashboards as code are reviewed, versioned and reproducible."
+        }
+      ]
+    },
+    {
+      "id": "govern",
+      "label": "Alerting & access",
+      "tone": "orange",
+      "tiles": [
+        {
+          "id": "alerting",
+          "label": "Unified alerting",
+          "icon": "grafana",
+          "says": "Alert rules query any source and track state.",
+          "detail": "Normal, pending and firing states drive notification policies with labels."
+        },
+        {
+          "id": "contact",
+          "label": "Contact points",
+          "icon": "grafana",
+          "says": "Contact points deliver alerts to email, chat or webhooks.",
+          "detail": "Routing by label sends each team its own signals."
+        },
+        {
+          "id": "rbac",
+          "label": "Teams & RBAC",
+          "icon": "grafana",
+          "says": "Roles and folder permissions control access.",
+          "detail": "SSO integration keeps access aligned with the organisation."
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "from": "ds_prom",
+      "to": "dashboards"
+    },
+    {
+      "from": "ds_logs",
+      "to": "dashboards"
+    },
+    {
+      "from": "ds_traces",
+      "to": "explore"
+    },
+    {
+      "from": "ds_prom",
+      "to": "explore"
+    },
+    {
+      "from": "provisioning",
+      "to": "dashboards"
+    },
+    {
+      "from": "dashboards",
+      "to": "alerting"
+    },
+    {
+      "from": "ds_prom",
+      "to": "alerting"
+    },
+    {
+      "from": "alerting",
+      "to": "contact"
+    },
+    {
+      "from": "dashboards",
+      "to": "rbac"
+    }
+  ],
+  "run": {
+    "cmd": "$ grafana-cli plugins ls",
+    "lines": [
+      "installed plugins:",
+      "grafana-piechart-panel @ 1.6.x",
+      "grafana-clock-panel @ 2.1.x"
+    ]
+  },
+  "declarations": [
+    "Grafana visualises; it does not store metrics.",
+    "Dashboards belong in Git.",
+    "One pane for metrics, logs and traces.",
+    "Alert on what the dashboard proves."
+  ]
+}

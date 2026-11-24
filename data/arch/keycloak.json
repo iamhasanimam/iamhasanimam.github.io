@@ -1,0 +1,226 @@
+{
+  "title": "Keycloak OIDC Login and Token Validation",
+  "summary": "A browser logs in via Keycloak using the authorization code flow, then the app and gateway validate the resulting JWTs.",
+  "nodes": [
+    {
+      "id": "browser",
+      "label": "Browser",
+      "sub": "User agent",
+      "kind": "client",
+      "icon": null,
+      "detail": "Redirected to Keycloak for login and returns with an authorization code."
+    },
+    {
+      "id": "app",
+      "label": "App (OIDC Client)",
+      "sub": "Registered client",
+      "kind": "service",
+      "icon": null,
+      "detail": "Registered as a client in a realm. Exchanges the authorization code for tokens, using PKCE for public clients."
+    },
+    {
+      "id": "kc",
+      "label": "Keycloak Realm",
+      "sub": "Identity provider",
+      "kind": "control",
+      "icon": "keycloak",
+      "detail": "A realm isolates users, clients, roles and settings. Authenticates users and issues ID, access and refresh tokens.",
+      "group": "Keycloak"
+    },
+    {
+      "id": "login",
+      "label": "Login Flow",
+      "sub": "MFA and consent",
+      "kind": "process",
+      "icon": "keycloak",
+      "detail": "Authentication flows can require password, OTP or WebAuthn, and run required actions before issuing a code.",
+      "group": "Keycloak"
+    },
+    {
+      "id": "db",
+      "label": "User Store",
+      "sub": "Users and sessions",
+      "kind": "store",
+      "icon": "postgresql",
+      "detail": "Keycloak persists realm configuration and users in a relational database, or federates to LDAP or Active Directory.",
+      "group": "Keycloak"
+    },
+    {
+      "id": "jwks",
+      "label": "JWKS Endpoint",
+      "sub": "Public signing keys",
+      "kind": "network",
+      "icon": "keycloak",
+      "detail": "Publishes realm public keys so resource servers can verify token signatures without calling Keycloak per request."
+    },
+    {
+      "id": "gateway",
+      "label": "API Gateway",
+      "sub": "Validates JWT",
+      "kind": "proxy",
+      "icon": null,
+      "detail": "Verifies signature, issuer, audience and expiry of the bearer token, then forwards allowed requests."
+    },
+    {
+      "id": "api",
+      "label": "Resource API",
+      "sub": "Protected backend",
+      "kind": "service",
+      "icon": null,
+      "detail": "Authorises using claims such as roles or scopes from the validated token."
+    }
+  ],
+  "links": [
+    {
+      "from": "browser",
+      "to": "app",
+      "label": "open app",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "app",
+      "to": "kc",
+      "label": "redirect",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "kc",
+      "to": "login",
+      "label": "authenticate",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "login",
+      "to": "db",
+      "label": "lookup user",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "kc",
+      "to": "browser",
+      "label": "code",
+      "style": "dashed",
+      "flow": true
+    },
+    {
+      "from": "browser",
+      "to": "gateway",
+      "label": "Bearer token",
+      "style": "solid",
+      "flow": true
+    },
+    {
+      "from": "jwks",
+      "to": "gateway",
+      "label": "public keys",
+      "style": "dashed",
+      "flow": true
+    },
+    {
+      "from": "kc",
+      "to": "jwks",
+      "label": "publishes",
+      "style": "dashed",
+      "flow": false
+    },
+    {
+      "from": "gateway",
+      "to": "api",
+      "label": "validated",
+      "style": "solid",
+      "flow": true
+    }
+  ],
+  "steps": [
+    {
+      "title": "App redirects to Keycloak",
+      "text": "An unauthenticated user is sent to the realm's authorization endpoint with client ID and PKCE challenge.",
+      "nodes": [
+        "browser",
+        "app",
+        "kc"
+      ],
+      "links": [
+        [
+          "browser",
+          "app"
+        ],
+        [
+          "app",
+          "kc"
+        ]
+      ]
+    },
+    {
+      "title": "User authenticates",
+      "text": "Keycloak runs the login flow, checking credentials against its user store and any MFA step.",
+      "nodes": [
+        "kc",
+        "login",
+        "db"
+      ],
+      "links": [
+        [
+          "kc",
+          "login"
+        ],
+        [
+          "login",
+          "db"
+        ]
+      ]
+    },
+    {
+      "title": "Code returns, tokens issued",
+      "text": "The browser returns with a code; the app exchanges it for access, ID and refresh tokens.",
+      "nodes": [
+        "kc",
+        "browser",
+        "app"
+      ],
+      "links": [
+        [
+          "kc",
+          "browser"
+        ]
+      ]
+    },
+    {
+      "title": "Calls carry the access token",
+      "text": "The client calls the API with a bearer token in the Authorization header.",
+      "nodes": [
+        "browser",
+        "gateway"
+      ],
+      "links": [
+        [
+          "browser",
+          "gateway"
+        ]
+      ]
+    },
+    {
+      "title": "Gateway validates the JWT",
+      "text": "Using cached JWKS keys it checks signature, issuer, audience and expiry, then forwards.",
+      "nodes": [
+        "jwks",
+        "gateway",
+        "api"
+      ],
+      "links": [
+        [
+          "jwks",
+          "gateway"
+        ],
+        [
+          "gateway",
+          "api"
+        ]
+      ]
+    }
+  ]
+}
