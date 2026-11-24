@@ -18,7 +18,7 @@
     {
       "stage": "Platform and DevOps engineering",
       "years": "2025 - present",
-      "focus": "Sole platform owner for an OpenShift 4.x platform: API gateway, identity, GitOps delivery, observability and reliability runbooks."
+      "focus": "Built the infrastructure and monitoring that production systems run on: OpenShift 4.x, API gateway, identity, GitOps delivery, observability and reliability runbooks."
     }
   ],
   "roles": [
@@ -28,10 +28,10 @@
       "location": "Noida, India",
       "start": "Nov 2025",
       "end": "Present",
-      "summary": "Sole platform owner of an OpenShift 4.x platform for a large public-sector platform, running at about 400 req/s at p95 under 50 ms.",
+      "summary": "I create the infrastructure and monitoring that production systems run on: an OpenShift 4.x platform for a large public-sector platform, serving about 400 req/s at p95 under 50 ms.",
       "highlights": [
-        "Own the OpenShift 4.x platform end to end as the sole platform owner",
-        "Observability with OpenTelemetry, Prometheus, Loki, Tempo and Grafana",
+        "Build and run the OpenShift 4.x infrastructure, from gateway and identity to CI/CD and GitOps delivery",
+        "Build the monitoring: OpenTelemetry, Prometheus, Loki, Tempo and Grafana",
         "Authored a 44-page production readiness and rollback runbook"
       ],
       "stack": [
@@ -50,7 +50,7 @@
         "Kafka",
         "PostgreSQL"
       ],
-      "headline": "Sole owner of a production OpenShift platform",
+      "headline": "Build the infrastructure and monitoring production runs on",
       "impact": {
         "value": "400 req/s",
         "label": "p95 under 50 ms"
