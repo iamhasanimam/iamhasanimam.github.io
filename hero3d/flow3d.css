@@ -147,3 +147,6 @@
 }
 /* full screen always wins over the inline height rules above */
 .flow-sec.home .flow3d.is-full, .flow3d.is-full { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; max-width: none; max-height: none; border-radius: 0; z-index: 2147483000; }
+
+/* phones: the scene buttons sit below the Open full screen button instead of under it */
+@media (max-width:640px){ .flow3d .flow3d__tabs{top:52px} .flow3d .flow3d__crumb{top:52px} }

@@ -27,8 +27,8 @@ h1, h2, h3 { letter-spacing: -.022em; }
 /* iOS segmented control */
 .seg { height: 34px; padding: 2px; gap: 2px; border: 0; border-radius: 9px; background: color-mix(in srgb, var(--muted) 18%, transparent); }
 .seg button { border-radius: 7px; padding: 0 14px; color: var(--text); }
-.seg button[aria-pressed="true"] { background: var(--raised); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.3); }
-:root[data-theme="light"] .seg button[aria-pressed="true"] { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.seg button[aria-pressed="true"] { background: var(--primary); color: #fff; box-shadow: none; }
+
 .flow-chips .chip-l { border-radius: 999px; border: 0; background: var(--surface); color: var(--text); }
 .flow-chips .chip-l[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
 /* chips and badges */
