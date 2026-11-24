@@ -604,6 +604,7 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   const wStop = wb('Stop', 'Stop walk through', () => stopWalk()); wFollow.setAttribute('aria-pressed', 'false'); wPause.setAttribute('aria-pressed', 'false');
   wbar.append(wcap, wPrev, wPause, wNext, wFollow, wStop); root.appendChild(wbar);
   function startWalk() {
+    try { container.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' }); } catch (e) { /* ignore */ } // the walk-through takes the viewport
     if (!steps.length) return; exit(); stopWalk(); walkPrev = viewIdx; if (viewIdx !== BIRD) setView(BIRD);
     walking = true; paused = false; wPause.textContent = 'Pause'; bWalk.setAttribute('aria-pressed', 'true'); bWalk.textContent = 'Stop'; cap.hidden = true;
     tabId = null; tabBtns.forEach((b) => b.setAttribute('aria-pressed', 'false')); wbar.hidden = false; showStep(0); restartTimer();

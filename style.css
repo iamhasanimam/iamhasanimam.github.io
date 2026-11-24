@@ -477,3 +477,5 @@ details.more > summary { padding: 2px 0 6px var(--s4); list-style: none; cursor:
   .tn .dot { left: -36px; top: 22px; }
   .tn .co { justify-content: flex-start; }
 }
+
+@media (min-width: 1001px) { .flow-side { height: clamp(620px, calc(100vh - 110px), 1100px); height: clamp(620px, calc(100svh - 110px), 1100px); max-height: none; } }

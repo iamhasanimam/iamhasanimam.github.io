@@ -140,3 +140,8 @@
   .flow3d .flow3d__tabs::-webkit-scrollbar{display:none}
   .flow-sec.home .flow3d{height:clamp(440px,64vh,540px)}
 }
+
+/* desktop: the architecture scene fills the viewport (screen height minus the page header), so it fits a 24 inch monitor without scrolling or a gap */
+@media (min-width:641px){
+  .flow-sec.home .flow3d{height:clamp(620px,calc(100vh - 110px),1100px);height:clamp(620px,calc(100svh - 110px),1100px)}
+}
