@@ -591,8 +591,7 @@
    "col": 0,
    "row": 0,
    "says": "End users use the apps.",
-   "detail": "Real traffic enters through the edge and travels down the stack.",
-   "replicas": 3
+   "detail": "Real traffic enters through the edge and travels down the stack."
   }
  ],
  "wires": [
