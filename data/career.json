@@ -44,7 +44,8 @@
         "value": "400 req/s",
         "label": "p95 under 50 ms"
       },
-      "industry": "Service based"
+      "industry": "Service based",
+      "sector": "IT services"
     },
     {
       "company": "Wingify (VWO)",
@@ -66,7 +67,8 @@
         "value": "40%",
         "label": "faster resolution via runbooks"
       },
-      "industry": "Product based"
+      "industry": "Product based",
+      "sector": "Digital experience SaaS"
     },
     {
       "company": "IT By Design / Liongard",
@@ -90,7 +92,8 @@
         "value": "-25%",
         "label": "escalations"
       },
-      "industry": "Product based"
+      "industry": "Product based",
+      "sector": "MSP automation SaaS"
     },
     {
       "company": "IT By Design / System Solutions Inc",
@@ -117,7 +120,8 @@
         "value": "30%",
         "label": "less patching downtime"
       },
-      "industry": "Service based"
+      "industry": "Service based",
+      "sector": "Managed IT services"
     },
     {
       "company": "RealTimeDataServices",
@@ -135,7 +139,8 @@
         "Virtualisation"
       ],
       "headline": "Built a remote-desktop platform from bare metal",
-      "industry": "Service based"
+      "industry": "Service based",
+      "sector": "Cloud hosting"
     }
   ],
   "education": [
