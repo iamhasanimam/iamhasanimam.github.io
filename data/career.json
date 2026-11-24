@@ -30,9 +30,9 @@
       "end": "Present",
       "summary": "Builds and runs the infrastructure and monitoring that production systems run on, on OpenShift, serving about 400 req/s at p95 under 50 ms.",
       "highlights": [
-        "Production Kubernetes (OpenShift) platform",
-        "CI/CD across multiple environments",
-        "Monitoring and load testing"
+        "Istio service mesh with mTLS across multiple Kubernetes clusters",
+        "6+ environments, each with its own Jenkins CI/CD pipeline",
+        "Highly available stateful Kafka, and Redis in sharded mode"
       ],
       "stack": [
         "Kubernetes",
@@ -51,28 +51,57 @@
         {
           "level": "Platform",
           "items": [
-            "Built and operated a production Kubernetes (OpenShift) platform",
-            "Ran stateful services with high availability on Kubernetes",
-            "Containerised and orchestrated microservices with Kustomize"
+            "Set up an Istio service mesh with mutual TLS (mTLS) between services across multiple Kubernetes clusters",
+            "Deployed stateful Kafka with high availability, plus Kafka Connect",
+            "Deployed stateful Redis with high availability in sharded (cluster) mode",
+            "Configured pod anti-affinity so that Redis and Kafka pods run on different nodes",
+            "Containerised and orchestrated Java microservices, setting CPU and memory requests and limits at the Kubernetes resource level with Kustomize",
+            "Set up the Horizontal Pod Autoscaler (HPA) with a 60% utilisation target",
+            "Orchestrated per-environment manifests with Kustomize",
+            "Hosted the platform on VMware ESXi"
           ]
         },
         {
           "level": "Delivery",
           "items": [
-            "CI/CD with Jenkins across multiple environments"
+            "Managed 6+ environments, each with its own CI/CD pipeline in Jenkins",
+            "Hardened container images in CI/CD, including removing SUID and SGID bits"
+          ]
+        },
+        {
+          "level": "API layer",
+          "items": [
+            "Implemented APIOps at the Kong layer, with separate internal and external workspaces"
+          ]
+        },
+        {
+          "level": "Edge",
+          "items": [
+            "Built high availability with VRRP for NGINX, and used HAProxy for TCP passthrough"
+          ]
+        },
+        {
+          "level": "Network and DNS",
+          "items": [
+            "Set up a DNS server with BIND, using forwarders so that external names still resolve"
           ]
         },
         {
           "level": "Observability",
           "items": [
-            "Monitoring with Prometheus, Grafana, Loki and Tempo",
-            "Service metrics: request rate, error rate and latency"
+            "Implemented the LGTM stack (Loki, Grafana, Tempo and Mimir) with a sink for telemetry",
+            "Set up service monitoring: labels for Prometheus scraping, and Kubernetes annotations that direct an OpenTelemetry Collector to send logs to Loki and traces to Tempo",
+            "Defined the key service metrics: request rate, error rate, and p95 and p99 latency",
+            "Built Grafana graphs from Prometheus scrapes of service mesh metrics, compared by reporter (source and destination)",
+            "Added per-node resource usage metrics with node_exporter",
+            "Tracked host saturation: load average against CPU count, and against memory"
           ]
         },
         {
           "level": "Performance",
           "items": [
-            "Load testing with k6 and capacity sizing"
+            "Load tested with k6, measuring request duration (http_req_duration) and using ramping virtual-user and arrival-rate scenarios",
+            "Sized capacity with Little's Law (concurrency = arrival rate × latency)"
           ]
         }
       ],
