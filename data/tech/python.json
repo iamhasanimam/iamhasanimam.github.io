@@ -9,7 +9,7 @@
  "howItWorks": [
   {
    "title": "Environment",
-   "body": "A venv per project isolates dependencies.\nrequirements.txt pins exact versions.\nThe standard library covers most ops scripts: argparse, json, subprocess, pathlib.\nLocked-down hosts install from an internal mirror."
+   "body": "A venv per project isolates dependencies.\nrequirements.txt pins exact versions.\nThe standard library covers most ops scripts: argparse, json, subprocess, pathlib.\nPackages install from an index or a local cache."
   },
   {
    "title": "API clients",
@@ -20,12 +20,24 @@
    "body": "boto3 paginators list cloud resources read-only.\nThe Docker SDK inspects and prunes containers and images.\nsubprocess.run takes a list, check=True and a timeout.\nMutations hide behind --apply."
   },
   {
-   "title": "Dashboard pipeline",
-   "body": "Collectors pull version-control and project-management REST APIs.\nRows are normalised and upserted into PostgreSQL.\nApache Superset on Kubernetes queries PostgreSQL for charts.\nThe dashboard shows delivery and ticket flow in one place."
+   "title": "Collect, store, report",
+   "body": "Collectors pull REST APIs of the tools you track, such as Git hosts and ticket systems.\nRows are normalised and upserted into PostgreSQL, so reruns are safe.\nA BI tool such as Apache Superset queries PostgreSQL for charts.\nOne dashboard shows delivery and ticket flow in one place."
   },
   {
    "title": "Scheduling and gates",
    "body": "A systemd timer runs the oneshot service; Persistent=true catches missed runs.\nThe exit code feeds alerting.\nCI runs ruff and pytest before every merge.\nLogs go to journald, structured as JSON lines."
+  },
+  {
+   "title": "What sits in front",
+   "body": "A scheduler starts the script: systemd timer, cron, a Kubernetes CronJob or a CI stage.\nOperators pass settings by environment variables and command-line arguments.\nSecrets arrive from the environment, a Kubernetes Secret or a secrets manager.\nExit codes tell the scheduler and alerting whether the run worked."
+  },
+  {
+   "title": "What sits behind",
+   "body": "REST APIs through requests; boto3 for AWS with the standard credential chain.\nThe official kubernetes client uses a kubeconfig, or the pod service account in-cluster.\npsycopg writes results to PostgreSQL; prometheus_client or a Pushgateway exposes metrics.\nA dashboard tool such as Superset or Grafana reads the stored data."
+  },
+  {
+   "title": "Alternatives",
+   "body": "Bash: choose it for short glue around existing commands.\nGo: a single static binary, common for operators and CLIs.\nAnsible modules: choose them for declarative host configuration instead of scripts.\nNode.js or Ruby: valid where the team and libraries already live there."
   }
  ],
  "flow": [
@@ -111,7 +123,6 @@
   "Docker group membership grants root; keep prune behind --apply.",
   "Timer without Persistent=true skips runs missed while the host was down."
  ],
- "labVideos": [],
  "furtherReading": [
   {
    "label": "requests: timeouts",

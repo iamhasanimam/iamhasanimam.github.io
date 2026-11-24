@@ -34,7 +34,9 @@
     "primary",
     "replica",
     "patroni",
-    "wal"
+    "wal",
+    "lb",
+    "prom"
    ]
   },
   {
@@ -79,7 +81,7 @@
    "col": 0,
    "row": 0,
    "says": "The primary takes writes.",
-   "detail": "One backend per connection. Commit fsyncs WAL before data files.",
+   "detail": "Durable SQL storage. Alternatives: MySQL or MariaDB, managed RDS or Cloud SQL, CockroachDB for multi-region.",
    "href": "#/tech/postgresql",
    "inner": [
     {
@@ -157,7 +159,32 @@
    "col": 2,
    "row": 0,
    "says": "archive_command ships WAL to S3.",
-   "detail": "Base backup plus archived WAL gives point-in-time recovery."
+   "detail": "Base backup plus archived WAL gives point-in-time recovery.",
+   "href": "#/tech/loki-minio"
+  },
+  {
+   "id": "lb",
+   "label": "Endpoint",
+   "tech": "HAProxy",
+   "icon": "haproxy",
+   "layer": 2,
+   "col": 2,
+   "row": 0,
+   "says": "HAProxy routes to the leader.",
+   "detail": "Health-checks Patroni on 8008 and sends writes to the primary. Alternatives: VIP, libpq multi-host.",
+   "href": "#/tech/haproxy"
+  },
+  {
+   "id": "prom",
+   "label": "Prometheus",
+   "tech": "Prometheus",
+   "icon": "prometheus",
+   "layer": 1,
+   "col": 3,
+   "row": 0,
+   "says": "Prometheus scrapes postgres_exporter.",
+   "detail": "Alert on replication lag, WAL disk usage and long transactions.",
+   "href": "#/tech/prometheus"
   }
  ],
  "wires": [
@@ -209,6 +236,27 @@
    "label": "archive",
    "style": "dashed",
    "flow": true
+  },
+  {
+   "from": "app",
+   "to": "lb",
+   "label": "writes",
+   "style": "solid",
+   "flow": true
+  },
+  {
+   "from": "lb",
+   "to": "primary",
+   "label": "leader only",
+   "style": "solid",
+   "flow": true
+  },
+  {
+   "from": "prom",
+   "to": "primary",
+   "label": "scrape exporter",
+   "style": "dashed",
+   "flow": false
   }
  ],
  "steps": [

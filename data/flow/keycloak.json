@@ -1,412 +1,412 @@
 {
-  "title": "Keycloak",
-  "subtitle": "SSO with OIDC, PKCE, realms and HA.",
-  "layers": [
-    {
-      "layer": 0,
-      "label": "State"
-    },
-    {
-      "layer": 1,
-      "label": "Keycloak cluster"
-    },
-    {
-      "layer": 2,
-      "label": "Edge"
-    },
-    {
-      "layer": 3,
-      "label": "Apps"
-    }
-  ],
-  "groups": [
-    {
-      "id": "cl",
-      "label": "Cluster",
-      "boxes": [
-        "node1",
-        "node2",
-        "realm"
-      ]
-    }
-  ],
-  "tabs": [
-    {
-      "id": "sso",
-      "label": "SSO flow",
-      "focus": [
-        "user",
-        "app",
-        "lb",
-        "node1",
-        "realm",
-        "api"
-      ]
-    },
-    {
-      "id": "ha",
-      "label": "HA",
-      "focus": [
-        "lb",
-        "node1",
-        "node2",
-        "infinispan",
-        "db"
-      ]
-    },
-    {
-      "id": "ops",
-      "label": "Operations",
-      "focus": [
-        "realm",
-        "import",
-        "heap",
-        "db"
-      ]
-    }
-  ],
-  "boxes": [
-    {
-      "id": "user",
-      "label": "User",
-      "tech": "Browser",
-      "icon": null,
-      "layer": 3,
-      "col": 0,
-      "row": 0,
-      "says": "The user signs in once.",
-      "detail": "Logs in at Keycloak; the session cookie gives SSO across apps."
-    },
-    {
-      "id": "app",
-      "label": "App",
-      "tech": "OIDC client",
-      "icon": null,
-      "layer": 3,
-      "col": 1,
-      "row": 0,
-      "says": "The app redirects to Keycloak.",
-      "detail": "A public client sends a PKCE challenge and swaps the code for tokens."
-    },
-    {
-      "id": "api",
-      "label": "API",
-      "tech": "Resource server",
-      "icon": null,
-      "layer": 3,
-      "col": 2,
-      "row": 0,
-      "says": "The API validates the JWT.",
-      "detail": "Checks signature, issuer, audience and exp, allowing small clock skew."
-    },
-    {
-      "id": "lb",
-      "label": "Load balancer",
-      "tech": "HAProxy",
-      "icon": "haproxy",
-      "layer": 2,
-      "col": 1,
-      "row": 0,
-      "says": "The balancer fronts both nodes.",
-      "detail": "Health-checks /health/ready and spreads logins across nodes.",
-      "href": "#/tech/haproxy"
-    },
-    {
-      "id": "node1",
-      "label": "Node 1",
-      "tech": "Keycloak",
-      "icon": "keycloak",
-      "layer": 1,
-      "col": 0,
-      "row": 0,
-      "says": "Node 1 serves logins.",
-      "detail": "One Keycloak member of the Infinispan cluster."
-    },
-    {
-      "id": "node2",
-      "label": "Node 2",
-      "tech": "Keycloak",
-      "icon": "keycloak",
-      "layer": 1,
-      "col": 1,
-      "row": 0,
-      "says": "Node 2 shares the load.",
-      "detail": "A second member; sessions survive the loss of either node."
-    },
-    {
-      "id": "realm",
-      "label": "Realm",
-      "tech": "Keycloak realm",
-      "icon": null,
-      "layer": 1,
-      "col": 2,
-      "row": 0,
-      "says": "A realm isolates identity.",
-      "detail": "Holds users, clients and roles; roles become token claims.",
-      "inner": [
-        {
-          "id": "cl",
-          "label": "Clients"
-        },
-        {
-          "id": "ro",
-          "label": "Roles"
-        },
-        {
-          "id": "us",
-          "label": "Users"
-        },
-        {
-          "id": "tk",
-          "label": "Tokens"
-        }
-      ]
-    },
-    {
-      "id": "heap",
-      "label": "JVM heap",
-      "tech": "JVM",
-      "icon": null,
-      "layer": 1,
-      "col": 3,
-      "row": 0,
-      "says": "Heap is bounded.",
-      "detail": "JAVA_OPTS_KC_HEAP caps the heap below the container limit."
-    },
-    {
-      "id": "infinispan",
-      "label": "Infinispan",
-      "tech": "Infinispan",
-      "icon": null,
-      "layer": 0,
-      "col": 0,
-      "row": 0,
-      "says": "Infinispan replicates sessions.",
-      "detail": "Distributed caches hold sessions across nodes; JGroups handles membership."
-    },
-    {
-      "id": "db",
-      "label": "PostgreSQL",
-      "tech": "PostgreSQL",
-      "icon": "postgresql",
-      "layer": 0,
-      "col": 1,
-      "row": 0,
-      "says": "One database holds all state.",
-      "detail": "Shared by every node for realms, users and clients.",
-      "href": "#/tech/postgresql"
-    },
-    {
-      "id": "import",
-      "label": "Import/Export",
-      "tech": "kc.sh",
-      "icon": null,
-      "layer": 0,
-      "col": 2,
-      "row": 0,
-      "says": "Realms move as JSON.",
-      "detail": "kc.sh export and --import-realm rebuild a realm anywhere."
-    }
-  ],
-  "wires": [
-    {
-      "from": "user",
-      "to": "app",
-      "label": "opens",
-      "style": "solid",
-      "flow": true,
-      "weight": "bold"
-    },
-    {
-      "from": "app",
-      "to": "lb",
-      "label": "redirect",
-      "style": "solid",
-      "flow": true,
-      "weight": "bold"
-    },
-    {
-      "from": "lb",
-      "to": "node1",
-      "style": "solid",
-      "flow": true,
-      "weight": "normal"
-    },
-    {
-      "from": "lb",
-      "to": "node2",
-      "style": "solid",
-      "flow": true,
-      "weight": "normal"
-    },
-    {
-      "from": "node1",
-      "to": "realm",
-      "style": "dashed",
-      "flow": false,
-      "weight": "normal"
-    },
-    {
-      "from": "realm",
-      "to": "api",
-      "label": "JWT",
-      "style": "solid",
-      "flow": true,
-      "weight": "bold"
-    },
-    {
-      "from": "node1",
-      "to": "infinispan",
-      "label": "sessions",
-      "style": "dashed",
-      "flow": true,
-      "weight": "normal"
-    },
-    {
-      "from": "node2",
-      "to": "infinispan",
-      "label": "sessions",
-      "style": "dashed",
-      "flow": true,
-      "weight": "normal"
-    },
-    {
-      "from": "node1",
-      "to": "db",
-      "style": "solid",
-      "flow": true,
-      "weight": "normal"
-    },
-    {
-      "from": "node2",
-      "to": "db",
-      "style": "solid",
-      "flow": true,
-      "weight": "normal"
-    },
-    {
-      "from": "import",
-      "to": "realm",
-      "label": "JSON",
-      "style": "dashed",
-      "flow": true,
-      "weight": "normal"
-    },
-    {
-      "from": "heap",
-      "to": "node1",
-      "style": "dashed",
-      "flow": false,
-      "weight": "normal"
-    }
-  ],
-  "steps": [
-    {
-      "title": "Redirect",
-      "text": "The app sends the browser to Keycloak with a PKCE challenge.",
-      "boxes": [
-        "user",
-        "app",
-        "lb"
-      ],
-      "wires": [
-        [
-          "user",
-          "app"
-        ],
-        [
-          "app",
-          "lb"
-        ]
-      ]
-    },
-    {
-      "title": "Log in",
-      "text": "A node authenticates the user and stores the session.",
-      "boxes": [
-        "lb",
-        "node1",
-        "infinispan"
-      ],
-      "wires": [
-        [
-          "lb",
-          "node1"
-        ],
-        [
-          "node1",
-          "infinispan"
-        ]
-      ]
-    },
-    {
-      "title": "Issue tokens",
-      "text": "The app swaps the code for signed JWTs.",
-      "boxes": [
-        "realm",
-        "api"
-      ],
-      "wires": [
-        [
-          "realm",
-          "api"
-        ]
-      ]
-    },
-    {
-      "title": "Replicate",
-      "text": "Infinispan and PostgreSQL keep both nodes in step.",
-      "boxes": [
-        "node1",
-        "node2",
-        "infinispan",
-        "db"
-      ],
-      "wires": [
-        [
-          "node1",
-          "infinispan"
-        ],
-        [
-          "node2",
-          "infinispan"
-        ],
-        [
-          "node1",
-          "db"
-        ],
-        [
-          "node2",
-          "db"
-        ]
-      ]
-    },
-    {
-      "title": "Move realms",
-      "text": "Export to JSON, import on another instance.",
-      "boxes": [
-        "import",
-        "realm"
-      ],
-      "wires": [
-        [
-          "import",
-          "realm"
-        ]
-      ]
-    }
-  ],
-  "run": {
-    "cmd": "kc.sh export --realm lab --dir /var/backups/kc",
-    "lines": [
-      "Realm 'lab' exported",
-      "Keycloak started in cluster mode with 2 members"
-    ]
+ "title": "Keycloak",
+ "subtitle": "SSO with OIDC, PKCE, realms and HA.",
+ "layers": [
+  {
+   "layer": 0,
+   "label": "Infrastructure"
   },
-  "declarations": [
-    "Keycloak issues signed tokens.",
-    "Realms isolate identity.",
-    "Infinispan replicates sessions.",
-    "APIs verify iss, aud and exp."
+  {
+   "layer": 1,
+   "label": "Platform"
+  },
+  {
+   "layer": 2,
+   "label": "Edge"
+  },
+  {
+   "layer": 3,
+   "label": "Users"
+  }
+ ],
+ "groups": [
+  {
+   "id": "cl",
+   "label": "Cluster",
+   "boxes": [
+    "node1",
+    "node2",
+    "realm"
+   ]
+  }
+ ],
+ "tabs": [
+  {
+   "id": "sso",
+   "label": "SSO flow",
+   "focus": [
+    "user",
+    "app",
+    "lb",
+    "node1",
+    "realm",
+    "api"
+   ]
+  },
+  {
+   "id": "ha",
+   "label": "HA",
+   "focus": [
+    "lb",
+    "node1",
+    "node2",
+    "infinispan",
+    "db"
+   ]
+  },
+  {
+   "id": "ops",
+   "label": "Operations",
+   "focus": [
+    "realm",
+    "import",
+    "heap",
+    "db"
+   ]
+  }
+ ],
+ "boxes": [
+  {
+   "id": "user",
+   "label": "User",
+   "tech": "Browser",
+   "icon": null,
+   "layer": 3,
+   "col": 0,
+   "row": 0,
+   "says": "The user signs in once.",
+   "detail": "Logs in at Keycloak; the session cookie gives SSO across apps."
+  },
+  {
+   "id": "app",
+   "label": "App",
+   "tech": "OIDC client",
+   "icon": null,
+   "layer": 3,
+   "col": 1,
+   "row": 0,
+   "says": "The app redirects to Keycloak.",
+   "detail": "A public client sends a PKCE challenge and swaps the code for tokens."
+  },
+  {
+   "id": "api",
+   "label": "API",
+   "tech": "Resource server",
+   "icon": null,
+   "layer": 3,
+   "col": 2,
+   "row": 0,
+   "says": "The API validates the JWT.",
+   "detail": "Checks signature, issuer, audience and exp, allowing small clock skew."
+  },
+  {
+   "id": "lb",
+   "label": "Load balancer",
+   "tech": "HAProxy",
+   "icon": "haproxy",
+   "layer": 2,
+   "col": 1,
+   "row": 0,
+   "says": "The balancer fronts both nodes.",
+   "detail": "Health-checks /health/ready and spreads logins across nodes.",
+   "href": "#/tech/haproxy"
+  },
+  {
+   "id": "node1",
+   "label": "Node 1",
+   "tech": "Keycloak",
+   "icon": "keycloak",
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "Node 1 serves logins.",
+   "detail": "One Keycloak member of the Infinispan cluster."
+  },
+  {
+   "id": "node2",
+   "label": "Node 2",
+   "tech": "Keycloak",
+   "icon": "keycloak",
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "Node 2 shares the load.",
+   "detail": "A second member; sessions survive the loss of either node."
+  },
+  {
+   "id": "realm",
+   "label": "Realm",
+   "tech": "Keycloak realm",
+   "icon": null,
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "A realm isolates identity.",
+   "detail": "Holds users, clients and roles; roles become token claims. Alternatives: Authentik, Auth0, Okta, Cognito.",
+   "inner": [
+    {
+     "id": "cl",
+     "label": "Clients"
+    },
+    {
+     "id": "ro",
+     "label": "Roles"
+    },
+    {
+     "id": "us",
+     "label": "Users"
+    },
+    {
+     "id": "tk",
+     "label": "Tokens"
+    }
+   ]
+  },
+  {
+   "id": "heap",
+   "label": "JVM heap",
+   "tech": "JVM",
+   "icon": null,
+   "layer": 1,
+   "col": 3,
+   "row": 0,
+   "says": "Heap is bounded.",
+   "detail": "JAVA_OPTS_KC_HEAP caps the heap below the container limit."
+  },
+  {
+   "id": "infinispan",
+   "label": "Infinispan",
+   "tech": "Infinispan",
+   "icon": null,
+   "layer": 0,
+   "col": 0,
+   "row": 0,
+   "says": "Infinispan replicates sessions.",
+   "detail": "Distributed caches hold sessions across nodes; JGroups handles membership."
+  },
+  {
+   "id": "db",
+   "label": "PostgreSQL",
+   "tech": "PostgreSQL",
+   "icon": "postgresql",
+   "layer": 0,
+   "col": 1,
+   "row": 0,
+   "says": "One database holds all state.",
+   "detail": "Shared by every node for realms, users and clients.",
+   "href": "#/tech/postgresql"
+  },
+  {
+   "id": "import",
+   "label": "Import/Export",
+   "tech": "kc.sh",
+   "icon": null,
+   "layer": 0,
+   "col": 2,
+   "row": 0,
+   "says": "Realms move as JSON.",
+   "detail": "kc.sh export and --import-realm rebuild a realm anywhere."
+  }
+ ],
+ "wires": [
+  {
+   "from": "user",
+   "to": "app",
+   "label": "opens",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "app",
+   "to": "lb",
+   "label": "redirect",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "lb",
+   "to": "node1",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "lb",
+   "to": "node2",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "node1",
+   "to": "realm",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "realm",
+   "to": "api",
+   "label": "JWT",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "node1",
+   "to": "infinispan",
+   "label": "sessions",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "node2",
+   "to": "infinispan",
+   "label": "sessions",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "node1",
+   "to": "db",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "node2",
+   "to": "db",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "import",
+   "to": "realm",
+   "label": "JSON",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "heap",
+   "to": "node1",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  }
+ ],
+ "steps": [
+  {
+   "title": "Redirect",
+   "text": "The app sends the browser to Keycloak with a PKCE challenge.",
+   "boxes": [
+    "user",
+    "app",
+    "lb"
+   ],
+   "wires": [
+    [
+     "user",
+     "app"
+    ],
+    [
+     "app",
+     "lb"
+    ]
+   ]
+  },
+  {
+   "title": "Log in",
+   "text": "A node authenticates the user and stores the session.",
+   "boxes": [
+    "lb",
+    "node1",
+    "infinispan"
+   ],
+   "wires": [
+    [
+     "lb",
+     "node1"
+    ],
+    [
+     "node1",
+     "infinispan"
+    ]
+   ]
+  },
+  {
+   "title": "Issue tokens",
+   "text": "The app swaps the code for signed JWTs.",
+   "boxes": [
+    "realm",
+    "api"
+   ],
+   "wires": [
+    [
+     "realm",
+     "api"
+    ]
+   ]
+  },
+  {
+   "title": "Replicate",
+   "text": "Infinispan and PostgreSQL keep both nodes in step.",
+   "boxes": [
+    "node1",
+    "node2",
+    "infinispan",
+    "db"
+   ],
+   "wires": [
+    [
+     "node1",
+     "infinispan"
+    ],
+    [
+     "node2",
+     "infinispan"
+    ],
+    [
+     "node1",
+     "db"
+    ],
+    [
+     "node2",
+     "db"
+    ]
+   ]
+  },
+  {
+   "title": "Move realms",
+   "text": "Export to JSON, import on another instance.",
+   "boxes": [
+    "import",
+    "realm"
+   ],
+   "wires": [
+    [
+     "import",
+     "realm"
+    ]
+   ]
+  }
+ ],
+ "run": {
+  "cmd": "kc.sh export --realm lab --dir /var/backups/kc",
+  "lines": [
+   "Realm 'lab' exported",
+   "Keycloak started in cluster mode with 2 members"
   ]
+ },
+ "declarations": [
+  "Keycloak issues signed tokens.",
+  "Realms isolate identity.",
+  "Infinispan replicates sessions.",
+  "APIs verify iss, aud and exp."
+ ]
 }

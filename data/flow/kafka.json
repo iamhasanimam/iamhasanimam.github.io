@@ -99,7 +99,8 @@
    "col": 1,
    "row": 0,
    "says": "The broker leads partitions.",
-   "detail": "Accepts writes on the leader and serves fetches to consumers."
+   "detail": "Stores the replicated log. Alternatives: RabbitMQ for task queues, NATS for light messaging, cloud queues.",
+   "href": "#/tech/kafka"
   },
   {
    "id": "topic",
@@ -158,6 +159,30 @@
    "row": 0,
    "says": "KRaft keeps cluster metadata.",
    "detail": "Controllers replicate metadata in a Raft quorum; no ZooKeeper."
+  },
+  {
+   "id": "k8s",
+   "label": "Kubernetes",
+   "tech": "Kubernetes",
+   "icon": "kubernetes",
+   "layer": 2,
+   "col": 1,
+   "row": 0,
+   "says": "Strimzi runs brokers on Kubernetes.",
+   "detail": "An operator manages broker pods, listeners and certificates.",
+   "href": "#/tech/kubernetes-okd"
+  },
+  {
+   "id": "prom",
+   "label": "Prometheus",
+   "tech": "Prometheus",
+   "icon": "prometheus",
+   "layer": 2,
+   "col": 3,
+   "row": 0,
+   "says": "Prometheus scrapes JMX metrics.",
+   "detail": "Alert on consumer lag, under-replicated and offline partitions.",
+   "href": "#/tech/prometheus"
   }
  ],
  "wires": [
@@ -216,6 +241,20 @@
    "style": "dashed",
    "flow": true,
    "weight": "normal"
+  },
+  {
+   "from": "k8s",
+   "to": "broker",
+   "label": "runs brokers",
+   "style": "dashed",
+   "flow": true
+  },
+  {
+   "from": "prom",
+   "to": "broker",
+   "label": "scrape JMX",
+   "style": "dashed",
+   "flow": false
   }
  ],
  "steps": [

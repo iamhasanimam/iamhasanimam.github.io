@@ -8,37 +8,57 @@
  "whatItIs": "",
  "howItWorks": [
   {
+   "title": "What it is and where it sits",
+   "body": "Kong Gateway is an API gateway built on NGINX and OpenResty, extended with Lua plugins.\nIt works at L7: routes match Host, path, method and headers.\nStream routes can proxy raw TCP and TLS at L4.\nIt sits in the Edge layer: behind a load balancer, in front of services."
+  },
+  {
    "title": "Entities",
-   "body": "Service is the upstream.\nRoute matches host, path, method or header.\nPlugin attaches behaviour at global, service, route or consumer scope.\nUpstream and Targets add health checks and balancing."
+   "body": "A Service describes one upstream: protocol, host, port and path.\nA Route matches requests by host, path, method or header and points to a Service.\nA Plugin attaches behaviour at global, Service, Route or Consumer scope.\nA Consumer identifies a client or app for credentials and per-client limits.\nAn Upstream with Targets adds balancing and active or passive health checks."
   },
   {
    "title": "Request phases",
-   "body": "Kong listens on 8000 and 8443.\nThe router picks the best Route.\nThe access phase runs auth, then rate limits.\nThe balancer picks a healthy Target and reuses keepalive."
+   "body": "Kong listens on 8000 for HTTP and 8443 for HTTPS by default.\nThe router picks the best-matching Route; Route and Service plugins are then resolved.\nThe access phase runs authentication, then rate limiting, by plugin priority.\nThe balancer picks a healthy Target and reuses upstream keepalive connections.\nHeader and body filters shape the response; log plugins ship it after completion."
   },
   {
    "title": "Config modes",
-   "body": "DB-backed stores entities in PostgreSQL.\nDB-less loads one declarative file.\nHybrid pushes config from a control plane to data planes.\nData planes keep serving from cache if the control plane drops."
+   "body": "DB-backed mode stores entities in PostgreSQL; the Admin API changes them live.\nDB-less mode loads one declarative file and needs no database.\nHybrid mode pushes config from a control plane to data planes.\nData planes keep serving from cached config if the control plane drops.\nCheck each plugin supports DB-less before choosing that mode."
   },
   {
-   "title": "decK diff-guard",
-   "body": "Git holds kong.yaml as the source of truth.\nJenkins runs deck gateway diff on every pull request.\nThe guard fails the build on any deleting line.\nSync runs only after merge to main."
+   "title": "Config as code with decK",
+   "body": "Git holds kong.yaml as the source of truth.\ndeck gateway diff previews changes; deck gateway sync applies them.\ndeck gateway dump exports a live gateway into a file.\nTags and workspaces split files per team."
   },
   {
-   "title": "Client IP preservation",
-   "body": "The balancer sends the PROXY protocol header.\nKong accepts it only from trusted_ips.\nreal_ip_header proxy_protocol restores the client address.\nIP-based rate limits then count real clients."
+   "title": "Security",
+   "body": "Authenticate with key-auth, basic-auth, jwt, oauth2 or, in Enterprise, openid-connect.\nThe jwt plugin can validate tokens issued by an external identity provider.\nBind the Admin API to localhost; remote access needs RBAC or mTLS in front.\nUse rate-limiting, ip-restriction and request-size-limiting to protect upstreams.\nUpstream TLS verification is configured per Service with ca_certificates and tls_verify."
+  },
+  {
+   "title": "Observability",
+   "body": "The prometheus plugin exposes request counts, latency and bandwidth per Service and Route.\nThe status endpoint reports database reachability and connection counters.\nLog plugins ship access logs to files, HTTP endpoints or syslog.\nOpenTelemetry tracing is available through a plugin.\nAlert on 5xx rate, upstream latency p95 and failed health checks."
+  },
+  {
+   "title": "Failure modes and troubleshooting",
+   "body": "404 with no Route matched: check host, path, method and strip_path on the Route.\n502 or 503 means the upstream refused, or no healthy Target is left.\n401 and 403 come from auth plugins; test with the expected header or key.\nRate limiting with policy local counts per node, so limits multiply with node count.\nRead the error log first; raise log_level to debug only briefly."
+  },
+  {
+   "title": "Connecting to its neighbours",
+   "body": "In front (Users): DNS points at a load balancer or VIP that forwards to the Kong listener.\nBehind, on VMs (Infrastructure): Services point at app hosts; Upstreams and Targets add balancing and health checks.\nBehind, on Kubernetes (Platform): Kong Ingress Controller reads Ingress or Gateway API resources and configures Kong.\nExpose the Kong proxy Service as LoadBalancer (cloud or MetalLB) or NodePort behind your own balancer.\nStandalone Kong outside the cluster points Services at NodePort or LoadBalancer addresses, not ClusterIP.\nIdentity: the jwt or openid-connect plugin validates tokens from an identity provider such as Keycloak."
+  },
+  {
+   "title": "Alternatives",
+   "body": "NGINX or HAProxy: choose them when you only need routing and TLS, with no plugin ecosystem.\nEnvoy-based gateways (Envoy Gateway, Emissary): choose them for xDS-driven config and Gateway API.\nTraefik: choose it for simple auto-discovery in container setups.\nApache APISIX: choose it for a similar plugin gateway with etcd-backed config.\nCloud API gateways (AWS API Gateway, Azure APIM): choose them when the provider should host the gateway."
   }
  ],
  "flow": [
-  "Client opens TLS to the Kong listener on 8443.",
-  "Kong parses the PROXY header if the source is in trusted_ips.",
+  "Client opens TLS to the Kong listener on 8443, usually via a balancer.",
   "The router matches a Route by host, path and method.",
   "The plugin chain for the Route, Service and Consumer is resolved.",
   "Access phase runs authentication, then rate limiting.",
   "The balancer picks a healthy Target and reuses a keepalive connection.",
+  "Targets can be VM APIs or Kubernetes Services and pods.",
   "The response returns through header and body filters; logs and metrics ship."
  ],
  "deploy": {
-  "summary": "On-prem edge: hardened host, DNS, firewall, Kong with PostgreSQL, decK pipeline, client IP.",
+  "summary": "On-prem edge: hardened host, firewall, Kong with PostgreSQL, a decK workflow, then Kubernetes.",
   "prerequisites": [
    "Linux VM with Docker Engine 24+ and Compose",
    "decK and curl installed",
@@ -77,22 +97,22 @@
     "note": "Save as kong.yaml. Use policy redis for a cluster-wide limit."
    },
    {
-    "title": "Diff-guard that fails on deletes",
+    "title": "Diff, review, then sync with decK",
     "lang": "bash",
-    "code": "#!/usr/bin/env bash\nset -euo pipefail\nOUT=$(deck gateway diff -s kong.yaml --kong-addr \"$KONG_ADDR\" --no-color)\necho \"$OUT\"\nif echo \"$OUT\" | grep -E '^deleting '; then\n  echo \"ERROR: diff contains deletions; review manually and set ALLOW_DELETE=1 to override\" >&2\n  [ \"${ALLOW_DELETE:-0}\" = \"1\" ] || exit 1\nfi\ndeck gateway sync -s kong.yaml --kong-addr \"$KONG_ADDR\"",
-    "note": "Run the diff on pull requests, the sync on merge to main. Check line prefixes on your decK version."
+    "code": "export KONG_ADDR=http://127.0.0.1:8001\ndeck gateway ping --kong-addr \"$KONG_ADDR\"\ndeck gateway diff -s kong.yaml --kong-addr \"$KONG_ADDR\"\ndeck gateway sync -s kong.yaml --kong-addr \"$KONG_ADDR\"\ndeck gateway diff -s kong.yaml --kong-addr \"$KONG_ADDR\"",
+    "note": "Sync deletes entities missing from the file, so read the diff first. The last diff should show no changes."
    },
    {
-    "title": "Preserve the client IP behind a balancer",
+    "title": "Add key authentication",
     "lang": "yaml",
-    "code": "    environment:\n      KONG_TRUSTED_IPS: 10.0.0.0/8,172.16.0.0/12\n      KONG_REAL_IP_HEADER: proxy_protocol\n      KONG_REAL_IP_RECURSIVE: \"on\"\n      KONG_PROXY_LISTEN: 0.0.0.0:8000 proxy_protocol, 0.0.0.0:8443 ssl proxy_protocol\n",
-    "note": "Merge into the kong environment. Trust only your balancer CIDRs."
+    "code": "# append to kong.yaml, then diff and sync again\nconsumers:\n  - username: demo-app\n    keyauth_credentials:\n      - key: CHANGE_ME_LONG_RANDOM\nplugins:\n  - name: key-auth\n    route: httpbin-route",
+    "note": "Replace the key with a long random value. Then call with the apikey header."
    },
    {
     "title": "Install on Kubernetes with Helm",
     "lang": "bash",
-    "code": "helm repo add kong https://charts.konghq.com\nhelm repo update\nkubectl create namespace kong\nhelm install kong kong/kong -n kong \\\n  --set image.tag=3.8 \\\n  --set ingressController.enabled=true \\\n  --set proxy.type=NodePort \\\n  --set env.database=off\nkubectl -n kong rollout status deploy/kong-kong",
-    "note": "DB-less with the ingress controller. Pin the chart with --version."
+    "code": "helm repo add kong https://charts.konghq.com\nhelm repo update\nkubectl create namespace kong\nhelm install kong kong/kong -n kong \\\n  --set image.tag=3.8 \\\n  --set ingressController.enabled=true \\\n  --set proxy.type=LoadBalancer \\\n  --set env.database=off\nkubectl -n kong rollout status deploy/kong-kong",
+    "note": "DB-less with the ingress controller. Use proxy.type=NodePort on bare metal without MetalLB. Pin the chart with --version."
    }
   ]
  },
@@ -101,46 +121,46 @@
   "curl -s localhost:8001/services lists the declared service",
   "curl -i localhost:8000/anything/get returns 200 with X-RateLimit headers",
   "deck gateway diff -s kong.yaml reports no changes after sync",
-  "docker compose logs kong shows no unexpected errors"
+  "kubectl -n kong get svc kong-kong-proxy shows the proxy address"
  ],
  "pitfalls": [
   "deck sync deletes what is missing from the file; always diff first.",
-  "proxy_protocol on the listener without a sending balancer breaks every request.",
-  "A broad trusted_ips lets clients spoof X-Forwarded-For and dodge IP limits.",
+  "A Route matching nothing returns 404; check strip_path, host and path ordering.",
   "Rate limiting with policy local multiplies the limit by node count.",
   "Exposing the Admin API on 8001 gives full control of the gateway.",
   "Run migrations up before rolling nodes; finish only after all nodes upgrade.",
-  "DB-less mode: check every plugin supports it before choosing it."
+  "DB-less mode: check every plugin supports it before choosing it.",
+  "Plugin order is fixed by priority, not by the order you attach them."
  ],
  "furtherReading": [
   {
    "label": "Kong Gateway documentation",
-   "url": "https://docs.konghq.com/gateway/latest/"
+   "url": "https://developer.konghq.com/gateway/"
   },
   {
    "label": "decK documentation",
-   "url": "https://docs.konghq.com/deck/latest/"
+   "url": "https://developer.konghq.com/deck/"
+  },
+  {
+   "label": "Kong Ingress Controller",
+   "url": "https://developer.konghq.com/kubernetes-ingress-controller/"
   },
   {
    "label": "Kong Helm chart",
    "url": "https://github.com/Kong/charts"
-  },
-  {
-   "label": "Kong Docker install",
-   "url": "https://docs.konghq.com/gateway/latest/install/docker/"
   }
  ],
  "keyPoints": [
   "Kong matches Routes, runs plugins, then proxies to Services at L7.",
-  "Config is code: decK diffs and syncs a YAML file.",
-  "A diff-guard stage blocks deletes before any sync reaches production.",
-  "Behind a load balancer, trusted_ips plus PROXY protocol keep the client IP."
+  "Config is entities: Services, Routes, Plugins, Consumers, Upstreams.",
+  "decK diffs and syncs a YAML file, so config lives in Git.",
+  "Run DB-less, with PostgreSQL, or hybrid; on Kubernetes use the ingress controller."
  ],
  "quickDeploy": [
   "Start Kong and PostgreSQL with Docker Compose.",
   "Declare service, route and plugin in kong.yaml.",
-  "Run decK diff, guard against deletes, then sync.",
-  "Set trusted_ips and proxy_protocol behind the balancer."
+  "Run decK diff, review it, then sync.",
+  "Bind the Admin API to localhost; add auth plugins."
  ],
  "osi": [
   "L4",
@@ -149,7 +169,7 @@
  "osiNote": "Routes by Host and path at L7; proxies TCP and TLS at L4.",
  "production": [
   "Run three or more data-plane nodes behind a VIP or load balancer.",
-  "Back up PostgreSQL; roll back by syncing the previous Git tag with decK.",
+  "Back up PostgreSQL; roll back by applying the previous Git version of kong.yaml.",
   "Bind the Admin API to localhost and protect it with RBAC or mTLS.",
   "Set per-Service timeouts and retries; use Redis for cluster-wide rate limits.",
   "Alert on 5xx rate, upstream latency p95 and plugin errors from Prometheus."

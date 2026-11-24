@@ -26,6 +26,18 @@
   {
    "title": "Audit and injection",
    "body": "Audit devices log each request; secret values are HMAC-hashed.\nAgent auto-auths with AppRole and renews the token.\nAgent templates write secrets to files for the app.\nRendered files refresh when the secret changes."
+  },
+  {
+   "title": "What sits in front",
+   "body": "Clients (Users, apps, CI jobs) call the HTTPS API on port 8200.\nA load balancer in the Edge layer can front several nodes and health-check /v1/sys/health.\nA Kubernetes pod (Platform) can authenticate with its service account JWT.\nCI authenticates with AppRole or JWT and gets a short-lived token per run."
+  },
+  {
+   "title": "What sits behind",
+   "body": "Raft integrated storage on local disk (Infrastructure) holds the encrypted data.\nAuto-unseal can hand the root key to a cloud KMS or HSM.\nThe database engine creates per-request PostgreSQL users that expire on lease.\nThe PKI engine issues short-lived certificates for TLS and mTLS.\nDelivery to apps: Agent sidecar or injector, Secrets Store CSI provider, or External Secrets Operator."
+  },
+  {
+   "title": "Alternatives",
+   "body": "HashiCorp Vault: choose it for the original with commercial support; OpenBao is a fork under the Linux Foundation.\nCloud secret managers (AWS Secrets Manager, Azure Key Vault, GCP Secret Manager): choose them for provider-managed storage.\nSOPS: choose it to keep encrypted secrets in Git without a server.\nKubernetes Secrets with External Secrets Operator: choose it to sync from an existing store."
   }
  ],
  "flow": [

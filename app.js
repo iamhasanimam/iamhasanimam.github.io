@@ -1,5 +1,5 @@
 /* Portfolio SPA: hash routing, static JSON data, no build. All data text is inserted with textContent (no innerHTML on data). */
-import { parseRoute, nextRoute } from './route.js?v=20261124z';
+import { parseRoute, nextRoute } from './route.js?v=20261125e';
 (() => {
   'use strict';
 
@@ -8,7 +8,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124z';
   const LINKEDIN_URL = 'https://www.linkedin.com/in/iamhasanimam';
   const TYPE_CODE_MS = 22; // code typing speed in the hero editor, git log and code blocks (ms per character)
   const PAUSE_MS = 1800;   // pause after a snippet is typed, before the next tab
-  const ASSET_V = '20261124z'; // cache-busting for dynamic imports; keep in sync with index.html
+  const ASSET_V = '20261125e'; // cache-busting for dynamic imports; keep in sync with index.html
 
   // Brand colours (tuned for the dark banner). Slugs missing from simple-icons get a monogram.
   const COLORS = {
@@ -65,7 +65,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124z';
   const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : '');
   const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // Never show the sensitive wording from data on the public site.
-  const clean = (s) => String(s == null ? '' : s).replace(/air-?gapped\s*/gi, '').replace(/government[- ]grade\s*/gi, '').replace(/\s{2,}/g, ' ').trim();
+  const clean = (s) => String(s == null ? '' : s).replace(/\s{2,}/g, ' ').trim();
   const firstSentence = (s) => { const t = String(s || '').trim(); const m = t.match(/^.*?[.!?](\s|$)/); return (m ? m[0] : t).trim(); };
   const words = (s, n) => { const w = String(s).split(/\s+/); return w.length > n ? w.slice(0, n).join(' ').replace(/[,;:]$/, '') + '...' : String(s); };
   const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -199,7 +199,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124z';
     { file: 'kong.yaml', lang: 'yaml', code: ['_format_version: "3.0"', 'services:', '  - name: orders', '    url: http://orders.internal:8080', '    routes:', '      - name: orders-route', '        paths: [/orders]', '    plugins:', '      - name: rate-limiting', '        config: { minute: 600 }'].join('\n') },
     { file: 'haproxy.cfg', lang: 'cfg', code: ['frontend fe_https', '    bind :443 ssl crt /etc/haproxy/certs/', '    default_backend be_nginx', '', 'backend be_nginx', '    balance roundrobin', '    option httpchk GET /healthz', '    server nginx1 10.0.0.11:8080 check send-proxy', '    server nginx2 10.0.0.12:8080 check send-proxy'].join('\n') },
     { file: 'Jenkinsfile', lang: 'groovy', code: ['pipeline {', '  agent any', '  stages {', "    stage('Build')  { steps { sh 'make image' } }", "    stage('Scan')   { steps { sh 'trivy image --exit-code 1 app' } }", "    stage('Deploy') { steps { sh 'kubectl apply -k prod' } }", "    stage('Smoke')  { steps { sh 'curl -fsS $APP/healthz' } }", '  }', '}'].join('\n') },
-    { file: 'diff-guard.sh', lang: 'bash', code: ['#!/usr/bin/env bash', 'set -euo pipefail', 'deck gateway diff kong.yaml > plan.txt', 'if grep -q deleting plan.txt; then', '  echo "blocked: plan deletes routes"', '  exit 1', 'fi', 'echo "diff clean"'].join('\n') }
+    { file: 'deploy.sh', lang: 'bash', code: ['#!/usr/bin/env bash', 'set -euo pipefail', 'kubectl apply -k overlays/prod', 'kubectl rollout status deploy/orders --timeout=120s', 'echo "deployed"'].join('\n') }
   ];
   function termCard() {
     const tabs = h('div', { class: 'term-tabs', role: 'tablist', 'aria-label': 'Code samples' });
@@ -574,7 +574,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124z';
       more,
       h('div', { class: 'wk-foot' },
         p.repo ? h('a', { class: 'btn wk-repo', href: p.repo, target: '_blank', rel: 'noopener noreferrer', onclick: (e) => e.stopPropagation() }, h('span', { class: 'wk-gh', 'aria-hidden': 'true' }, glyph('github', 'GH')), 'Repo')
-          : h('span', { class: 'badge ' + (/production/i.test(p.kind) ? '' : 'soon') }, /production/i.test(p.kind) ? 'Production' : 'Coming soon'),
+          : h('span', { class: 'badge ' + (/platform/i.test(p.kind) ? '' : 'soon') }, /platform/i.test(p.kind) ? 'Platform' : 'Coming soon'),
         p.year ? h('span', { class: 'wk-year' }, fmtYears(p.year)) : null)].filter(Boolean));
     if (open) {
       if (p.image) more.append(h('img', { class: 'wk-img', src: p.image, alt: p.imageAlt || '', loading: 'lazy', decoding: 'async' }));
@@ -612,7 +612,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124z';
     const chipsEl = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by category' });
     const paint = () => {
       gridEl.textContent = '';
-      projects.filter((p) => (!cat || p.category === cat) && (kind === 'all' || (kind === 'personal' ? /personal/i.test(p.kind) : /production/i.test(p.kind))))
+      projects.filter((p) => (!cat || p.category === cat) && (kind === 'all' || (kind === 'personal' ? /personal/i.test(p.kind) : /platform/i.test(p.kind))))
         .forEach((p) => gridEl.append(workCard(p, { expand: true })));
       if (!gridEl.childNodes.length) gridEl.append(comingCard('Nothing here yet.'));
       chipsEl.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.c || null) === cat)));
@@ -620,7 +620,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124z';
     };
     chipsEl.append(h('button', { type: 'button', class: 'chip', 'data-c': '', onclick: () => { cat = null; paint(); } }, 'All'));
     cats.forEach((c) => chipsEl.append(h('button', { type: 'button', class: 'chip', 'data-c': c, onclick: () => { cat = c; paint(); } }, c)));
-    const kseg = seg(kind, (v) => { kind = v; paint(); }, [['all', 'All'], ['personal', 'Personal'], ['production', 'Production']]);
+    const kseg = seg(kind, (v) => { kind = v; paint(); }, [['all', 'All'], ['personal', 'Personal'], ['production', 'Platform']]);
     kseg.setAttribute('aria-label', 'Kind');
     root.append(h('div', { class: 'toolbar' }, chipsEl, kseg), gridEl);
     paint();
@@ -914,7 +914,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124z';
       root.append(h('section', { 'aria-labelledby': 'wk-h' }, h('div', { class: 'sec' }, eb('// work', h('h2', { id: 'wk-h' }, 'Selected work')), h('a', { class: 'more', href: '#/work' }, 'All work \u2192')),
         h('div', { class: 'grid work' }, projects.slice(0, 3).map((p) => workCard(p, null)))));
     }
-    const shown = [{ title: 'Multi-cluster Kubernetes connectivity with a service mesh', summary: 'Two clusters in one Istio mesh: east-west gateway, sidecar injection and cross-cluster traffic.', tags: ['Istio', 'Kubernetes'], date: '', url: null, soon: true }].concat(sortedPosts(posts));
+    const shown = [{ title: 'How does a service mesh work?', summary: 'Sidecars, control plane and traffic policy, explained from the basics.', tags: ['Istio', 'Kubernetes'], date: '', url: null, soon: true }].concat(sortedPosts(posts));
     const c = carousel(shown);
     root.append(h('section', { 'aria-labelledby': 'bl-h' }, h('div', { class: 'sec' }, eb('// writing', h('h2', { id: 'bl-h' }, 'Writing')), c.ctl), h('div', { class: 'carousel-wrap' }, c.track), c.prog));
     if (idx && idx.length) {

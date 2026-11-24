@@ -26,6 +26,18 @@
   {
    "title": "Pooling and hardening",
    "body": "PgBouncer transaction mode multiplexes clients onto few backends.\nlisten_addresses names the interfaces Postgres binds.\npg_hba.conf is first-match: type, database, user, CIDR, method.\nssl = on with scram-sha-256 protects credentials and data in transit."
+  },
+  {
+   "title": "What sits in front",
+   "body": "Platform services connect with libpq or a driver; the wire protocol runs on TCP 5432.\nA pooler such as PgBouncer listens on 6432 and holds a small pool of backends.\nA failover endpoint is a virtual IP or HAProxy health-checking Patroni's REST API on 8008.\nlibpq accepts several hosts; target_session_attrs=read-write finds the current primary."
+  },
+  {
+   "title": "What sits behind",
+   "body": "Behind the primary sit its disk, the WAL archive and the streaming standbys.\nWAL archives and base backups go to object storage; pgBackRest and WAL-G are the usual tools.\nOn Kubernetes, an operator such as CloudNativePG manages primary, replicas and Services.\npostgres_exporter exposes metrics to Prometheus; Grafana draws them."
+  },
+  {
+   "title": "Alternatives",
+   "body": "MySQL or MariaDB: choose them when the application or team already standardises on them.\nManaged PostgreSQL (RDS, Cloud SQL): choose it to hand off backups and failover.\nSQLite: a single-file embedded database for one-process tools and tests.\nDistributed SQL such as CockroachDB: choose it for multi-region writes, at extra cost."
   }
  ],
  "flow": [

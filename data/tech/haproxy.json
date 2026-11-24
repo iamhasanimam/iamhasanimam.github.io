@@ -8,34 +8,50 @@
  "whatItIs": "",
  "howItWorks": [
   {
-   "title": "Frontend and backend",
-   "body": "A frontend binds ports and applies rules.\nA backend holds servers and a balance algorithm.\nmode tcp relays bytes; mode http parses requests.\nThe first matching use_backend wins, else default_backend."
+   "title": "What it is and where it sits",
+   "body": "HAProxy is a high-performance TCP and HTTP load balancer and reverse proxy.\nmode tcp works at L4: it relays bytes and never reads the payload.\nmode http works at L7: it parses requests, rewrites headers and routes by content.\nIt sits in the Edge layer in front of app servers, databases or cluster nodes.\nTLS can pass through untouched or terminate on the balancer."
   },
   {
-   "title": "Upstreams and health checks",
-   "body": "roundrobin spreads evenly; leastconn suits long-lived connections; source pins clients.\ncheck probes a TCP connect; option httpchk GET /healthz tests the app.\ninter, fall and rise set probe speed and flap tolerance.\nbackup servers take traffic only when all primaries are down."
+   "title": "Architecture and config model",
+   "body": "Config sections: global, defaults, frontend, backend, plus listen for combined blocks.\nA frontend binds addresses and applies rules; the first matching use_backend wins.\nA backend holds servers, a balance algorithm and health checks.\nMulti-threaded workers share one process; nbthread follows the CPU count.\nMaster-worker mode lets a reload start new workers and drain the old ones."
   },
   {
-   "title": "L4 versus L7",
-   "body": "L4 forwards TLS untouched: no certificates on the balancer.\nL7 terminates TLS and routes by Host header, path or method.\nSNI routing at L4 needs tcp-request inspect-delay to read the ClientHello.\nUse L4 for databases and Kubernetes API; L7 for web and APIs."
+   "title": "Request flow",
+   "body": "The kernel accepts the connection; a worker thread binds it to a frontend.\nACLs evaluate in order on SNI, Host header, path or method.\nhttp-request rules can deny, redirect or rewrite before backend selection.\nThe balancer picks a healthy server below its maxconn; extra requests queue.\nSNI routing at L4 needs tcp-request inspect-delay to read the ClientHello.\nUse L4 for databases and the Kubernetes API; L7 for web and APIs."
   },
   {
-   "title": "PROXY protocol",
-   "body": "At L4 the backend sees HAProxy as the client.\nsend-proxy-v2 on the server line prepends the real source address.\nThe receiver must expect it: NGINX proxy_protocol, another HAProxy accept-proxy.\nEnable both ends in one change window."
+   "title": "Balancing and health checks",
+   "body": "roundrobin spreads evenly; leastconn suits long-lived sessions; uri hashes the request path.\ncheck probes a TCP connect; option httpchk GET /healthz tests the application.\ninter, fall and rise set probe speed and flap tolerance.\nbackup servers take traffic only when all primaries are down.\nStick tables track request rates; use them for rate limiting."
   },
   {
-   "title": "Floating IP with keepalived",
-   "body": "Two nodes share one VIP through VRRP, protocol 112.\nHighest priority holds the VIP and sends advertisements.\nA track_script lowers priority when haproxy dies.\nThe BACKUP claims the VIP and sends gratuitous ARP."
+   "title": "High availability and scaling",
+   "body": "Two nodes share one VIP through keepalived VRRP, IP protocol 112.\nThe highest priority holds the VIP; a track_script lowers it when haproxy dies.\nThe BACKUP claims the VIP and sends gratuitous ARP.\nKeep both nodes on identical haproxy.cfg from Git.\nScale a single node vertically first; HAProxy handles very high connection counts per host."
+  },
+  {
+   "title": "Security and observability",
+   "body": "Bind the stats socket and page to localhost or admin networks only.\nhttp-request deny restricts paths such as /admin to internal networks.\nBuilt-in Prometheus exporter on /metrics (2.4 and newer) and a stats page at /stats.\ntcplog and httplog record timers that separate queue, connect and response time.\nAlert on 5xx rate, backend queue depth, servers down and session rate against maxconn."
+  },
+  {
+   "title": "Failure modes and troubleshooting",
+   "body": "All servers failing health checks returns 503; check the stats page for L4 and L7 check reasons.\nTermination state codes in the log, such as sD or cD, show which side timed out.\nhaproxy -c catches config errors; a bad reload leaves the old workers serving.\nIdle long-lived sessions die at timeout server; raise timeout tunnel for WebSockets and databases.\nRuntime API via the stats socket drains a server: set server be/srv state drain."
+  },
+  {
+   "title": "Connecting to its neighbours",
+   "body": "In front (Users): DNS points at the HAProxy VIP, or a cloud balancer forwards to it.\nBehind, on VMs (Infrastructure): backends hold app servers and databases, each with a health check.\nBehind, on Kubernetes (Platform): list every worker node IP and the NodePort as servers, with check.\nService type LoadBalancer: a cloud balancer or MetalLB gives a VIP; HAProxy can sit behind it or replace it on-prem.\nControl plane: mode tcp on 6443 across all API servers gives kubectl one stable endpoint.\nThe HAProxy Kubernetes Ingress Controller can run inside the cluster instead and route by Host and path."
+  },
+  {
+   "title": "Alternatives",
+   "body": "NGINX: choose it when you also serve static files or want one tool for web and proxy.\nEnvoy: choose it for dynamic xDS config, gRPC and mesh data planes.\nTraefik: choose it for automatic Kubernetes and container discovery.\nCaddy: choose it for automatic HTTPS and a short config.\nCloud load balancers: choose them when the provider should run the Edge and its HA."
   }
  ],
  "flow": [
   "Client connects to the VIP held by the MASTER node.",
-  "Kernel hands the connection to an HAProxy worker thread.",
+  "A HAProxy worker thread accepts the connection on a frontend.",
   "tcp-request inspect-delay waits for the TLS ClientHello and reads the SNI.",
   "ACLs run in order; use_backend or default_backend picks the pool.",
-  "Balance algorithm chooses a healthy server below maxconn.",
-  "HAProxy connects upstream and sends the PROXY header first.",
-  "Bytes relay both ways under timeout client and timeout server.",
+  "The balance algorithm chooses a healthy server below maxconn.",
+  "Servers can be VMs, Kubernetes NodePorts or API servers on 6443.",
+  "A NodePort hit is forwarded by kube-proxy to a ready pod.",
   "Counters and logs update; health checks run in the background."
  ],
  "deploy": {
@@ -48,10 +64,10 @@
   ],
   "steps": [
    {
-    "title": "Write haproxy.cfg",
+    "title": "Write haproxy.cfg (VM pools, API servers, NodePorts)",
     "lang": "haproxy",
-    "code": "global\n    log stdout format raw local0\n    maxconn 20000\n    stats socket /tmp/haproxy.sock mode 660 level admin expose-fd listeners\n\ndefaults\n    mode tcp\n    log global\n    option tcplog\n    timeout connect 3s\n    timeout client  1m\n    timeout server  1m\n    timeout check   2s\n\nfrontend stats\n    mode http\n    bind :8404\n    stats enable\n    stats uri /stats\n    stats refresh 5s\n    http-request use-service prometheus-exporter if { path /metrics }\n\nfrontend fe_https\n    bind :443\n    tcp-request inspect-delay 5s\n    tcp-request content accept if { req_ssl_hello_type 1 }\n    use_backend be_app_a if { req_ssl_sni -i a.example.test }\n    use_backend be_app_b if { req_ssl_sni -i b.example.test }\n    default_backend be_app_a\n\nbackend be_app_a\n    balance roundrobin\n    default-server inter 2s fall 3 rise 2\n    server a1 10.0.1.11:443 check send-proxy-v2\n    server a2 10.0.1.12:443 check send-proxy-v2\n\nbackend be_app_b\n    balance leastconn\n    default-server inter 2s fall 3 rise 2\n    server b1 10.0.2.11:443 check send-proxy-v2\n    server b2 10.0.2.12:443 check send-proxy-v2 backup\n\nfrontend fe_http\n    mode http\n    bind :80\n    option httplog\n    acl is_api path_beg /api\n    acl is_admin path_beg /admin\n    acl internal src 10.0.0.0/8\n    http-request deny if is_admin !internal\n    use_backend be_api if is_api\n    default_backend be_web\n\nbackend be_api\n    mode http\n    balance uri\n    option httpchk GET /healthz\n    http-check expect status 200\n    server api1 10.0.3.11:8080 check\n    server api2 10.0.3.12:8080 check\n\nbackend be_web\n    mode http\n    balance roundrobin\n    option forwardfor\n    server web1 10.0.4.11:8080 check\n    server web2 10.0.4.12:8080 check\n",
-    "note": "Replace every address with your own. Prometheus exporter needs HAProxy 2.4 or newer."
+    "code": "global\n    log stdout format raw local0\n    maxconn 20000\n    stats socket /tmp/haproxy.sock mode 660 level admin expose-fd listeners\n\ndefaults\n    mode tcp\n    log global\n    option tcplog\n    timeout connect 3s\n    timeout client  1m\n    timeout server  1m\n    timeout check   2s\n\nfrontend stats\n    mode http\n    bind :8404\n    stats enable\n    stats uri /stats\n    stats refresh 5s\n    http-request use-service prometheus-exporter if { path /metrics }\n\nfrontend fe_https\n    bind :443\n    tcp-request inspect-delay 5s\n    tcp-request content accept if { req_ssl_hello_type 1 }\n    use_backend be_app_a if { req_ssl_sni -i a.example.test }\n    use_backend be_app_b if { req_ssl_sni -i b.example.test }\n    default_backend be_app_a\n\nbackend be_app_a\n    balance roundrobin\n    default-server inter 2s fall 3 rise 2\n    server a1 10.0.1.11:443 check\n    server a2 10.0.1.12:443 check\n\nbackend be_app_b\n    balance leastconn\n    default-server inter 2s fall 3 rise 2\n    server b1 10.0.2.11:443 check\n    server b2 10.0.2.12:443 check backup\n\nfrontend fe_http\n    mode http\n    bind :80\n    option httplog\n    acl is_api path_beg /api\n    acl is_admin path_beg /admin\n    acl internal src 10.0.0.0/8\n    http-request deny if is_admin !internal\n    use_backend be_api if is_api\n    default_backend be_web\n\nbackend be_api\n    mode http\n    balance uri\n    option httpchk GET /healthz\n    http-check expect status 200\n    server api1 10.0.3.11:8080 check\n    server api2 10.0.3.12:8080 check\n\nbackend be_web\n    mode http\n    balance roundrobin\n    server web1 10.0.4.11:8080 check\n    server web2 10.0.4.12:8080 check\n\nfrontend fe_k8s_api\n    bind :6443\n    default_backend be_k8s_api\n\nbackend be_k8s_api\n    balance roundrobin\n    default-server inter 3s fall 3 rise 2\n    server cp1 10.0.20.21:6443 check\n    server cp2 10.0.20.22:6443 check\n    server cp3 10.0.20.23:6443 check\n\nfrontend fe_nodeport\n    bind :8080\n    default_backend be_nodeport\n\nbackend be_nodeport\n    balance leastconn\n    default-server inter 2s fall 3 rise 2\n    server w1 10.0.20.11:30080 check\n    server w2 10.0.20.12:30080 check\n    server w3 10.0.20.13:30080 check\n",
+    "note": "Replace every address and the NodePort. The Prometheus exporter needs HAProxy 2.4 or newer."
    },
    {
     "title": "Validate the configuration",
@@ -62,7 +78,7 @@
    {
     "title": "Run HAProxy in Docker",
     "lang": "bash",
-    "code": "docker run -d --name haproxy --restart unless-stopped \\\n  --sysctl net.ipv4.ip_unprivileged_port_start=0 \\\n  -p 80:80 -p 443:443 -p 127.0.0.1:8404:8404 \\\n  -v \"$PWD/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro\" \\\n  haproxy:3.0.31\ndocker logs haproxy --tail 20",
+    "code": "docker run -d --name haproxy --restart unless-stopped \\\n  --sysctl net.ipv4.ip_unprivileged_port_start=0 \\\n  -p 80:80 -p 443:443 -p 6443:6443 -p 8080:8080 -p 127.0.0.1:8404:8404 \\\n  -v \"$PWD/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro\" \\\n  haproxy:3.0.31\ndocker logs haproxy --tail 20",
     "note": "The image runs unprivileged, so the sysctl frees ports below 1024. Pin the minor tag you tested."
    },
    {
@@ -106,7 +122,7 @@
  ],
  "pitfalls": [
   "Missing inspect-delay: SNI ACLs see an empty buffer and everything hits default_backend.",
-  "send-proxy to a backend without PROXY support gives instant protocol errors.",
+  "A health check on the wrong port marks healthy servers down.",
   "Absent timeouts leak idle connections; set connect, client and server.",
   "Idle database or WebSocket sessions die at timeout server; raise timeout tunnel.",
   "Different virtual_router_id or two MASTERs causes split brain, with the VIP on both.",
@@ -119,18 +135,22 @@
    "url": "https://docs.haproxy.org/3.0/configuration.html"
   },
   {
-   "label": "PROXY protocol specification",
-   "url": "https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt"
+   "label": "HAProxy management guide (3.0)",
+   "url": "https://docs.haproxy.org/3.0/management.html"
   },
   {
    "label": "keepalived documentation",
    "url": "https://keepalived.readthedocs.io/en/latest/"
+  },
+  {
+   "label": "Kubernetes: Service types",
+   "url": "https://kubernetes.io/docs/concepts/services-networking/service/"
   }
  ],
  "keyPoints": [
-  "Frontends match traffic; backends balance it across health-checked upstream servers.",
+  "Frontends match traffic; backends balance it across health-checked servers.",
   "L4 passes TLS untouched and routes by SNI; L7 routes by Host and path.",
-  "send-proxy-v2 carries the client IP; the backend must accept PROXY protocol.",
+  "One config file, validated with haproxy -c, reloads without dropping connections.",
   "keepalived VRRP floats one IP between two HAProxy nodes."
  ],
  "quickDeploy": [

@@ -26,6 +26,18 @@
   {
    "title": "VRRP, SSH and DNS",
    "body": "VRRP gives the higher priority node the VIP; a track_script drives failover.\nsshd takes keys only, no root, named users.\ndnsmasq serves A and PTR records and forwards the rest."
+  },
+  {
+   "title": "What sits in front",
+   "body": "Users and clients arrive at the Edge, usually a load balancer holding a virtual IP.\nkeepalived VRRP floats that VIP between two nodes for failover.\nSwitches and routers on the physical network deliver frames to the NIC (Infrastructure).\nDNS records, for example from dnsmasq, point names at those addresses."
+  },
+  {
+   "title": "What sits behind",
+   "body": "Namespaces, veth pairs and bridges connect containers and VMs to the host.\nThe Docker engine publishes ports as iptables DNAT rules and masquerades outbound traffic.\nOn Kubernetes, kube-proxy programs iptables or IPVS rules that DNAT Services to pod IPs.\nKVM VMs attach to a Linux bridge through tap devices."
+  },
+  {
+   "title": "Alternatives",
+   "body": "nftables: the successor to iptables; choose it for new rule sets.\nOpen vSwitch: choose it for VLAN-heavy or SDN-style virtual switching.\nCilium with eBPF: replaces kube-proxy rules on Kubernetes nodes.\nCloud VPC networking: managed routing and security groups instead of host configuration."
   }
  ],
  "flow": [

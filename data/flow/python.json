@@ -4,19 +4,19 @@
  "layers": [
   {
    "layer": 3,
-   "label": "Run"
+   "label": "Platform: reports"
   },
   {
    "layer": 2,
-   "label": "Collect"
+   "label": "Platform: store"
   },
   {
    "layer": 1,
-   "label": "Store"
+   "label": "Infrastructure: APIs"
   },
   {
    "layer": 0,
-   "label": "Report"
+   "label": "Operators: run"
   }
  ],
  "groups": [
@@ -83,7 +83,7 @@
    "col": 1,
    "row": 0,
    "says": "Python orchestrates every collector.",
-   "detail": "One venv, pinned requirements, argparse options and exit codes that alerting can read.",
+   "detail": "One venv, pinned requirements, argparse options and exit codes. Alternatives: Bash, Go.",
    "inner": [
     {
      "id": "arg",
@@ -193,7 +193,7 @@
    "col": 2,
    "row": 0,
    "says": "Superset charts the data.",
-   "detail": "Runs on Kubernetes, queries PostgreSQL and serves the DevOps Intelligence Dashboard."
+   "detail": "Queries PostgreSQL and serves a dashboard. Alternatives: Grafana, Metabase."
   }
  ],
  "wires": [

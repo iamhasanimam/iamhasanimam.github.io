@@ -26,6 +26,18 @@
   {
    "title": "Compose profiles",
    "body": "Compose declares services, networks and volumes in one file.\nA profile starts a service only when requested.\nCore services start by default; data and observability start on demand.\nmem_limit on each service keeps a small host stable."
+  },
+  {
+   "title": "What sits in front",
+   "body": "Users and CI run the docker CLI, or Compose, against the dockerd Unix socket.\nA reverse proxy on a user-defined network publishes the ports; the Edge sees only that proxy.\nRegistries such as Docker Hub or a private OCI registry supply images on pull.\nRegistry credentials live in ~/.docker/config.json."
+  },
+  {
+   "title": "What sits behind",
+   "body": "dockerd delegates to containerd, which calls runc to start the process.\nThe Linux kernel provides namespaces, cgroups, overlayfs and bridges (Infrastructure).\nVolumes hold data; the json-file log driver holds output; cAdvisor can expose metrics.\nThe same OCI image later runs on Kubernetes through containerd or CRI-O."
+  },
+  {
+   "title": "Alternatives",
+   "body": "Podman: daemonless and rootless by default; choose it where no root daemon is wanted.\ncontainerd with nerdctl: the runtime without the Docker daemon.\nBuildah or Kaniko: image builds without a daemon, common inside CI.\nLXC or a virtual machine: choose them when a full OS per workload is needed."
   }
  ],
  "flow": [

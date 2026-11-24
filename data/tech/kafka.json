@@ -26,6 +26,18 @@
   {
    "title": "Listeners and retention",
    "body": "Clients connect to the bootstrap address, then to advertised listeners.\nListeners are plain TCP, so L4 balancers must not hide broker addresses.\nAdvertise a DNS name every client can resolve.\nRetention deletes old segments by time or size, not by consumption."
+  },
+  {
+   "title": "What sits in front",
+   "body": "Platform services are producers: they send records to a topic through the bootstrap address.\nKafka Connect source connectors pull data from databases and files into topics.\nOne load balancer works for bootstrap only; every broker needs its own advertised address.\nUsers and the Edge stay outside; they reach Kafka only through application services."
+  },
+  {
+   "title": "What sits behind",
+   "body": "Consumers in groups read the log; sink connectors write topics into databases and object stores.\nBehind the brokers sit local disks for log segments and the KRaft controller quorum.\nOn Kubernetes, the Strimzi operator runs brokers and exposes them by NodePort, LoadBalancer or Ingress.\nJMX metrics go to Prometheus; authenticate with SASL or mTLS and restrict topics with ACLs."
+  },
+  {
+   "title": "Alternatives",
+   "body": "RabbitMQ: choose it for task queues, routing rules and per-message acknowledgement.\nNATS: choose it for light, fast messaging with a small operational footprint.\nCloud queues (SQS, Pub/Sub, Kinesis): choose them when you want no brokers to run.\nRedis Streams: choose it for small event flows when Redis is already deployed."
   }
  ],
  "flow": [

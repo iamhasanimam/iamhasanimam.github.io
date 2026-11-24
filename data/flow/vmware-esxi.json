@@ -4,11 +4,11 @@
  "layers": [
   {
    "layer": 3,
-   "label": "Access"
+   "label": "Edge"
   },
   {
    "layer": 2,
-   "label": "Guest VMs"
+   "label": "Platform services"
   },
   {
    "layer": 1,
@@ -16,7 +16,7 @@
   },
   {
    "layer": 0,
-   "label": "Hypervisor"
+   "label": "Infrastructure"
   }
  ],
  "groups": [
@@ -93,7 +93,7 @@
    "col": 2,
    "row": 0,
    "says": "The gateway VM routes and NATs.",
-   "detail": "One NIC on each vSwitch; MASQUERADE out, DNAT 443 in."
+   "detail": "One NIC on each vSwitch; MASQUERADE out, DNAT 443 in. Alternatives: pfSense, OPNsense, VyOS."
   },
   {
    "id": "rdgw",
@@ -104,7 +104,7 @@
    "col": 0,
    "row": 0,
    "says": "RD Gateway proxies RDP over HTTPS.",
-   "detail": "Authenticates users against AD and enforces access policy."
+   "detail": "Authenticates users against AD. Alternatives: Apache Guacamole, Citrix, VPN."
   },
   {
    "id": "rdcb",
@@ -137,7 +137,7 @@
    "col": 3,
    "row": 0,
    "says": "DC01 runs AD DS, DNS, DHCP.",
-   "detail": "Authenticates users, resolves names and leases addresses."
+   "detail": "Authenticates, resolves names, leases addresses. Alternatives: Samba AD, FreeIPA."
   },
   {
    "id": "dc02",
@@ -170,7 +170,7 @@
    "col": 0,
    "row": 0,
    "says": "vSwitch0 carries the uplink.",
-   "detail": "L2 switch bound to vmnic0 and the WAN side of the gateway."
+   "detail": "L2 switch bound to vmnic0 and the WAN side of the gateway. Alternatives: Open vSwitch."
   },
   {
    "id": "vsw1",
@@ -181,7 +181,7 @@
    "col": 2,
    "row": 0,
    "says": "vSwitch1 is private.",
-   "detail": "No uplink: an isolated L2 segment for every lab VM."
+   "detail": "No uplink: an isolated L2 segment. Alternatives: VLANs, NSX segments."
   },
   {
    "id": "esxi",
@@ -192,7 +192,7 @@
    "col": 1,
    "row": 0,
    "says": "ESXi runs on bare metal.",
-   "detail": "The VMkernel schedules VMs and hosts both vSwitches and datastores.",
+   "detail": "The VMkernel schedules VMs and hosts both vSwitches and datastores. Alternatives: KVM, Proxmox, Hyper-V.",
    "inner": [
     {
      "id": "vmk",
@@ -221,7 +221,7 @@
    "col": 1,
    "row": 0,
    "says": "The jumpbox is the admin door.",
-   "detail": "Hardened host on the private network; the only path for RDP and SSH admin."
+   "detail": "Hardened host on the private network; the admin path. Alternatives: Teleport, VPN."
   }
  ],
  "wires": [

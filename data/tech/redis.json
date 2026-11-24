@@ -26,6 +26,18 @@
   {
    "title": "Persistence and sessions",
    "body": "RDB forks and snapshots; fast restore, loses writes since the last dump.\nAOF logs every write; everysec bounds loss to about one second.\nA frontend session cache: TTL on every key, allkeys-lru or volatile-lru.\nPure cache loss is tolerable; session loss logs users out."
+  },
+  {
+   "title": "What sits in front",
+   "body": "Platform services are the clients: app code using a cluster-aware library such as Lettuce, Jedis or redis-py.\nClients start from seed nodes, then read the slot map and open a connection to every master.\nA plain L4 load balancer in front breaks MOVED redirects; point clients at the nodes.\nUsers and the Edge never talk to Redis; only Platform services do."
+  },
+  {
+   "title": "What sits behind",
+   "body": "Behind the masters sit replicas and local disk for RDB and AOF files.\nOn Kubernetes, a StatefulSet with a headless Service gives stable DNS names and a volume per pod.\nBehind NAT or in containers, set cluster-announce-ip or cluster-announce-hostname so peers advertise reachable addresses.\nredis_exporter exposes metrics for Prometheus; secure with ACL users and TLS."
+  },
+  {
+   "title": "Alternatives",
+   "body": "Memcached: pure in-memory cache, multi-threaded, no persistence or replication.\nRedis with Sentinel: one primary plus replicas and automatic failover, without sharding.\nValkey: a community fork of Redis that keeps the same protocol and clients.\nManaged services (ElastiCache, Memorystore): choose them when you do not want to run nodes."
   }
  ],
  "flow": [

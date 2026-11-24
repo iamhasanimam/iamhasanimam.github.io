@@ -1,29 +1,22 @@
 {
  "title": "Kong gateway",
- "subtitle": "Requests flow through Kong; config flows through Git and decK.",
+ "subtitle": "Requests flow through Kong; config flows from Git, decK or the ingress controller.",
  "layers": [
   {
    "layer": 0,
-   "label": "Config pipeline"
+   "label": "Operators"
   },
   {
    "layer": 1,
-   "label": "Data plane"
+   "label": "Platform"
   },
   {
    "layer": 2,
    "label": "Edge"
-  }
- ],
- "groups": [
+  },
   {
-   "id": "guard",
-   "label": "Diff-guard",
-   "boxes": [
-    "git",
-    "jenkins",
-    "deck"
-   ]
+   "layer": 3,
+   "label": "Users"
   }
  ],
  "boxes": [
@@ -32,34 +25,46 @@
    "label": "Client",
    "tech": "Browser",
    "icon": null,
-   "layer": 2,
+   "layer": 3,
    "col": 0,
    "row": 0,
    "says": "Clients send HTTPS requests.",
-   "detail": "Browsers and services call one public name. Kong hides every backend behind it."
+   "detail": "Browsers and services call one public API name."
   },
   {
    "id": "lb",
    "label": "Load balancer",
-   "tech": "HAProxy",
+   "tech": "HAProxy / cloud LB",
    "icon": "haproxy",
-   "layer": 2,
+   "layer": 3,
    "col": 1,
    "row": 0,
-   "says": "HAProxy fronts Kong, sends PROXY protocol.",
-   "detail": "The balancer spreads TLS traffic across Kong nodes and forwards the real client address.",
+   "says": "A balancer fronts the Kong nodes.",
+   "detail": "It spreads TLS traffic across Kong nodes; on Kubernetes this is a LoadBalancer Service.",
    "href": "#/tech/haproxy"
   },
   {
+   "id": "idp",
+   "label": "Identity",
+   "tech": "Keycloak",
+   "icon": "keycloak",
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "JWTs are validated at the gateway.",
+   "detail": "The jwt plugin checks tokens from an identity provider. Alternatives: Authentik, Auth0, Okta, Cognito.",
+   "href": "#/tech/keycloak"
+  },
+  {
    "id": "kong",
-   "label": "Kong proxy",
+   "label": "Kong",
    "tech": "Kong",
    "icon": "kong",
-   "layer": 1,
+   "layer": 2,
    "col": 1,
    "row": 0,
    "says": "Kong matches routes and runs plugins.",
-   "detail": "The data plane accepts 8443, matches the Route, runs auth and rate limits, then proxies upstream.",
+   "detail": "Matches the Route, runs auth and rate limits, then proxies upstream. Alternatives: NGINX, Envoy Gateway, Traefik, APISIX, cloud API gateways.",
    "href": "#/tech/kong",
    "inner": [
     {
@@ -73,23 +78,43 @@
     {
      "id": "balancer",
      "label": "Balancer"
-    },
-    {
-     "id": "admin",
-     "label": "Admin API"
     }
    ]
   },
   {
-   "id": "app",
-   "label": "Upstream",
-   "tech": "Service",
+   "id": "kic",
+   "label": "Ingress controller",
+   "tech": "Kong Ingress Controller",
    "icon": null,
-   "layer": 1,
+   "layer": 2,
    "col": 2,
    "row": 0,
-   "says": "Services answer the proxied request.",
-   "detail": "Healthy Targets in an Upstream receive requests over reused keepalive connections."
+   "says": "KIC turns Ingress resources into config.",
+   "detail": "It watches Ingress and Gateway API objects and programs Kong.",
+   "href": "#/tech/kubernetes-okd"
+  },
+  {
+   "id": "api",
+   "label": "VM API",
+   "tech": "Upstream",
+   "icon": null,
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "Kong proxies to VM-hosted APIs.",
+   "detail": "Targets in an Upstream get health checks and balancing."
+  },
+  {
+   "id": "svc",
+   "label": "Service",
+   "tech": "Service and Pods",
+   "icon": null,
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "Kong proxies to Kubernetes Services.",
+   "detail": "KIC sends traffic straight to ready pod endpoints.",
+   "href": "#/tech/kubernetes-okd"
   },
   {
    "id": "git",
@@ -100,19 +125,7 @@
    "col": 0,
    "row": 0,
    "says": "Git holds kong.yaml.",
-   "detail": "The declarative file is the source of truth; every change is a reviewed commit."
-  },
-  {
-   "id": "jenkins",
-   "label": "Pipeline",
-   "tech": "Jenkins",
-   "icon": "jenkins",
-   "layer": 0,
-   "col": 1,
-   "row": 0,
-   "says": "Jenkins runs the diff-guard.",
-   "detail": "Pull requests run deck gateway diff and fail on any deleting line.",
-   "href": "#/tech/jenkins"
+   "detail": "Pull requests review every gateway change."
   },
   {
    "id": "deck",
@@ -120,10 +133,10 @@
    "tech": "decK",
    "icon": null,
    "layer": 0,
-   "col": 2,
+   "col": 1,
    "row": 0,
-   "says": "decK syncs the file to Kong.",
-   "detail": "deck gateway sync applies the approved diff to the Admin API after merge."
+   "says": "decK diffs and syncs the file.",
+   "detail": "It applies kong.yaml to the Admin API."
   },
   {
    "id": "pg",
@@ -131,10 +144,10 @@
    "tech": "PostgreSQL",
    "icon": "postgresql",
    "layer": 0,
-   "col": 3,
+   "col": 2,
    "row": 0,
-   "says": "PostgreSQL stores entities.",
-   "detail": "DB-backed mode keeps Services, Routes and Plugins here; nodes poll for changes.",
+   "says": "PostgreSQL stores entities in DB mode.",
+   "detail": "DB-less mode skips it and loads one file.",
    "href": "#/tech/postgresql"
   }
  ],
@@ -150,28 +163,47 @@
   {
    "from": "lb",
    "to": "kong",
-   "label": "PROXY protocol",
+   "label": "HTTPS",
    "style": "solid",
    "flow": true,
    "weight": "bold"
   },
   {
    "from": "kong",
-   "to": "app",
+   "to": "api",
+   "label": "HTTP",
    "style": "solid",
    "flow": true,
    "weight": "bold"
   },
   {
-   "from": "git",
-   "to": "jenkins",
+   "from": "kong",
+   "to": "svc",
+   "label": "HTTP",
    "style": "solid",
    "flow": true,
    "weight": "normal"
   },
   {
-   "from": "jenkins",
+   "from": "kong",
+   "to": "idp",
+   "label": "JWKS",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "kic",
+   "to": "kong",
+   "label": "config",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "git",
    "to": "deck",
+   "label": "kong.yaml",
    "style": "solid",
    "flow": true,
    "weight": "normal"
@@ -180,13 +212,14 @@
    "from": "deck",
    "to": "kong",
    "label": "Admin API",
-   "style": "solid",
-   "flow": true,
+   "style": "dashed",
+   "flow": false,
    "weight": "normal"
   },
   {
-   "from": "kong",
-   "to": "pg",
+   "from": "pg",
+   "to": "kong",
+   "label": "entities",
    "style": "dashed",
    "flow": false,
    "weight": "normal"
@@ -194,39 +227,40 @@
  ],
  "tabs": [
   {
-   "id": "req",
+   "id": "request",
    "label": "Request path",
    "focus": [
     "client",
     "lb",
     "kong",
-    "app"
+    "api",
+    "svc"
    ]
   },
   {
-   "id": "cfg",
-   "label": "Config pipeline",
+   "id": "config",
+   "label": "Config path",
    "focus": [
     "git",
-    "jenkins",
     "deck",
-    "kong"
+    "kong",
+    "pg",
+    "kic"
    ]
   },
   {
-   "id": "state",
-   "label": "State",
+   "id": "auth",
+   "label": "Auth",
    "focus": [
     "kong",
-    "pg",
-    "deck"
+    "idp"
    ]
   }
  ],
  "steps": [
   {
-   "title": "Accept",
-   "text": "The balancer sends TLS and the PROXY header to Kong.",
+   "title": "Connect",
+   "text": "Clients reach Kong through the balancer.",
    "boxes": [
     "client",
     "lb",
@@ -244,55 +278,67 @@
    ]
   },
   {
-   "title": "Match",
-   "text": "The router picks a Route by host, path and method.",
-   "boxes": [
-    "kong"
-   ],
-   "wires": []
-  },
-  {
-   "title": "Enforce",
-   "text": "Plugins authenticate and rate limit the request.",
-   "boxes": [
-    "kong"
-   ],
-   "wires": []
-  },
-  {
-   "title": "Proxy",
-   "text": "The balancer sends it to a healthy Target.",
+   "title": "Authenticate",
+   "text": "Plugins validate the token or key.",
    "boxes": [
     "kong",
-    "app"
+    "idp"
    ],
    "wires": [
     [
      "kong",
-     "app"
+     "idp"
     ]
    ]
   },
   {
-   "title": "Ship config",
-   "text": "Git, Jenkins and decK diff then sync the change.",
+   "title": "Proxy",
+   "text": "Kong picks a healthy VM or pod target.",
+   "boxes": [
+    "kong",
+    "api",
+    "svc"
+   ],
+   "wires": [
+    [
+     "kong",
+     "api"
+    ],
+    [
+     "kong",
+     "svc"
+    ]
+   ]
+  },
+  {
+   "title": "Declare",
+   "text": "Git and decK push config to the Admin API.",
    "boxes": [
     "git",
-    "jenkins",
     "deck",
     "kong"
    ],
    "wires": [
     [
      "git",
-     "jenkins"
-    ],
-    [
-     "jenkins",
      "deck"
     ],
     [
      "deck",
+     "kong"
+    ]
+   ]
+  },
+  {
+   "title": "Kubernetes",
+   "text": "KIC programs Kong from Ingress resources.",
+   "boxes": [
+    "kic",
+    "kong"
+   ],
+   "wires": [
+    [
+     "kic",
      "kong"
     ]
    ]
@@ -302,13 +348,13 @@
   "cmd": "deck gateway diff -s kong.yaml",
   "lines": [
    "Summary: Created: 1 Updated: 1 Deleted: 0",
-   "diff-guard: no deletes, safe to sync"
+   "review the diff, then run sync"
   ]
  },
  "declarations": [
   "Kong gates every API call.",
   "Git declares, decK syncs.",
-  "The guard blocks deletes.",
+  "Ingress resources configure Kong.",
   "Plugins enforce auth and limits."
  ]
 }

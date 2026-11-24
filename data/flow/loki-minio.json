@@ -83,7 +83,7 @@
    "col": 1,
    "row": 0,
    "says": "Alloy receives OTLP and pushes it on.",
-   "detail": "Batches telemetry, then sends logs to Loki and traces to Tempo."
+   "detail": "Collects and pushes logs. Alternatives: Fluent Bit, Vector, OpenTelemetry Collector, Promtail."
   },
   {
    "id": "grafana",
@@ -106,7 +106,8 @@
    "col": 0,
    "row": 0,
    "says": "The distributor validates and hashes streams.",
-   "detail": "Enforces limits, then forwards each stream to replication_factor ingesters on the hash ring."
+   "detail": "Enforces limits, then forwards each stream to replication_factor ingesters on the hash ring.",
+   "href": "#/tech/loki-minio"
   },
   {
    "id": "ingester",
@@ -142,7 +143,7 @@
    "col": 2,
    "row": 0,
    "says": "Queriers read the index, then chunks.",
-   "detail": "Merge results from object storage and recent data still in ingesters."
+   "detail": "Reads index and chunks. Alternatives: Elasticsearch or OpenSearch for full-text search."
   },
   {
    "id": "tempo",
@@ -186,7 +187,20 @@
    "col": 0,
    "row": 0,
    "says": "MinIO serves chunks over the S3 API.",
-   "detail": "Self-hosted object storage with erasure coding; Loki and Tempo use the S3 API."
+   "detail": "S3 API object storage. Alternatives: Ceph RGW, cloud S3, GCS or Azure Blob.",
+   "href": "#/tech/loki-minio"
+  },
+  {
+   "id": "k8s",
+   "label": "Kubernetes",
+   "tech": "Kubernetes",
+   "icon": "kubernetes",
+   "layer": 0,
+   "col": 2,
+   "row": 0,
+   "says": "Pods write logs; Alloy tails them.",
+   "detail": "Alloy runs as a DaemonSet and labels streams from pod metadata.",
+   "href": "#/tech/kubernetes-okd"
   }
  ],
  "wires": [
@@ -277,6 +291,13 @@
    "style": "solid",
    "flow": true,
    "weight": "normal"
+  },
+  {
+   "from": "k8s",
+   "to": "alloy",
+   "label": "pod logs",
+   "style": "solid",
+   "flow": true
   }
  ],
  "steps": [

@@ -4,7 +4,7 @@
  "layers": [
   {
    "layer": 2,
-   "label": "Control node"
+   "label": "Operators: control node"
   },
   {
    "layer": 1,
@@ -12,7 +12,7 @@
   },
   {
    "layer": 0,
-   "label": "Managed hosts"
+   "label": "Infrastructure: hosts"
   }
  ],
  "groups": [
@@ -69,7 +69,7 @@
    "col": 0,
    "row": 0,
    "says": "CI gates playbooks with --check.",
-   "detail": "Runs check and diff on every change, then applies after review.",
+   "detail": "Runs check and diff on every change. Alternatives: GitLab CI, GitHub Actions.",
    "href": "#/tech/jenkins"
   },
   {
@@ -81,7 +81,7 @@
    "col": 1,
    "row": 0,
    "says": "The control node runs ansible-playbook.",
-   "detail": "Holds playbooks, inventory and vault. No agent on targets.",
+   "detail": "Holds playbooks, inventory and vault. No agent on targets. Alternatives: Puppet, Salt, Terraform.",
    "inner": [
     {
      "id": "ad-hoc",

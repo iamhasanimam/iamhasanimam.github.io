@@ -4,15 +4,15 @@
  "layers": [
   {
    "layer": 0,
-   "label": "Linux kernel"
+   "label": "Infrastructure: kernel"
   },
   {
    "layer": 1,
-   "label": "Engine"
+   "label": "Platform: engine"
   },
   {
    "layer": 2,
-   "label": "Images and apps"
+   "label": "Platform: images, apps"
   }
  ],
  "boxes": [
@@ -71,7 +71,7 @@
    "col": 1,
    "row": 0,
    "says": "dockerd serves the API.",
-   "detail": "The CLI talks to dockerd, which delegates to containerd, which calls runc.",
+   "detail": "CLI calls dockerd, then containerd, then runc. Alternatives: Podman, containerd with nerdctl.",
    "inner": [
     {
      "id": "cli",
@@ -100,7 +100,7 @@
    "col": 2,
    "row": 0,
    "says": "A registry stores images.",
-   "detail": "Push after the build, pull on the host. Scan before promote."
+   "detail": "Push after the build, pull on the host. Alternatives: Harbor, Nexus, cloud registries."
   },
   {
    "id": "image",

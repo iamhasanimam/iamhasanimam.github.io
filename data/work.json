@@ -201,8 +201,8 @@
       "slug": "istio-traffic",
       "title": "Istio traffic management",
       "category": "Kubernetes & Mesh",
-      "kind": "Production",
-      "summary": "Canary, blue-green and percentage routing on a large public-sector platform.",
+      "kind": "Platform",
+      "summary": "Canary, blue-green and percentage routing with Istio.",
       "icons": [
         "istio",
         "kubernetes",
@@ -211,10 +211,10 @@
         "opentelemetry"
       ],
       "bullets": [
-        "Implemented VirtualService and DestinationRule for canary and blue-green releases",
-        "Configured percentage-based traffic splitting between service versions",
-        "Tuned ringHash load balancing for session affinity per frontend pod",
-        "Secured workloads with AuthorizationPolicy and mTLS"
+        "VirtualService and DestinationRule for canary and blue-green releases",
+        "Percentage-based traffic splitting between service versions",
+        "Load-balancing policies for service subsets",
+        "mTLS and AuthorizationPolicy between workloads"
       ],
       "repo": null,
       "image": null,
@@ -223,7 +223,6 @@
         "Istio",
         "VirtualService",
         "DestinationRule",
-        "ringHash",
         "mTLS"
       ],
       "year": "2025-2026",
@@ -233,8 +232,8 @@
       "slug": "multicluster-mesh",
       "title": "Multi-cluster Kubernetes with a service mesh",
       "category": "Kubernetes & Mesh",
-      "kind": "Production",
-      "summary": "Two clusters joined in one Istio mesh. Blog coming soon.",
+      "kind": "Platform",
+      "summary": "Reference lab: two Kubernetes clusters in one Istio mesh.",
       "icons": [
         "istio",
         "kubernetes",
@@ -243,10 +242,10 @@
         "grafana"
       ],
       "bullets": [
-        "Designed an east-west gateway exposed through NodePort",
-        "Configured an AUTO_PASSTHROUGH pod in the receiving cluster",
-        "Deployed sidecar injection through annotation for the added cluster",
-        "Documented cross-cluster service connectivity in a coming blog"
+        "East-west gateway exposed through NodePort or LoadBalancer",
+        "AUTO_PASSTHROUGH listener on the receiving cluster",
+        "Sidecar injection through namespace annotation",
+        "Cross-cluster service discovery and failover"
       ],
       "repo": null,
       "image": null,
@@ -265,7 +264,7 @@
       "slug": "cluster-hardening",
       "title": "Kubernetes policy and autoscaling",
       "category": "Kubernetes & Mesh",
-      "kind": "Production",
+      "kind": "Platform",
       "summary": "Network isolation, autoscaling and highly available identity.",
       "icons": [
         "kubernetes",
@@ -275,10 +274,9 @@
         "gnubash"
       ],
       "bullets": [
-        "Secured namespaces with NetworkPolicy and AuthorizationPolicy",
-        "Built an HPA rule ConfigMap generator",
-        "Configured Keycloak high availability with Infinispan",
-        "Documented the platform in a 44-page readiness and rollback runbook"
+        "NetworkPolicy and AuthorizationPolicy per namespace",
+        "HorizontalPodAutoscaler rules for stateless services",
+        "Keycloak high availability with Infinispan"
       ],
       "repo": null,
       "image": null,
@@ -295,10 +293,10 @@
     },
     {
       "slug": "jenkins-argocd-kong",
-      "title": "Jenkins, ArgoCD and Kong pipelines",
+      "title": "Jenkins, Argo CD and Kong concepts",
       "category": "CI/CD",
-      "kind": "Production",
-      "summary": "14-stage delivery pipeline and guarded API gateway changes.",
+      "kind": "Platform",
+      "summary": "CI/CD with Jenkins and Argo CD, and declarative Kong config.",
       "icons": [
         "jenkins",
         "argo",
@@ -307,17 +305,16 @@
         "gnubash"
       ],
       "bullets": [
-        "Built a 14-stage Jenkins and ArgoCD pipeline for GitOps delivery",
-        "Automated Kong configuration with decK and diff-guard Jenkins pipelines",
-        "Implemented diff by default, stop on deletions, backup before sync",
-        "Deployed smoke tests after every sync"
+        "Multi-stage Jenkins pipeline: build, test, scan, push, deploy",
+        "GitOps delivery with Argo CD and Kustomize",
+        "Kong configuration as code with decK"
       ],
       "repo": null,
       "image": null,
       "imageAlt": null,
       "stack": [
         "Jenkins",
-        "ArgoCD",
+        "Argo CD",
         "Kong",
         "decK",
         "Kustomize"
@@ -329,8 +326,8 @@
       "slug": "observability-stack",
       "title": "Metrics, logs and traces",
       "category": "Observability",
-      "kind": "Production",
-      "summary": "Node, service and trace telemetry in Prometheus, Loki, Tempo and Grafana.",
+      "kind": "Platform",
+      "summary": "Metrics, logs and traces in Prometheus, Loki, Tempo and Grafana.",
       "icons": [
         "prometheus",
         "grafana",
@@ -339,10 +336,10 @@
         "kubernetes"
       ],
       "bullets": [
-        "Deployed node_exporter for host metrics",
-        "Configured Spring Boot Actuator metrics scraped through ServiceMonitor",
-        "Implemented OpenTelemetry pushing logs to Loki and traces to Tempo",
-        "Built Grafana dashboards around the four golden signals"
+        "node_exporter for host metrics",
+        "Application metrics scraped through ServiceMonitor",
+        "OpenTelemetry sending logs to Loki and traces to Tempo",
+        "Grafana dashboards around the four golden signals"
       ],
       "repo": null,
       "image": null,
@@ -362,8 +359,8 @@
       "slug": "edge-haproxy-nginx",
       "title": "HAProxy and NGINX edge",
       "category": "Edge & Networking",
-      "kind": "Production",
-      "summary": "Redundant edge preserving the true client IP.",
+      "kind": "Platform",
+      "summary": "Reference lab: load balancer tiers with VRRP failover.",
       "icons": [
         "haproxy",
         "nginx",
@@ -372,10 +369,10 @@
         "kubernetes"
       ],
       "bullets": [
-        "Configured HAProxy and NGINX edge layers with VRRP failover",
-        "Implemented PROXY protocol for client source IP preservation",
-        "Tuned HAProxy upstreams and NGINX http and stream blocks",
-        "Documented the traffic path for troubleshooting"
+        "HAProxy and NGINX tiers with VRRP failover",
+        "TLS termination, load balancing and health checks",
+        "HAProxy upstreams and NGINX http and stream blocks",
+        "NGINX reaching Kubernetes through NodePort or a LoadBalancer Service"
       ],
       "repo": null,
       "image": null,
@@ -384,8 +381,8 @@
         "HAProxy",
         "NGINX",
         "VRRP",
-        "PROXY protocol",
-        "keepalived"
+        "keepalived",
+        "NodePort"
       ],
       "year": "2025-2026",
       "status": "shipped"

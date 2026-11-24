@@ -4,15 +4,15 @@
  "layers": [
   {
    "layer": 2,
-   "label": "Clients"
+   "label": "Users"
   },
   {
    "layer": 1,
-   "label": "OpenBao API"
+   "label": "Platform"
   },
   {
    "layer": 0,
-   "label": "Storage"
+   "label": "Infrastructure"
   }
  ],
  "groups": [
@@ -166,7 +166,7 @@
    "col": 0,
    "row": 0,
    "says": "The leader commits writes.",
-   "detail": "One active node handles writes and replicates to followers over port 8201.",
+   "detail": "One active node handles writes and replicates to followers. Alternatives: Vault, cloud secret managers, SOPS.",
    "inner": [
     {
      "id": "barrier",

@@ -1,156 +1,168 @@
 {
-  "slug": "grafana",
-  "name": "Grafana",
-  "category": "Observability",
-  "icon": "grafana",
-  "level": "hands-on",
-  "tagline": "Queries Prometheus, Loki and Tempo; draws dashboards, alerts, links signals.",
-  "whatItIs": "",
-  "howItWorks": [
-    {
-      "title": "Datasources as code",
-      "body": "YAML under provisioning/datasources defines Prometheus, Loki and Tempo.\nFixed uid values keep dashboards portable across environments.\nGrafana proxies queries server-side; browsers never reach the backends.\nProvisioned datasources are read-only in the UI."
-    },
-    {
-      "title": "Dashboards as code",
-      "body": "A file provider loads dashboard JSON from a mounted directory.\nJSON lives in Git; changes arrive by pull request, not by clicking.\nVariables and uid-bound datasources let one dashboard serve every cluster.\nallowUiUpdates: false stops drift between Git and the running server."
-    },
-    {
-      "title": "Four golden signals",
-      "body": "Latency: histogram_quantile(0.95, sum by (le) (rate(x_bucket[5m]))).\nTraffic: sum(rate(x_count[5m])) in requests per second.\nErrors: 5xx rate divided by total rate.\nSaturation: CPU, memory, queue depth from node_exporter.\nPanels follow that order so on-call reads top to bottom."
-    },
-    {
-      "title": "Alerting",
-      "body": "Alert rules query a datasource, apply a threshold, hold for a duration.\nNotification policies route by label to contact points.\nRules and policies provision from YAML like everything else.\nAlert on symptoms users feel, not on every cause."
-    },
-    {
-      "title": "Trace-to-logs correlation",
-      "body": "Prometheus exemplars carry a trace_id on latency points.\nClick an exemplar and Tempo opens that trace.\ntracesToLogsV2 jumps from a span to Loki lines filtered by trace ID.\nLoki derivedFields turn trace_id in a log line into a Tempo link."
-    }
-  ],
-  "flow": [
-    "Provisioning files mount into Grafana at startup.",
-    "Datasources register Prometheus, Loki and Tempo with fixed uids.",
-    "Dashboard JSON loads from the file provider.",
-    "Panels run PromQL and LogQL through the Grafana proxy.",
-    "An exemplar on a latency point opens the trace in Tempo.",
-    "Tempo jumps from a span to its Loki logs.",
-    "Alert rules evaluate and route to contact points."
-  ],
-  "deploy": {
-    "summary": "Grafana OSS in Docker with Prometheus, Loki and Tempo provisioned as code, plus a golden-signals dashboard.",
-    "prerequisites": [
-      "Docker 24+ with Compose v2",
-      "Prometheus reachable as prometheus:9090 (network monitoring)",
-      "Loki and Tempo reachable, or drop those datasources",
-      "Port 3000 free"
-    ],
-    "steps": [
-      {
-        "title": "Directory layout",
-        "lang": "bash",
-        "code": "mkdir -p provisioning/datasources provisioning/dashboards dashboards\ntouch docker-compose.yml",
-        "note": "Provisioning files mount read-only into /etc/grafana/provisioning."
-      },
-      {
-        "title": "Firewall: admin subnet only",
-        "lang": "bash",
-        "code": "# 10.0.0.0/24 = admin subnet (placeholder)\nsudo ufw allow from 10.0.0.0/24 to any port 3000 proto tcp\nsudo ufw status numbered",
-        "note": "Replace the subnet. In production publish only the TLS reverse proxy."
-      },
-      {
-        "title": "Compose file",
-        "lang": "yaml",
-        "code": "services:\n  grafana:\n    image: grafana/grafana:11.1.0\n    environment:\n      GF_SECURITY_ADMIN_USER: admin\n      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD}\n      GF_USERS_ALLOW_SIGN_UP: \"false\"\n    volumes:\n      - ./provisioning:/etc/grafana/provisioning:ro\n      - ./dashboards:/var/lib/grafana/dashboards:ro\n      - grafana-data:/var/lib/grafana\n    ports: [\"3000:3000\"]\nnetworks:\n  default:\n    name: monitoring\nvolumes:\n  grafana-data: {}",
-        "note": "Export GRAFANA_ADMIN_PASSWORD first; compose refuses to start without it. Network is shared with Prometheus."
-      },
-      {
-        "title": "Datasources with correlation",
-        "lang": "yaml",
-        "code": "apiVersion: 1\ndatasources:\n  - name: Prometheus\n    uid: prom\n    type: prometheus\n    access: proxy\n    url: http://prometheus:9090\n    isDefault: true\n    jsonData:\n      exemplarTraceIdDestinations:\n        - name: trace_id\n          datasourceUid: tempo\n  - name: Loki\n    uid: loki\n    type: loki\n    access: proxy\n    url: http://loki:3100\n    jsonData:\n      derivedFields:\n        - name: TraceID\n          matcherRegex: 'trace_id=(\\w+)'\n          url: '$${__value.raw}'\n          datasourceUid: tempo\n  - name: Tempo\n    uid: tempo\n    type: tempo\n    access: proxy\n    url: http://tempo:3200\n    jsonData:\n      tracesToLogsV2:\n        datasourceUid: loki\n        filterByTraceID: true\n        spanStartTimeShift: '-5m'\n        spanEndTimeShift: '5m'",
-        "note": "Save as provisioning/datasources/ds.yml. Loki and Tempo must resolve at these hostnames; adjust URLs."
-      },
-      {
-        "title": "Dashboard provider",
-        "lang": "yaml",
-        "code": "apiVersion: 1\nproviders:\n  - name: file-dashboards\n    folder: Platform\n    type: file\n    allowUiUpdates: false\n    options:\n      path: /var/lib/grafana/dashboards",
-        "note": "Save as provisioning/dashboards/provider.yml. Grafana rescans the path periodically."
-      },
-      {
-        "title": "Golden signals dashboard",
-        "lang": "json",
-        "code": "{\n  \"uid\": \"golden-signals\",\n  \"title\": \"Golden Signals\",\n  \"schemaVersion\": 39,\n  \"time\": {\"from\": \"now-1h\", \"to\": \"now\"},\n  \"panels\": [\n    {\"id\": 1, \"type\": \"timeseries\", \"title\": \"Latency p95 (s)\", \"gridPos\": {\"x\": 0, \"y\": 0, \"w\": 12, \"h\": 8},\n     \"datasource\": {\"type\": \"prometheus\", \"uid\": \"prom\"},\n     \"targets\": [{\"refId\": \"A\", \"expr\": \"histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket[5m])))\"}]},\n    {\"id\": 2, \"type\": \"timeseries\", \"title\": \"Traffic (req/s)\", \"gridPos\": {\"x\": 12, \"y\": 0, \"w\": 12, \"h\": 8},\n     \"datasource\": {\"type\": \"prometheus\", \"uid\": \"prom\"},\n     \"targets\": [{\"refId\": \"A\", \"expr\": \"sum(rate(http_server_requests_seconds_count[5m]))\"}]},\n    {\"id\": 3, \"type\": \"timeseries\", \"title\": \"Error ratio (5xx)\", \"gridPos\": {\"x\": 0, \"y\": 8, \"w\": 12, \"h\": 8},\n     \"datasource\": {\"type\": \"prometheus\", \"uid\": \"prom\"},\n     \"targets\": [{\"refId\": \"A\", \"expr\": \"sum(rate(http_server_requests_seconds_count{status=~\\\"5..\\\"}[5m])) / sum(rate(http_server_requests_seconds_count[5m]))\"}]},\n    {\"id\": 4, \"type\": \"timeseries\", \"title\": \"Saturation: CPU cores used\", \"gridPos\": {\"x\": 12, \"y\": 8, \"w\": 12, \"h\": 8},\n     \"datasource\": {\"type\": \"prometheus\", \"uid\": \"prom\"},\n     \"targets\": [{\"refId\": \"A\", \"expr\": \"sum(rate(process_cpu_seconds_total[5m]))\"}]}\n  ]\n}",
-        "note": "Save as dashboards/golden-signals.json. Metric names assume Spring Boot Micrometer."
-      },
-      {
-        "title": "Alert rule provisioning",
-        "lang": "yaml",
-        "code": "apiVersion: 1\ngroups:\n  - orgId: 1\n    name: slo\n    folder: Platform\n    interval: 1m\n    rules:\n      - uid: high-error-ratio\n        title: High 5xx ratio\n        condition: C\n        for: 5m\n        noDataState: OK\n        execErrState: Error\n        labels: {severity: critical}\n        annotations: {summary: \"5xx ratio above 2 percent\"}\n        data:\n          - refId: A\n            datasourceUid: prom\n            relativeTimeRange: {from: 600, to: 0}\n            model:\n              expr: sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count[5m]))\n              instant: true\n              refId: A\n          - refId: C\n            datasourceUid: __expr__\n            model:\n              type: threshold\n              expression: A\n              conditions:\n                - evaluator: {type: gt, params: [0.02]}\n              refId: C",
-        "note": "Save as provisioning/alerting/rules.yml (already mounted). Route with a notification policy."
-      },
-      {
-        "title": "Start",
-        "lang": "bash",
-        "code": "export GRAFANA_ADMIN_PASSWORD='change-me-now'\ndocker compose up -d",
-        "note": "Change the password; keep it in a secret store."
-      }
-    ]
+ "slug": "grafana",
+ "name": "Grafana",
+ "category": "Observability",
+ "icon": "grafana",
+ "level": "hands-on",
+ "tagline": "Queries Prometheus, Loki and Tempo; draws dashboards, alerts, links signals.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Datasources as code",
+   "body": "YAML under provisioning/datasources defines Prometheus, Loki and Tempo.\nFixed uid values keep dashboards portable across environments.\nGrafana proxies queries server-side; browsers never reach the backends.\nProvisioned datasources are read-only in the UI."
   },
-  "verify": [
-    "Datasources: curl -s -u admin:$GRAFANA_ADMIN_PASSWORD localhost:3000/api/datasources | jq '.[].name'",
-    "Health: curl -s localhost:3000/api/health",
-    "Dashboard loaded: curl -s -u admin:$GRAFANA_ADMIN_PASSWORD 'localhost:3000/api/search?query=Golden'",
-    "Datasource test: curl -s -u admin:$GRAFANA_ADMIN_PASSWORD localhost:3000/api/datasources/uid/prom/health",
-    "Provisioning errors: docker compose logs grafana | grep -i provisioning"
+  {
+   "title": "Dashboards as code",
+   "body": "A file provider loads dashboard JSON from a mounted directory.\nJSON lives in Git; changes arrive by pull request, not by clicking.\nVariables and uid-bound datasources let one dashboard serve every cluster.\nallowUiUpdates: false stops the UI diverging from Git."
+  },
+  {
+   "title": "Four golden signals",
+   "body": "Latency: histogram_quantile(0.95, sum by (le) (rate(x_bucket[5m]))).\nTraffic: sum(rate(x_count[5m])) in requests per second.\nErrors: 5xx rate divided by total rate.\nSaturation: CPU, memory, queue depth from node_exporter.\nPanels follow that order so on-call reads top to bottom."
+  },
+  {
+   "title": "Alerting",
+   "body": "Alert rules query a datasource, apply a threshold, hold for a duration.\nNotification policies route by label to contact points.\nRules and policies provision from YAML like everything else.\nAlert on symptoms users feel, not on every cause."
+  },
+  {
+   "title": "Trace-to-logs correlation",
+   "body": "Prometheus exemplars carry a trace_id on latency points.\nClick an exemplar and Tempo opens that trace.\ntracesToLogsV2 jumps from a span to Loki lines filtered by trace ID.\nLoki derivedFields turn trace_id in a log line into a Tempo link."
+  },
+  {
+   "title": "What sits in front",
+   "body": "Users open dashboards over HTTPS, usually through the Edge reverse proxy.\nSign-in uses OIDC through generic OAuth against an identity provider such as Keycloak.\nBehind a reverse proxy, set root_url, and serve_from_sub_path if it lives under a path.\nDashboards and datasources arrive as provisioned files from Git."
+  },
+  {
+   "title": "What sits behind",
+   "body": "Grafana's server must reach each backend: Prometheus 9090, Loki 3100, Tempo 3200.\nOn Kubernetes, the Helm chart sidecar loads dashboards from labelled ConfigMaps.\nThe default SQLite database suits one instance; use PostgreSQL to run several replicas.\nContact points deliver alerts to Slack, email or any webhook."
+  },
+  {
+   "title": "Alternatives",
+   "body": "Kibana: choose it when Elasticsearch or OpenSearch is the main data store.\nDatadog or other SaaS dashboards: choose them to avoid running servers.\nPerses: a newer open-source dashboard project with dashboards as code.\nPrometheus console or Alertmanager UI: enough for a quick check, not for dashboards."
+  }
+ ],
+ "flow": [
+  "Provisioning files mount into Grafana at startup.",
+  "Datasources register Prometheus, Loki and Tempo with fixed uids.",
+  "Dashboard JSON loads from the file provider.",
+  "Panels run PromQL and LogQL through the Grafana proxy.",
+  "An exemplar on a latency point opens the trace in Tempo.",
+  "Tempo jumps from a span to its Loki logs.",
+  "Alert rules evaluate and route to contact points."
+ ],
+ "deploy": {
+  "summary": "Grafana OSS in Docker with Prometheus, Loki and Tempo provisioned as code, plus a golden-signals dashboard.",
+  "prerequisites": [
+   "Docker 24+ with Compose v2",
+   "Prometheus reachable as prometheus:9090 (network monitoring)",
+   "Loki and Tempo reachable, or drop those datasources",
+   "Port 3000 free"
   ],
-  "pitfalls": [
-    "Dashboards without fixed datasource uid break when imported elsewhere.",
-    "Editing a provisioned dashboard in the UI is lost on restart.",
-    "Default SQLite blocks running two replicas; use PostgreSQL.",
-    "Exemplars need the app to emit them and Prometheus exemplar storage on.",
-    "Alerting on every cause pages humans for noise; alert on symptoms.",
-    "'No data' state silently hides outages; set noDataState deliberately.",
-    "Admin password in compose files ends up in Git; use secrets."
-  ],
-  "furtherReading": [
-    {
-      "label": "Grafana provisioning",
-      "url": "https://grafana.com/docs/grafana/latest/administration/provisioning/"
-    },
-    {
-      "label": "Grafana alerting",
-      "url": "https://grafana.com/docs/grafana/latest/alerting/"
-    },
-    {
-      "label": "Google SRE: monitoring distributed systems",
-      "url": "https://sre.google/sre-book/monitoring-distributed-systems/"
-    },
-    {
-      "label": "Tempo data source",
-      "url": "https://grafana.com/docs/grafana/latest/datasources/tempo/configure-tempo-data-source/"
-    }
-  ],
-  "keyPoints": [
-    "Grafana queries datasources; it stores no metrics itself.",
-    "Datasources, dashboards and alerts are provisioned from Git.",
-    "Four golden signals: latency, traffic, errors, saturation.",
-    "Exemplars and derived fields jump from metric to trace to logs."
-  ],
-  "quickDeploy": [
-    "Mount provisioning files read-only.",
-    "Define Prometheus, Loki, Tempo datasources.",
-    "Load golden-signals dashboard from JSON.",
-    "Start and check the datasources API."
-  ],
-  "osi": [
-    "L7"
-  ],
-  "osiNote": "HTTP application: queries backends, serves dashboards over HTTPS.",
-  "production": [
-    "Provision everything as code; disable UI edits on shared dashboards.",
-    "Store state in PostgreSQL and run two replicas behind a load balancer.",
-    "Put SSO and TLS in front; no anonymous admin, no sign-up.",
-    "Back up the database and dashboard repo; restore-test quarterly.",
-    "Alert on datasource errors and scrape Grafana's own /metrics."
+  "steps": [
+   {
+    "title": "Directory layout",
+    "lang": "bash",
+    "code": "mkdir -p provisioning/datasources provisioning/dashboards dashboards\ntouch docker-compose.yml",
+    "note": "Provisioning files mount read-only into /etc/grafana/provisioning."
+   },
+   {
+    "title": "Firewall: admin subnet only",
+    "lang": "bash",
+    "code": "# 10.0.0.0/24 = admin subnet (placeholder)\nsudo ufw allow from 10.0.0.0/24 to any port 3000 proto tcp\nsudo ufw status numbered",
+    "note": "Replace the subnet. In production publish only the TLS reverse proxy."
+   },
+   {
+    "title": "Compose file",
+    "lang": "yaml",
+    "code": "services:\n  grafana:\n    image: grafana/grafana:11.1.0\n    environment:\n      GF_SECURITY_ADMIN_USER: admin\n      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD}\n      GF_USERS_ALLOW_SIGN_UP: \"false\"\n    volumes:\n      - ./provisioning:/etc/grafana/provisioning:ro\n      - ./dashboards:/var/lib/grafana/dashboards:ro\n      - grafana-data:/var/lib/grafana\n    ports: [\"3000:3000\"]\nnetworks:\n  default:\n    name: monitoring\nvolumes:\n  grafana-data: {}",
+    "note": "Export GRAFANA_ADMIN_PASSWORD first; compose refuses to start without it. Network is shared with Prometheus."
+   },
+   {
+    "title": "Datasources with correlation",
+    "lang": "yaml",
+    "code": "apiVersion: 1\ndatasources:\n  - name: Prometheus\n    uid: prom\n    type: prometheus\n    access: proxy\n    url: http://prometheus:9090\n    isDefault: true\n    jsonData:\n      exemplarTraceIdDestinations:\n        - name: trace_id\n          datasourceUid: tempo\n  - name: Loki\n    uid: loki\n    type: loki\n    access: proxy\n    url: http://loki:3100\n    jsonData:\n      derivedFields:\n        - name: TraceID\n          matcherRegex: 'trace_id=(\\w+)'\n          url: '$${__value.raw}'\n          datasourceUid: tempo\n  - name: Tempo\n    uid: tempo\n    type: tempo\n    access: proxy\n    url: http://tempo:3200\n    jsonData:\n      tracesToLogsV2:\n        datasourceUid: loki\n        filterByTraceID: true\n        spanStartTimeShift: '-5m'\n        spanEndTimeShift: '5m'",
+    "note": "Save as provisioning/datasources/ds.yml. Loki and Tempo must resolve at these hostnames; adjust URLs."
+   },
+   {
+    "title": "Dashboard provider",
+    "lang": "yaml",
+    "code": "apiVersion: 1\nproviders:\n  - name: file-dashboards\n    folder: Platform\n    type: file\n    allowUiUpdates: false\n    options:\n      path: /var/lib/grafana/dashboards",
+    "note": "Save as provisioning/dashboards/provider.yml. Grafana rescans the path periodically."
+   },
+   {
+    "title": "Golden signals dashboard",
+    "lang": "json",
+    "code": "{\n  \"uid\": \"golden-signals\",\n  \"title\": \"Golden Signals\",\n  \"schemaVersion\": 39,\n  \"time\": {\"from\": \"now-1h\", \"to\": \"now\"},\n  \"panels\": [\n    {\"id\": 1, \"type\": \"timeseries\", \"title\": \"Latency p95 (s)\", \"gridPos\": {\"x\": 0, \"y\": 0, \"w\": 12, \"h\": 8},\n     \"datasource\": {\"type\": \"prometheus\", \"uid\": \"prom\"},\n     \"targets\": [{\"refId\": \"A\", \"expr\": \"histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket[5m])))\"}]},\n    {\"id\": 2, \"type\": \"timeseries\", \"title\": \"Traffic (req/s)\", \"gridPos\": {\"x\": 12, \"y\": 0, \"w\": 12, \"h\": 8},\n     \"datasource\": {\"type\": \"prometheus\", \"uid\": \"prom\"},\n     \"targets\": [{\"refId\": \"A\", \"expr\": \"sum(rate(http_server_requests_seconds_count[5m]))\"}]},\n    {\"id\": 3, \"type\": \"timeseries\", \"title\": \"Error ratio (5xx)\", \"gridPos\": {\"x\": 0, \"y\": 8, \"w\": 12, \"h\": 8},\n     \"datasource\": {\"type\": \"prometheus\", \"uid\": \"prom\"},\n     \"targets\": [{\"refId\": \"A\", \"expr\": \"sum(rate(http_server_requests_seconds_count{status=~\\\"5..\\\"}[5m])) / sum(rate(http_server_requests_seconds_count[5m]))\"}]},\n    {\"id\": 4, \"type\": \"timeseries\", \"title\": \"Saturation: CPU cores used\", \"gridPos\": {\"x\": 12, \"y\": 8, \"w\": 12, \"h\": 8},\n     \"datasource\": {\"type\": \"prometheus\", \"uid\": \"prom\"},\n     \"targets\": [{\"refId\": \"A\", \"expr\": \"sum(rate(process_cpu_seconds_total[5m]))\"}]}\n  ]\n}",
+    "note": "Save as dashboards/golden-signals.json. Metric names assume Spring Boot Micrometer."
+   },
+   {
+    "title": "Alert rule provisioning",
+    "lang": "yaml",
+    "code": "apiVersion: 1\ngroups:\n  - orgId: 1\n    name: slo\n    folder: Platform\n    interval: 1m\n    rules:\n      - uid: high-error-ratio\n        title: High 5xx ratio\n        condition: C\n        for: 5m\n        noDataState: OK\n        execErrState: Error\n        labels: {severity: critical}\n        annotations: {summary: \"5xx ratio above 2 percent\"}\n        data:\n          - refId: A\n            datasourceUid: prom\n            relativeTimeRange: {from: 600, to: 0}\n            model:\n              expr: sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count[5m]))\n              instant: true\n              refId: A\n          - refId: C\n            datasourceUid: __expr__\n            model:\n              type: threshold\n              expression: A\n              conditions:\n                - evaluator: {type: gt, params: [0.02]}\n              refId: C",
+    "note": "Save as provisioning/alerting/rules.yml (already mounted). Route with a notification policy."
+   },
+   {
+    "title": "Start",
+    "lang": "bash",
+    "code": "export GRAFANA_ADMIN_PASSWORD='change-me-now'\ndocker compose up -d",
+    "note": "Change the password; keep it in a secret store."
+   }
   ]
+ },
+ "verify": [
+  "Datasources: curl -s -u admin:$GRAFANA_ADMIN_PASSWORD localhost:3000/api/datasources | jq '.[].name'",
+  "Health: curl -s localhost:3000/api/health",
+  "Dashboard loaded: curl -s -u admin:$GRAFANA_ADMIN_PASSWORD 'localhost:3000/api/search?query=Golden'",
+  "Datasource test: curl -s -u admin:$GRAFANA_ADMIN_PASSWORD localhost:3000/api/datasources/uid/prom/health",
+  "Provisioning errors: docker compose logs grafana | grep -i provisioning"
+ ],
+ "pitfalls": [
+  "Dashboards without fixed datasource uid break when imported elsewhere.",
+  "Editing a provisioned dashboard in the UI is lost on restart.",
+  "Default SQLite blocks running two replicas; use PostgreSQL.",
+  "Exemplars need the app to emit them and Prometheus exemplar storage on.",
+  "Alerting on every cause pages humans for noise; alert on symptoms.",
+  "'No data' state silently hides outages; set noDataState deliberately.",
+  "Admin password in compose files ends up in Git; use secrets."
+ ],
+ "furtherReading": [
+  {
+   "label": "Grafana provisioning",
+   "url": "https://grafana.com/docs/grafana/latest/administration/provisioning/"
+  },
+  {
+   "label": "Grafana alerting",
+   "url": "https://grafana.com/docs/grafana/latest/alerting/"
+  },
+  {
+   "label": "Google SRE: monitoring distributed systems",
+   "url": "https://sre.google/sre-book/monitoring-distributed-systems/"
+  },
+  {
+   "label": "Tempo data source",
+   "url": "https://grafana.com/docs/grafana/latest/datasources/tempo/configure-tempo-data-source/"
+  }
+ ],
+ "keyPoints": [
+  "Grafana queries datasources; it stores no metrics itself.",
+  "Datasources, dashboards and alerts are provisioned from Git.",
+  "Four golden signals: latency, traffic, errors, saturation.",
+  "Exemplars and derived fields jump from metric to trace to logs."
+ ],
+ "quickDeploy": [
+  "Mount provisioning files read-only.",
+  "Define Prometheus, Loki, Tempo datasources.",
+  "Load golden-signals dashboard from JSON.",
+  "Start and check the datasources API."
+ ],
+ "osi": [
+  "L7"
+ ],
+ "osiNote": "HTTP application: queries backends, serves dashboards over HTTPS.",
+ "production": [
+  "Provision everything as code; disable UI edits on shared dashboards.",
+  "Store state in PostgreSQL and run two replicas behind a load balancer.",
+  "Put SSO and TLS in front; no anonymous admin, no sign-up.",
+  "Back up the database and dashboard repo; restore-test quarterly.",
+  "Alert on datasource errors and scrape Grafana's own /metrics."
+ ]
 }

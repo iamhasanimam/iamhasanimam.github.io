@@ -1,157 +1,177 @@
 {
-  "slug": "keycloak",
-  "name": "Keycloak",
-  "category": "Identity & Access Management",
-  "icon": "keycloak",
-  "level": "hands-on",
-  "tagline": "Issues signed tokens for SSO: OIDC, realms, clients and roles.",
-  "whatItIs": "",
-  "howItWorks": [
-    {
-      "title": "Authorization Code flow with PKCE",
-      "body": "The app redirects the browser to Keycloak with a code_challenge (S256).\nThe user logs in once; Keycloak redirects back with a one-time code.\nThe app swaps code plus code_verifier for tokens at the token endpoint.\nOther apps in the realm reuse the session cookie: that is SSO."
-    },
-    {
-      "title": "Realms, clients, roles",
-      "body": "A realm is an isolated space of users, clients, roles and policy.\nA client is an app that may ask for tokens; public clients use PKCE.\nRealm and client roles are mapped into token claims.\nMappers add audience and custom claims."
-    },
-    {
-      "title": "JWT validation",
-      "body": "Fetch the realm JWKS and verify the signature by kid.\nCheck iss equals the realm URL, aud contains your API, exp is in the future.\nAllow a small clock skew, such as 30 seconds.\nCache the JWKS; refresh on an unknown kid."
-    },
-    {
-      "title": "HA with Infinispan",
-      "body": "Nodes form one Infinispan cluster; discovery uses the database (jdbc-ping).\nDistributed caches hold sessions and auth sessions across nodes.\nAll nodes share one PostgreSQL for users, clients and realms.\nOpen TCP 7800 and 57800 between nodes. JBoss grouping works the same way, via JGroups."
-    },
-    {
-      "title": "Realm import, export and heap",
-      "body": "kc.sh export writes a realm to JSON; start --import-realm loads it.\nStop the node before a full export, or use a separate instance.\nSet JAVA_OPTS_KC_HEAP to bound the JVM heap.\nSize the container limit above heap for metaspace and threads."
-    }
-  ],
-  "flow": [
-    "The user opens the app; it has no session.",
-    "The app redirects the browser to the realm auth endpoint with a PKCE challenge.",
-    "The load balancer picks a node; Keycloak shows the login page.",
-    "The user authenticates; Keycloak stores the session in Infinispan.",
-    "Keycloak redirects back to the app with a one-time code.",
-    "The app posts code plus code_verifier to the token endpoint.",
-    "Keycloak returns access, refresh and ID tokens signed with the realm key.",
-    "The API checks signature, issuer, audience and exp, then serves the request."
-  ],
-  "deploy": {
-    "summary": "Bring up a hardened Linux host, run Keycloak under systemd, then add a node.",
-    "prerequisites": [
-      "Two Linux VMs with sudo",
-      "PostgreSQL 16 reachable from both",
-      "TLS certificate for the public hostname",
-      "DNS name pointing at the load balancer"
-    ],
-    "steps": [
-      {
-        "title": "SSH keys, static IP, firewall",
-        "lang": "bash",
-        "code": "ssh-copy-id -i ~/.ssh/id_ed25519.pub <USER>@<NODE_IP>   # then set PasswordAuthentication no in sshd_config.d\n# netplan: addresses: [<NODE_IP>/24], routes via <GW>, nameservers <DNS_IP>\nsudo netplan apply\n# DNS: sso.example.com A <LB_IP>  (placeholder)\nsudo ufw allow 8443/tcp\nsudo ufw allow from <PEER_NODE_IP> to any port 7800,57800 proto tcp",
-        "note": "8443 serves users. 7800 and 57800 are for the cluster, so open them to peers only."
-      },
-      {
-        "title": "Install Keycloak 26.0.7",
-        "lang": "bash",
-        "code": "sudo apt-get install -y openjdk-21-jre-headless\ncurl -LO https://github.com/keycloak/keycloak/releases/download/26.0.7/keycloak-26.0.7.tar.gz\nsudo tar -xzf keycloak-26.0.7.tar.gz -C /opt && sudo ln -s /opt/keycloak-26.0.7 /opt/keycloak\nsudo useradd -r -s /usr/sbin/nologin keycloak && sudo chown -R keycloak: /opt/keycloak-26.0.7",
-        "note": "Create a PostgreSQL database and user named keycloak first."
-      },
-      {
-        "title": "Configure and run under systemd",
-        "lang": "ini",
-        "code": "# /opt/keycloak/conf/keycloak.conf\ndb=postgres\ndb-url=jdbc:postgresql://<DB_HOST>:5432/keycloak\ndb-username=keycloak\ndb-password=<DB_PASSWORD>\nhostname=https://sso.example.com\nhttps-port=8443\nhttps-certificate-file=/etc/keycloak/tls.crt\nhttps-certificate-key-file=/etc/keycloak/tls.key\nhealth-enabled=true\nmetrics-enabled=true\n\n# /etc/systemd/system/keycloak.service\n[Unit]\nAfter=network-online.target\n[Service]\nUser=keycloak\nEnvironment=JAVA_OPTS_KC_HEAP=\"-Xms1g -Xmx2g\"\nEnvironment=KC_BOOTSTRAP_ADMIN_USERNAME=admin KC_BOOTSTRAP_ADMIN_PASSWORD=<ADMIN_PASSWORD>\nExecStart=/opt/keycloak/bin/kc.sh start\nRestart=on-failure\n[Install]\nWantedBy=multi-user.target",
-        "note": "Two files in one block. Then daemon-reload and enable --now keycloak."
-      },
-      {
-        "title": "Create realm, client, role and user",
-        "lang": "bash",
-        "code": "K=/opt/keycloak/bin/kcadm.sh\n$K config credentials --server https://sso.example.com:8443 --realm master --user admin\n$K create realms -s realm=lab -s enabled=true\n$K create clients -r lab -s clientId=web -s publicClient=true -s 'redirectUris=[\"https://app.example.com/*\"]' -s 'attributes.\"pkce.code.challenge.method\"=S256'\n$K create roles -r lab -s name=editor\n$K create users -r lab -s username=alice -s enabled=true\n$K set-password -r lab --username alice --new-password '<USER_PASSWORD>'",
-        "note": "The client is public and forces S256 PKCE. Add an audience mapper so access tokens carry aud for your API."
-      },
-      {
-        "title": "Run the PKCE flow",
-        "lang": "bash",
-        "code": "V=$(openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\\n')\nC=$(printf %s \"$V\" | openssl dgst -sha256 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')\necho \"https://sso.example.com:8443/realms/lab/protocol/openid-connect/auth?client_id=web&response_type=code&scope=openid&redirect_uri=https://app.example.com/cb&code_challenge=$C&code_challenge_method=S256&state=xyz\"\n# log in, copy ?code= from the redirect\ncurl -s https://sso.example.com:8443/realms/lab/protocol/openid-connect/token -d grant_type=authorization_code -d client_id=web -d code=<CODE> -d redirect_uri=https://app.example.com/cb -d code_verifier=\"$V\"",
-        "note": "Open the printed URL in a browser. The code is single-use and short-lived."
-      },
-      {
-        "title": "Validate the JWT in an API",
-        "lang": "python",
-        "code": "import jwt  # pip install 'pyjwt[crypto]==2.9.0'\nurl = 'https://sso.example.com:8443/realms/lab/protocol/openid-connect/certs'\nkey = jwt.PyJWKClient(url).get_signing_key_from_jwt(token).key\nclaims = jwt.decode(token, key, algorithms=['RS256'],\n    audience='<API_AUDIENCE>', issuer='https://sso.example.com:8443/realms/lab', leeway=30)",
-        "note": "The issuer must match the public hostname exactly. leeway=30 allows 30 seconds of clock skew."
-      },
-      {
-        "title": "Export and import realms",
-        "lang": "bash",
-        "code": "sudo systemctl stop keycloak\nsudo -u keycloak /opt/keycloak/bin/kc.sh export --dir /var/backups/kc --realm lab --users realm_file\nsudo cp /var/backups/kc/lab-realm.json /opt/keycloak/data/import/\nsudo -u keycloak /opt/keycloak/bin/kc.sh start --import-realm",
-        "note": "Import skips realms that already exist. Run it on the target node, not the live one."
-      },
-      {
-        "title": "Add a second node for HA",
-        "lang": "bash",
-        "code": "# same keycloak.conf and the same database as node 1\necho 'cache=ispn' | sudo tee -a /opt/keycloak/conf/keycloak.conf\necho 'cache-stack=jdbc-ping' | sudo tee -a /opt/keycloak/conf/keycloak.conf\nsudo systemctl edit keycloak   # add: Environment=JAVA_OPTS_APPEND=\"-Djgroups.bind.address=<NODE2_IP>\"\nsudo systemctl enable --now keycloak",
-        "note": "Repeat on node 1 with its own IP. Put both behind HAProxy or NGINX health-checking /health/ready on port 9000."
-      }
-    ]
+ "slug": "keycloak",
+ "name": "Keycloak",
+ "category": "Identity & Access Management",
+ "icon": "keycloak",
+ "level": "hands-on",
+ "tagline": "Issues signed tokens for SSO: OIDC, realms, clients and roles.",
+ "whatItIs": "",
+ "howItWorks": [
+  {
+   "title": "Authorization Code flow with PKCE",
+   "body": "The app redirects the browser to Keycloak with a code_challenge (S256).\nThe user logs in once; Keycloak redirects back with a one-time code.\nThe app swaps code plus code_verifier for tokens at the token endpoint.\nOther apps in the realm reuse the session cookie: that is SSO."
   },
-  "verify": [
-    "curl -s https://sso.example.com:8443/realms/lab/.well-known/openid-configuration returns the expected issuer.",
-    "curl -s http://localhost:9000/health/ready returns status UP.",
-    "The token response contains access_token, refresh_token and id_token.",
-    "The JWKS at /realms/lab/protocol/openid-connect/certs lists the signing key.",
-    "Kill node 1: the session survives on node 2."
+  {
+   "title": "Realms, clients, roles",
+   "body": "A realm is an isolated space of users, clients, roles and policy.\nA client is an app that may ask for tokens; public clients use PKCE.\nRealm and client roles are mapped into token claims.\nMappers add audience and custom claims."
+  },
+  {
+   "title": "JWT validation",
+   "body": "Fetch the realm JWKS and verify the signature by kid.\nCheck iss equals the realm URL, aud contains your API, exp is in the future.\nAllow a small clock skew, such as 30 seconds.\nCache the JWKS; refresh on an unknown kid."
+  },
+  {
+   "title": "HA with Infinispan",
+   "body": "Nodes form one Infinispan cluster; discovery uses the database (jdbc-ping).\nDistributed caches hold sessions and auth sessions across nodes.\nAll nodes share one PostgreSQL for users, clients and realms.\nOpen TCP 7800 and 57800 between nodes. JBoss grouping works the same way, via JGroups."
+  },
+  {
+   "title": "Realm import, export and heap",
+   "body": "kc.sh export writes a realm to JSON; start --import-realm loads it.\nStop the node before a full export, or use a separate instance.\nSet JAVA_OPTS_KC_HEAP to bound the JVM heap.\nSize the container limit above heap for metaspace and threads."
+  },
+  {
+   "title": "What sits in front",
+   "body": "Users (Users layer) open a browser to the Keycloak hostname over HTTPS.\nA reverse proxy or load balancer in the Edge layer usually fronts it; common modes are re-encrypt and passthrough.\nLimit network access so only the proxy reaches Keycloak.\nSet the public hostname so issuer URLs match what clients see."
+  },
+  {
+   "title": "What sits behind",
+   "body": "A relational database holds users, clients and realms; PostgreSQL is a standard choice.\nOptional federation reads users from LDAP or Active Directory.\nOther Keycloak nodes join the same Infinispan cluster for sessions.\nOn Kubernetes (Platform), the Keycloak Operator runs it and an Ingress exposes it."
+  },
+  {
+   "title": "Apps and APIs",
+   "body": "Apps are OIDC clients; single-page and mobile apps use a public client with PKCE.\nAn API or gateway validates JWTs offline with the realm JWKS, or calls the introspection endpoint.\nThe Kubernetes API server can trust the realm as an OIDC issuer for kubectl logins.\nGateways such as Kong validate tokens before traffic reaches services."
+  },
+  {
+   "title": "Tokens",
+   "body": "An access token is short-lived and carries claims for the API.\nA refresh token obtains a new access token without another login.\nAn ID token tells the app who signed in.\nAll are signed with the realm key and verified through the JWKS."
+  },
+  {
+   "title": "Alternatives",
+   "body": "Authentik: choose it for a lighter, Python-based self-hosted identity provider.\nAuth0 or Okta: choose them when a hosted SaaS should run identity.\nAmazon Cognito: choose it when the stack already lives in AWS.\nMicrosoft Entra ID: choose it when users already live in Microsoft 365."
+  }
+ ],
+ "flow": [
+  "The user opens the app; it has no session.",
+  "The app redirects the browser to the realm auth endpoint with a PKCE challenge.",
+  "The load balancer picks a node; Keycloak shows the login page.",
+  "The user authenticates; Keycloak stores the session in Infinispan.",
+  "Keycloak redirects back to the app with a one-time code.",
+  "The app posts code plus code_verifier to the token endpoint.",
+  "Keycloak returns access, refresh and ID tokens signed with the realm key.",
+  "The API checks signature, issuer, audience and exp, then serves the request."
+ ],
+ "deploy": {
+  "summary": "Bring up a hardened Linux host, run Keycloak under systemd, then add a node.",
+  "prerequisites": [
+   "Two Linux VMs with sudo",
+   "PostgreSQL 16 reachable from both",
+   "TLS certificate for the public hostname",
+   "DNS name pointing at the load balancer"
   ],
-  "pitfalls": [
-    "Issuer mismatch behind a proxy: set hostname and proxy headers correctly.",
-    "Missing audience mapper makes API aud checks fail.",
-    "Redirect URI wildcards that are too broad invite token theft.",
-    "Open 7800 and 57800 between nodes, or the cluster never forms.",
-    "Heap near the container limit gets the JVM OOM-killed.",
-    "Cache sessions are lost if every node restarts at once; roll nodes one by one.",
-    "Clock drift beyond leeway makes exp and nbf checks fail."
-  ],
-  "furtherReading": [
-    {
-      "label": "Keycloak documentation",
-      "url": "https://www.keycloak.org/documentation"
-    },
-    {
-      "label": "Configuring distributed caches",
-      "url": "https://www.keycloak.org/server/caching"
-    },
-    {
-      "label": "Importing and exporting realms",
-      "url": "https://www.keycloak.org/server/importExport"
-    },
-    {
-      "label": "Configuring the hostname (v2)",
-      "url": "https://www.keycloak.org/server/hostname"
-    }
-  ],
-  "keyPoints": [
-    "Authorization Code flow with PKCE signs users in once across every app.",
-    "Realms isolate users, clients and roles; roles become token claims.",
-    "APIs validate the JWT: signature, issuer, audience and expiry.",
-    "HA means Infinispan distributed caches plus one shared database."
-  ],
-  "quickDeploy": [
-    "Install Keycloak behind TLS with PostgreSQL.",
-    "Create a realm, a public client with PKCE, and roles.",
-    "Run the code flow and inspect the JWT.",
-    "Add a second node and export the realm."
-  ],
-  "osi": [
-    "L7"
-  ],
-  "osiNote": "Speaks HTTPS and OIDC; session state replicates between nodes on TCP 7800.",
-  "production": [
-    "Run two or more nodes behind a load balancer with a shared database.",
-    "Size heap with MaxRAMPercentage; load test logins and watch GC pauses.",
-    "Export realms to JSON and keep them in Git.",
-    "Back up PostgreSQL and test the restore.",
-    "Alert on login errors, token endpoint p95 and cache cluster size."
+  "steps": [
+   {
+    "title": "SSH keys, static IP, firewall",
+    "lang": "bash",
+    "code": "ssh-copy-id -i ~/.ssh/id_ed25519.pub <USER>@<NODE_IP>   # then set PasswordAuthentication no in sshd_config.d\n# netplan: addresses: [<NODE_IP>/24], routes via <GW>, nameservers <DNS_IP>\nsudo netplan apply\n# DNS: sso.example.com A <LB_IP>  (placeholder)\nsudo ufw allow 8443/tcp\nsudo ufw allow from <PEER_NODE_IP> to any port 7800,57800 proto tcp",
+    "note": "8443 serves users. 7800 and 57800 are for the cluster, so open them to peers only."
+   },
+   {
+    "title": "Install Keycloak 26.0.7",
+    "lang": "bash",
+    "code": "sudo apt-get install -y openjdk-21-jre-headless\ncurl -LO https://github.com/keycloak/keycloak/releases/download/26.0.7/keycloak-26.0.7.tar.gz\nsudo tar -xzf keycloak-26.0.7.tar.gz -C /opt && sudo ln -s /opt/keycloak-26.0.7 /opt/keycloak\nsudo useradd -r -s /usr/sbin/nologin keycloak && sudo chown -R keycloak: /opt/keycloak-26.0.7",
+    "note": "Create a PostgreSQL database and user named keycloak first."
+   },
+   {
+    "title": "Configure and run under systemd",
+    "lang": "ini",
+    "code": "# /opt/keycloak/conf/keycloak.conf\ndb=postgres\ndb-url=jdbc:postgresql://<DB_HOST>:5432/keycloak\ndb-username=keycloak\ndb-password=<DB_PASSWORD>\nhostname=https://sso.example.com\nhttps-port=8443\nhttps-certificate-file=/etc/keycloak/tls.crt\nhttps-certificate-key-file=/etc/keycloak/tls.key\nhealth-enabled=true\nmetrics-enabled=true\n\n# /etc/systemd/system/keycloak.service\n[Unit]\nAfter=network-online.target\n[Service]\nUser=keycloak\nEnvironment=JAVA_OPTS_KC_HEAP=\"-Xms1g -Xmx2g\"\nEnvironment=KC_BOOTSTRAP_ADMIN_USERNAME=admin KC_BOOTSTRAP_ADMIN_PASSWORD=<ADMIN_PASSWORD>\nExecStart=/opt/keycloak/bin/kc.sh start\nRestart=on-failure\n[Install]\nWantedBy=multi-user.target",
+    "note": "Two files in one block. Then daemon-reload and enable --now keycloak."
+   },
+   {
+    "title": "Create realm, client, role and user",
+    "lang": "bash",
+    "code": "K=/opt/keycloak/bin/kcadm.sh\n$K config credentials --server https://sso.example.com:8443 --realm master --user admin\n$K create realms -s realm=lab -s enabled=true\n$K create clients -r lab -s clientId=web -s publicClient=true -s 'redirectUris=[\"https://app.example.com/*\"]' -s 'attributes.\"pkce.code.challenge.method\"=S256'\n$K create roles -r lab -s name=editor\n$K create users -r lab -s username=alice -s enabled=true\n$K set-password -r lab --username alice --new-password '<USER_PASSWORD>'",
+    "note": "The client is public and forces S256 PKCE. Add an audience mapper so access tokens carry aud for your API."
+   },
+   {
+    "title": "Run the PKCE flow",
+    "lang": "bash",
+    "code": "V=$(openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\\n')\nC=$(printf %s \"$V\" | openssl dgst -sha256 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')\necho \"https://sso.example.com:8443/realms/lab/protocol/openid-connect/auth?client_id=web&response_type=code&scope=openid&redirect_uri=https://app.example.com/cb&code_challenge=$C&code_challenge_method=S256&state=xyz\"\n# log in, copy ?code= from the redirect\ncurl -s https://sso.example.com:8443/realms/lab/protocol/openid-connect/token -d grant_type=authorization_code -d client_id=web -d code=<CODE> -d redirect_uri=https://app.example.com/cb -d code_verifier=\"$V\"",
+    "note": "Open the printed URL in a browser. The code is single-use and short-lived."
+   },
+   {
+    "title": "Validate the JWT in an API",
+    "lang": "python",
+    "code": "import jwt  # pip install 'pyjwt[crypto]==2.9.0'\nurl = 'https://sso.example.com:8443/realms/lab/protocol/openid-connect/certs'\nkey = jwt.PyJWKClient(url).get_signing_key_from_jwt(token).key\nclaims = jwt.decode(token, key, algorithms=['RS256'],\n    audience='<API_AUDIENCE>', issuer='https://sso.example.com:8443/realms/lab', leeway=30)",
+    "note": "The issuer must match the public hostname exactly. leeway=30 allows 30 seconds of clock skew."
+   },
+   {
+    "title": "Export and import realms",
+    "lang": "bash",
+    "code": "sudo systemctl stop keycloak\nsudo -u keycloak /opt/keycloak/bin/kc.sh export --dir /var/backups/kc --realm lab --users realm_file\nsudo cp /var/backups/kc/lab-realm.json /opt/keycloak/data/import/\nsudo -u keycloak /opt/keycloak/bin/kc.sh start --import-realm",
+    "note": "Import skips realms that already exist. Run it on the target node, not the live one."
+   },
+   {
+    "title": "Add a second node for HA",
+    "lang": "bash",
+    "code": "# same keycloak.conf and the same database as node 1\necho 'cache=ispn' | sudo tee -a /opt/keycloak/conf/keycloak.conf\necho 'cache-stack=jdbc-ping' | sudo tee -a /opt/keycloak/conf/keycloak.conf\nsudo systemctl edit keycloak   # add: Environment=JAVA_OPTS_APPEND=\"-Djgroups.bind.address=<NODE2_IP>\"\nsudo systemctl enable --now keycloak",
+    "note": "Repeat on node 1 with its own IP. Put both behind HAProxy or NGINX health-checking /health/ready on port 9000."
+   }
   ]
+ },
+ "verify": [
+  "curl -s https://sso.example.com:8443/realms/lab/.well-known/openid-configuration returns the expected issuer.",
+  "curl -s http://localhost:9000/health/ready returns status UP.",
+  "The token response contains access_token, refresh_token and id_token.",
+  "The JWKS at /realms/lab/protocol/openid-connect/certs lists the signing key.",
+  "Kill node 1: the session survives on node 2."
+ ],
+ "pitfalls": [
+  "Issuer mismatch behind a proxy: set the public hostname correctly.",
+  "Missing audience mapper makes API aud checks fail.",
+  "Redirect URI wildcards that are too broad invite token theft.",
+  "Open 7800 and 57800 between nodes, or the cluster never forms.",
+  "Heap near the container limit gets the JVM OOM-killed.",
+  "Cache sessions are lost if every node restarts at once; roll nodes one by one.",
+  "Clock skew beyond the allowed leeway makes exp and nbf checks fail."
+ ],
+ "furtherReading": [
+  {
+   "label": "Keycloak documentation",
+   "url": "https://www.keycloak.org/documentation"
+  },
+  {
+   "label": "Configuring distributed caches",
+   "url": "https://www.keycloak.org/server/caching"
+  },
+  {
+   "label": "Importing and exporting realms",
+   "url": "https://www.keycloak.org/server/importExport"
+  },
+  {
+   "label": "Configuring the hostname (v2)",
+   "url": "https://www.keycloak.org/server/hostname"
+  }
+ ],
+ "keyPoints": [
+  "Authorization Code flow with PKCE signs users in once across every app.",
+  "Realms isolate users, clients and roles; roles become token claims.",
+  "APIs validate the JWT: signature, issuer, audience and expiry.",
+  "HA means Infinispan distributed caches plus one shared database."
+ ],
+ "quickDeploy": [
+  "Install Keycloak behind TLS with PostgreSQL.",
+  "Create a realm, a public client with PKCE, and roles.",
+  "Run the code flow and inspect the JWT.",
+  "Add a second node and export the realm."
+ ],
+ "osi": [
+  "L7"
+ ],
+ "osiNote": "Speaks HTTPS and OIDC; session state replicates between nodes on TCP 7800.",
+ "production": [
+  "Run two or more nodes behind a load balancer with a shared database.",
+  "Size heap with MaxRAMPercentage; load test logins and watch GC pauses.",
+  "Export realms to JSON and keep them in Git.",
+  "Back up PostgreSQL and test the restore.",
+  "Alert on login errors, token endpoint p95 and cache cluster size."
+ ]
 }

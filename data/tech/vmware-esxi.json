@@ -9,23 +9,39 @@
  "howItWorks": [
   {
    "title": "Hypervisor (L1)",
-   "body": "ESXi boots from a small device and runs the VMkernel on hardware.\nPhysical NICs (vmnic) are the only L1 link to the outside.\nDatastores hold each VM as a folder of .vmx and .vmdk files."
+   "body": "ESXi boots from a small device and runs the VMkernel directly on the hardware.\nPhysical NICs (vmnic) are the only L1 link to the outside.\nDatastores hold each VM as a folder of .vmx and .vmdk files."
   },
   {
    "title": "vSwitches (L2)",
-   "body": "vSwitch0 carries the uplink vmnic and the management network.\nvSwitch1 has no uplink: a private switch for lab VMs only.\nPort groups set VLAN and security policy per VM network."
+   "body": "A standard vSwitch is a software switch; uplinks are the vmnics attached to it.\nA vSwitch with no uplink is a private network for VMs on that host only.\nPort groups set the VLAN ID and security policy per VM network."
   },
   {
    "title": "Gateway VM (L3)",
-   "body": "One NIC sits on vSwitch0 (WAN), the other on vSwitch1 (LAN).\nip_forward and a MASQUERADE rule NAT private hosts to the WAN address.\nPort forwards (DNAT) publish 443 to the RD Gateway."
+   "body": "One NIC sits on the public vSwitch, the other on the private vSwitch.\nIP forwarding and a MASQUERADE rule NAT private hosts to the WAN address.\nPort forwards (DNAT) publish 443 to the RD Gateway."
   },
   {
    "title": "Active Directory services",
-   "body": "DC01 runs AD DS, DNS and DHCP for the private subnet.\nClients get DHCP scope, DNS suffix and the gateway VM as default route.\nDC02 joins as a second DC and takes over all five FSMO roles."
+   "body": "DC01 runs AD DS, DNS and DHCP for the private subnet.\nClients get the DHCP scope, DNS suffix and the gateway VM as default route.\nDC02 joins as a second DC and can take over all five FSMO roles."
   },
   {
    "title": "Remote desktops (L7)",
-   "body": "RD Gateway wraps RDP in HTTPS on 443 with a certificate.\nThe Connection Broker sends users to a session host in the collection.\nUsers reach file shares on the file server through DFS or SMB paths.\nA jumpbox is the single admin entry; RDP and SSH to servers start there."
+   "body": "RD Gateway wraps RDP in HTTPS on 443 with a certificate.\nThe Connection Broker sends users to a session host in the collection.\nFile shares live on a file server reached over SMB.\nA jumpbox is the single admin entry for RDP and SSH."
+  },
+  {
+   "title": "What sits in front",
+   "body": "Users: remote desktop clients and administrators on the physical network.\nEdge: a firewall or the gateway VM receives HTTPS, then NATs it to the private side.\nUplinks trunk VLANs to the physical switch; port groups tag each VM network."
+  },
+  {
+   "title": "What sits behind",
+   "body": "Platform services: Windows Server roles, Linux VMs or a Kubernetes cluster on VMs.\nInfrastructure: datastores on local disk, NFS, iSCSI or vSAN hold the VM files.\nThe vSphere CSI driver provisions Kubernetes volumes on datastores.\nvCenter manages many hosts; vMotion and vSphere HA need shared storage and a common network."
+  },
+  {
+   "title": "Operators and automation",
+   "body": "Operators use the Host Client, vCenter, SSH (only when needed) or esxcli.\nTerraform's vSphere provider, Ansible's VMware collection and govc automate the VM lifecycle.\nSnapshots are short-term; use a backup product for restores.\nesxtop and vCenter charts show CPU ready, memory ballooning and datastore latency."
+  },
+  {
+   "title": "Alternatives",
+   "body": "Hypervisor: KVM or Proxmox on Linux, Microsoft Hyper-V, Xen. Choose KVM or Proxmox to avoid licence cost.\nCloud-style IaaS on KVM: OpenStack. Public cloud: AWS EC2, Azure VMs.\nGateway and firewall: pfSense, OPNsense, VyOS or a Linux VM with iptables.\nDirectory: Samba AD, FreeIPA or Entra ID instead of Windows AD."
   }
  ],
  "flow": [

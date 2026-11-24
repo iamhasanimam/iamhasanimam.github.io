@@ -18,7 +18,7 @@
     {
       "stage": "Platform and DevOps engineering",
       "years": "2025 - present",
-      "focus": "Built the infrastructure and monitoring that production systems run on: OpenShift 4.x, API gateway, identity, GitOps delivery, observability and reliability runbooks."
+      "focus": "Built the infrastructure and monitoring that production systems run on: OpenShift 4.x, API gateway, identity, GitOps delivery, observability and reliability documentation."
     }
   ],
   "roles": [
@@ -28,27 +28,23 @@
       "location": "Noida, India",
       "start": "Nov 2025",
       "end": "Present",
-      "summary": "I create the infrastructure and monitoring that production systems run on: an OpenShift 4.x platform for a large public-sector platform, serving about 400 req/s at p95 under 50 ms.",
+      "summary": "Platform engineering on Kubernetes: infrastructure and monitoring that production systems run on, serving about 400 req/s at p95 under 50 ms.",
       "highlights": [
         "Build and run the OpenShift 4.x infrastructure, from gateway and identity to CI/CD and GitOps delivery",
-        "Build the monitoring: OpenTelemetry, Prometheus, Loki, Tempo and Grafana",
-        "Authored a 44-page production readiness and rollback runbook"
+        "Build the monitoring: OpenTelemetry, Prometheus, Loki, Tempo and Grafana"
       ],
       "stack": [
-        "OpenShift 4.x",
-        "Kong",
-        "Keycloak",
-        "mTLS",
+        "Kubernetes",
+        "OpenShift",
         "Jenkins",
-        "ArgoCD",
-        "OpenTelemetry",
+        "Argo CD",
         "Prometheus",
+        "Grafana",
         "Loki",
         "Tempo",
-        "Grafana",
+        "PostgreSQL",
         "Redis",
-        "Kafka",
-        "PostgreSQL"
+        "Kafka"
       ],
       "headline": "Build the infrastructure and monitoring production runs on",
       "impact": {

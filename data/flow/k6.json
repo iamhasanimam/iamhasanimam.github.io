@@ -4,15 +4,15 @@
  "layers": [
   {
    "layer": 0,
-   "label": "Observe"
+   "label": "Platform: observe"
   },
   {
    "layer": 1,
-   "label": "Target"
+   "label": "Edge and Platform: target"
   },
   {
    "layer": 2,
-   "label": "Load"
+   "label": "Operators: load"
   }
  ],
  "groups": [
@@ -78,7 +78,7 @@
    "col": 1,
    "row": 0,
    "says": "The script sets options.",
-   "detail": "Scenarios, thresholds and checks live in one JavaScript file.",
+   "detail": "Scenarios, thresholds and checks live in one JavaScript file. Alternatives: JMeter, Locust, Gatling.",
    "href": "#/tech/k6",
    "inner": [
     {
@@ -153,7 +153,7 @@
    "col": 1,
    "row": 0,
    "says": "Prometheus receives remote write.",
-   "detail": "Stores k6_http_req_duration_p95 and request rates per testid.",
+   "detail": "Stores k6 request metrics per testid. Alternatives: InfluxDB, OpenTelemetry backends.",
    "href": "#/tech/prometheus"
   },
   {

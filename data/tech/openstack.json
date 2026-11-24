@@ -18,7 +18,11 @@
   "Write local.conf; run stack.sh.",
   "Source openrc; launch a server."
  ],
- "osi": ["L2", "L3", "L7"],
+ "osi": [
+  "L2",
+  "L3",
+  "L7"
+ ],
  "osiNote": "Neutron bridges L2 and routes L3; service APIs speak HTTP.",
  "production": [
   "Run three controllers behind HAProxy and keepalived; cluster the database and RabbitMQ.",
@@ -47,6 +51,22 @@
   {
    "title": "Control plane",
    "body": "Services talk through REST APIs, a message queue and a database.\nHorizon calls the same APIs as the openstack CLI.\nCompute hosts run agents; controllers run the APIs.\nHA means a clustered queue and database."
+  },
+  {
+   "title": "Connecting to its neighbours",
+   "body": "In front: users call REST APIs through the CLI or Horizon; an HAProxy virtual IP fronts the APIs in HA setups.\nBehind: KVM hosts with libvirt, Open vSwitch or OVN, and Ceph or LVM storage.\nCluster API provider OpenStack or Magnum builds Kubernetes clusters on Nova instances.\ncloud-provider-openstack maps Service type LoadBalancer to Octavia and PersistentVolumes to Cinder.\nKeystone federates with an OIDC or SAML provider such as Keycloak."
+  },
+  {
+   "title": "Deployment tools",
+   "body": "DevStack is for labs; it installs everything on one machine from git.\nkolla-ansible deploys containerised services; OpenStack-Ansible deploys into LXC containers.\nTerraform, Heat or the openstack.cloud Ansible collection create projects and resources as code."
+  },
+  {
+   "title": "Operations",
+   "body": "Use the CLI for day-two tasks: openstack compute service list and network agent list.\nA Prometheus OpenStack exporter and central logs watch the control plane and compute hosts.\nBack up the database and Glance images; test the restore."
+  },
+  {
+   "title": "Alternatives",
+   "body": "Smaller scale: Proxmox or plain KVM with libvirt.\nVendor stacks: VMware vSphere with vCenter, or Microsoft Hyper-V.\nKubernetes-native virtualisation: KubeVirt on an existing cluster.\nPublic cloud: AWS, Azure or Google Cloud when owning hardware is not the goal."
   }
  ],
  "flow": [

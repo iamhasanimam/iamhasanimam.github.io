@@ -1,354 +1,393 @@
 {
-  "title": "Grafana",
-  "subtitle": "Datasources, dashboards and alerts as code",
-  "layers": [
-    {
-      "layer": 0,
-      "label": "Datasources"
-    },
-    {
-      "layer": 1,
-      "label": "As code"
-    },
-    {
-      "layer": 2,
-      "label": "Grafana"
-    },
-    {
-      "layer": 3,
-      "label": "Outputs"
-    }
-  ],
-  "tabs": [
-    {
-      "id": "sources",
-      "label": "Data sources",
-      "focus": [
-        "prom",
-        "loki",
-        "tempo",
-        "provision",
-        "grafana"
-      ]
-    },
-    {
-      "id": "dash",
-      "label": "Golden signals",
-      "focus": [
-        "grafana",
-        "dash",
-        "prom"
-      ]
-    },
-    {
-      "id": "corr",
-      "label": "Correlate and alert",
-      "focus": [
-        "prom",
-        "tempo",
-        "loki",
-        "alerting",
-        "contact"
-      ]
-    }
-  ],
-  "boxes": [
-    {
-      "id": "prom",
-      "label": "Prometheus",
-      "tech": "Prometheus",
-      "icon": "prometheus",
-      "layer": 0,
-      "col": 0,
-      "row": 0,
-      "says": "Prometheus answers metric queries.",
-      "detail": "Latency, traffic, errors and saturation come from PromQL. Exemplars carry trace IDs.",
-      "href": "#/tech/prometheus"
-    },
-    {
-      "id": "loki",
-      "label": "Loki",
-      "tech": "Loki",
-      "icon": "grafana",
-      "layer": 0,
-      "col": 2,
-      "row": 0,
-      "says": "Loki answers log queries.",
-      "detail": "LogQL returns lines by label; derived fields turn trace_id into a Tempo link.",
-      "href": "#/tech/loki-minio"
-    },
-    {
-      "id": "tempo",
-      "label": "Tempo",
-      "tech": "Tempo",
-      "icon": "grafana",
-      "layer": 0,
-      "col": 4,
-      "row": 0,
-      "says": "Tempo stores traces.",
-      "detail": "Opens a trace from an exemplar, then jumps from a span to its Loki logs."
-    },
-    {
-      "id": "provision",
-      "label": "Provisioning",
-      "tech": "Git",
-      "icon": "git",
-      "layer": 1,
-      "col": 2,
-      "row": 0,
-      "says": "Git provisions datasources and dashboards.",
-      "detail": "YAML and JSON mount read-only. Review by pull request; no drift from UI edits."
-    },
-    {
-      "id": "grafana",
-      "label": "Grafana",
-      "tech": "Grafana",
-      "icon": "grafana",
-      "layer": 2,
-      "col": 2,
-      "row": 0,
-      "says": "Grafana queries, never stores.",
-      "detail": "Proxies queries server-side, renders panels, evaluates alert rules.",
-      "size": [
-        3,
-        1,
-        2
-      ],
-      "inner": [
-        {
-          "id": "ds",
-          "label": "Datasources"
-        },
-        {
-          "id": "dashboards",
-          "label": "Dashboards"
-        },
-        {
-          "id": "explore",
-          "label": "Explore"
-        },
-        {
-          "id": "alerts",
-          "label": "Alerting"
-        }
-      ]
-    },
-    {
-      "id": "dash",
-      "label": "Dashboard",
-      "tech": "Grafana dashboard",
-      "icon": null,
-      "layer": 3,
-      "col": 0,
-      "row": 0,
-      "says": "Four golden signals, top to bottom.",
-      "detail": "Latency p95, traffic, 5xx ratio and CPU saturation read in on-call order."
-    },
-    {
-      "id": "alerting",
-      "label": "Alert Rules",
-      "tech": "Grafana Alerting",
-      "icon": null,
-      "layer": 3,
-      "col": 2,
-      "row": 0,
-      "says": "Alert rules judge symptoms.",
-      "detail": "A query, a threshold, a for duration; notification policies route by label."
-    },
-    {
-      "id": "contact",
-      "label": "Contact Point",
-      "tech": "Slack",
-      "icon": "slack",
-      "layer": 3,
-      "col": 4,
-      "row": 0,
-      "says": "Contact points deliver the page.",
-      "detail": "Slack, email or webhook receives grouped notifications."
-    }
-  ],
-  "wires": [
-    {
-      "from": "provision",
-      "to": "grafana",
-      "label": "provision",
-      "style": "solid",
-      "flow": true,
-      "weight": "bold"
-    },
-    {
-      "from": "grafana",
-      "to": "prom",
-      "label": "PromQL",
-      "style": "solid",
-      "flow": true,
-      "weight": "normal"
-    },
-    {
-      "from": "grafana",
-      "to": "loki",
-      "label": "LogQL",
-      "style": "solid",
-      "flow": true,
-      "weight": "normal"
-    },
-    {
-      "from": "grafana",
-      "to": "tempo",
-      "label": "TraceQL",
-      "style": "solid",
-      "flow": true,
-      "weight": "normal"
-    },
-    {
-      "from": "grafana",
-      "to": "dash",
-      "label": "render",
-      "style": "solid",
-      "flow": true,
-      "weight": "normal"
-    },
-    {
-      "from": "grafana",
-      "to": "alerting",
-      "label": "evaluate",
-      "style": "solid",
-      "flow": true,
-      "weight": "bold"
-    },
-    {
-      "from": "alerting",
-      "to": "contact",
-      "label": "notify",
-      "style": "solid",
-      "flow": true,
-      "weight": "normal"
-    },
-    {
-      "from": "prom",
-      "to": "tempo",
-      "label": "exemplar trace_id",
-      "style": "dashed",
-      "flow": false,
-      "weight": "normal"
-    },
-    {
-      "from": "tempo",
-      "to": "loki",
-      "label": "trace to logs",
-      "style": "dashed",
-      "flow": false,
-      "weight": "normal"
-    }
-  ],
-  "steps": [
-    {
-      "title": "Provision",
-      "text": "Git mounts datasources and dashboards at startup.",
-      "boxes": [
-        "provision",
-        "grafana"
-      ],
-      "wires": [
-        [
-          "provision",
-          "grafana"
-        ]
-      ]
-    },
-    {
-      "title": "Query",
-      "text": "Grafana proxies PromQL, LogQL and TraceQL.",
-      "boxes": [
-        "grafana",
-        "prom",
-        "loki",
-        "tempo"
-      ],
-      "wires": [
-        [
-          "grafana",
-          "prom"
-        ],
-        [
-          "grafana",
-          "loki"
-        ],
-        [
-          "grafana",
-          "tempo"
-        ]
-      ]
-    },
-    {
-      "title": "Dashboard",
-      "text": "Golden signals render from Prometheus.",
-      "boxes": [
-        "grafana",
-        "dash",
-        "prom"
-      ],
-      "wires": [
-        [
-          "grafana",
-          "dash"
-        ],
-        [
-          "grafana",
-          "prom"
-        ]
-      ]
-    },
-    {
-      "title": "Correlate",
-      "text": "Exemplar opens the trace; the span opens logs.",
-      "boxes": [
-        "prom",
-        "tempo",
-        "loki"
-      ],
-      "wires": [
-        [
-          "prom",
-          "tempo"
-        ],
-        [
-          "tempo",
-          "loki"
-        ]
-      ]
-    },
-    {
-      "title": "Alert",
-      "text": "Rules evaluate and notify contact points.",
-      "boxes": [
-        "grafana",
-        "alerting",
-        "contact"
-      ],
-      "wires": [
-        [
-          "grafana",
-          "alerting"
-        ],
-        [
-          "alerting",
-          "contact"
-        ]
-      ]
-    }
-  ],
-  "declarations": [
-    "Grafana queries, never stores.",
-    "Dashboards are code.",
-    "Four signals tell truth.",
-    "Exemplars link symptom to trace."
-  ],
-  "run": {
-    "cmd": "curl -s localhost:3000/api/datasources",
-    "lines": [
-      "Prometheus, Loki, Tempo: type, uid, url",
-      "provisioned: true, readOnly: true"
-    ]
+ "title": "Grafana",
+ "subtitle": "Datasources, dashboards and alerts as code",
+ "layers": [
+  {
+   "layer": 0,
+   "label": "Datasources"
+  },
+  {
+   "layer": 1,
+   "label": "As code"
+  },
+  {
+   "layer": 2,
+   "label": "Grafana"
+  },
+  {
+   "layer": 3,
+   "label": "Outputs"
   }
+ ],
+ "tabs": [
+  {
+   "id": "sources",
+   "label": "Data sources",
+   "focus": [
+    "prom",
+    "loki",
+    "tempo",
+    "provision",
+    "grafana"
+   ]
+  },
+  {
+   "id": "dash",
+   "label": "Golden signals",
+   "focus": [
+    "grafana",
+    "dash",
+    "prom"
+   ]
+  },
+  {
+   "id": "corr",
+   "label": "Correlate and alert",
+   "focus": [
+    "prom",
+    "tempo",
+    "loki",
+    "alerting",
+    "contact"
+   ]
+  }
+ ],
+ "boxes": [
+  {
+   "id": "prom",
+   "label": "Prometheus",
+   "tech": "Prometheus",
+   "icon": "prometheus",
+   "layer": 0,
+   "col": 0,
+   "row": 0,
+   "says": "Prometheus answers metric queries.",
+   "detail": "Latency, traffic, errors and saturation come from PromQL. Exemplars carry trace IDs.",
+   "href": "#/tech/prometheus"
+  },
+  {
+   "id": "loki",
+   "label": "Loki",
+   "tech": "Loki",
+   "icon": "grafana",
+   "layer": 0,
+   "col": 2,
+   "row": 0,
+   "says": "Loki answers log queries.",
+   "detail": "LogQL returns lines by label; derived fields turn trace_id into a Tempo link.",
+   "href": "#/tech/loki-minio"
+  },
+  {
+   "id": "tempo",
+   "label": "Tempo",
+   "tech": "Tempo",
+   "icon": "grafana",
+   "layer": 0,
+   "col": 4,
+   "row": 0,
+   "says": "Tempo stores traces.",
+   "detail": "Opens a trace from an exemplar, then jumps from a span to its Loki logs."
+  },
+  {
+   "id": "provision",
+   "label": "Provisioning",
+   "tech": "Git",
+   "icon": "git",
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "Git provisions datasources and dashboards.",
+   "detail": "YAML and JSON mount read-only. Review by pull request; UI edits cannot diverge from Git."
+  },
+  {
+   "id": "grafana",
+   "label": "Grafana",
+   "tech": "Grafana",
+   "icon": "grafana",
+   "layer": 2,
+   "col": 2,
+   "row": 0,
+   "says": "Grafana queries, never stores.",
+   "detail": "Draws dashboards and alerts. Alternatives: Kibana, Datadog, Perses.",
+   "size": [
+    3,
+    1,
+    2
+   ],
+   "inner": [
+    {
+     "id": "ds",
+     "label": "Datasources"
+    },
+    {
+     "id": "dashboards",
+     "label": "Dashboards"
+    },
+    {
+     "id": "explore",
+     "label": "Explore"
+    },
+    {
+     "id": "alerts",
+     "label": "Alerting"
+    }
+   ],
+   "href": "#/tech/grafana"
+  },
+  {
+   "id": "dash",
+   "label": "Dashboard",
+   "tech": "Grafana dashboard",
+   "icon": null,
+   "layer": 3,
+   "col": 0,
+   "row": 0,
+   "says": "Four golden signals, top to bottom.",
+   "detail": "Latency p95, traffic, 5xx ratio and CPU saturation read in on-call order."
+  },
+  {
+   "id": "alerting",
+   "label": "Alert Rules",
+   "tech": "Grafana Alerting",
+   "icon": null,
+   "layer": 3,
+   "col": 2,
+   "row": 0,
+   "says": "Alert rules judge symptoms.",
+   "detail": "A query, a threshold, a for duration; notification policies route by label."
+  },
+  {
+   "id": "contact",
+   "label": "Contact Point",
+   "tech": "Slack",
+   "icon": "slack",
+   "layer": 3,
+   "col": 4,
+   "row": 0,
+   "says": "Contact points deliver the page.",
+   "detail": "Slack, email or webhook receives grouped notifications."
+  },
+  {
+   "id": "idp",
+   "label": "Identity",
+   "tech": "Keycloak",
+   "icon": "keycloak",
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "Keycloak signs users in.",
+   "detail": "OIDC through generic OAuth. Alternatives: Authentik, Okta, Auth0.",
+   "href": "#/tech/keycloak"
+  },
+  {
+   "id": "pg",
+   "label": "Database",
+   "tech": "PostgreSQL",
+   "icon": "postgresql",
+   "layer": 1,
+   "col": 4,
+   "row": 0,
+   "says": "PostgreSQL stores Grafana state.",
+   "detail": "Needed to run several replicas. SQLite suits one instance.",
+   "href": "#/tech/postgresql"
+  }
+ ],
+ "wires": [
+  {
+   "from": "provision",
+   "to": "grafana",
+   "label": "provision",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "grafana",
+   "to": "prom",
+   "label": "PromQL",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "grafana",
+   "to": "loki",
+   "label": "LogQL",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "grafana",
+   "to": "tempo",
+   "label": "TraceQL",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "grafana",
+   "to": "dash",
+   "label": "render",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "grafana",
+   "to": "alerting",
+   "label": "evaluate",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "alerting",
+   "to": "contact",
+   "label": "notify",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "prom",
+   "to": "tempo",
+   "label": "exemplar trace_id",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "tempo",
+   "to": "loki",
+   "label": "trace to logs",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "idp",
+   "to": "grafana",
+   "label": "OIDC sign-in",
+   "style": "solid",
+   "flow": true
+  },
+  {
+   "from": "grafana",
+   "to": "pg",
+   "label": "state",
+   "style": "dashed",
+   "flow": true
+  }
+ ],
+ "steps": [
+  {
+   "title": "Provision",
+   "text": "Git mounts datasources and dashboards at startup.",
+   "boxes": [
+    "provision",
+    "grafana"
+   ],
+   "wires": [
+    [
+     "provision",
+     "grafana"
+    ]
+   ]
+  },
+  {
+   "title": "Query",
+   "text": "Grafana proxies PromQL, LogQL and TraceQL.",
+   "boxes": [
+    "grafana",
+    "prom",
+    "loki",
+    "tempo"
+   ],
+   "wires": [
+    [
+     "grafana",
+     "prom"
+    ],
+    [
+     "grafana",
+     "loki"
+    ],
+    [
+     "grafana",
+     "tempo"
+    ]
+   ]
+  },
+  {
+   "title": "Dashboard",
+   "text": "Golden signals render from Prometheus.",
+   "boxes": [
+    "grafana",
+    "dash",
+    "prom"
+   ],
+   "wires": [
+    [
+     "grafana",
+     "dash"
+    ],
+    [
+     "grafana",
+     "prom"
+    ]
+   ]
+  },
+  {
+   "title": "Correlate",
+   "text": "Exemplar opens the trace; the span opens logs.",
+   "boxes": [
+    "prom",
+    "tempo",
+    "loki"
+   ],
+   "wires": [
+    [
+     "prom",
+     "tempo"
+    ],
+    [
+     "tempo",
+     "loki"
+    ]
+   ]
+  },
+  {
+   "title": "Alert",
+   "text": "Rules evaluate and notify contact points.",
+   "boxes": [
+    "grafana",
+    "alerting",
+    "contact"
+   ],
+   "wires": [
+    [
+     "grafana",
+     "alerting"
+    ],
+    [
+     "alerting",
+     "contact"
+    ]
+   ]
+  }
+ ],
+ "declarations": [
+  "Grafana queries, never stores.",
+  "Dashboards are code.",
+  "Four signals tell truth.",
+  "Exemplars link symptom to trace."
+ ],
+ "run": {
+  "cmd": "curl -s localhost:3000/api/datasources",
+  "lines": [
+   "Prometheus, Loki, Tempo: type, uid, url",
+   "provisioned: true, readOnly: true"
+  ]
+ }
 }

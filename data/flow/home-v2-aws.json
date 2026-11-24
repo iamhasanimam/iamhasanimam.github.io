@@ -1,1140 +1,1140 @@
 {
- "title": "Platform v2",
- "subtitle": "AWS",
- "layers": [
-  {
-   "layer": 0,
-   "label": "Infrastructure"
-  },
-  {
-   "layer": 1,
-   "label": "Linux & runtime"
-  },
-  {
-   "layer": 2,
-   "label": "Kubernetes cluster"
-  },
-  {
-   "layer": 3,
-   "label": "Edge",
-   "kind": "outside",
-   "side": "left",
-   "arrange": "vertical"
-  },
-  {
-   "layer": 4,
-   "label": "End users",
-   "kind": "outside",
-   "side": "left",
-   "arrange": "vertical"
-  },
-  {
-   "layer": 5,
-   "label": "Platform services",
-   "kind": "outside",
-   "side": "right",
-   "arrange": "vertical"
-  },
-  {
-   "layer": 6,
-   "label": "Operators",
-   "kind": "outside",
-   "side": "right",
-   "arrange": "vertical"
-  }
- ],
- "groups": [
-  {
-   "id": "frontend-svc",
-   "label": "Frontend service",
-   "boxes": [
-    "web"
-   ]
-  },
-  {
-   "id": "backend-svc",
-   "label": "Backend services",
-   "boxes": [
-    "order",
-    "payment",
-    "notification"
-   ]
-  }
- ],
- "tabs": [
-  {
-   "id": "request",
-   "label": "Request",
-   "focus": [
-    "users",
-    "haproxy",
-    "nginx",
-    "kong",
-    "istio",
-    "web",
-    "order",
-    "payment",
-    "notification",
-    "postgres"
-   ]
-  },
-  {
-   "id": "sso",
-   "label": "SSO",
-   "focus": [
-    "users",
-    "kong",
-    "web",
-    "keycloak",
-    "redis",
-    "order"
-   ]
-  },
-  {
-   "id": "events",
-   "label": "Events",
-   "focus": [
-    "web",
-    "kafka",
-    "order",
-    "payment",
-    "notification"
-   ]
-  },
-  {
-   "id": "delivery",
-   "label": "Delivery",
-   "focus": [
-    "devs",
-    "git",
-    "jenkins",
-    "argo",
-    "kubernetes",
-    "ops"
-   ]
-  },
-  {
-   "id": "observe",
-   "label": "Observe",
-   "focus": [
-    "order",
-    "payment",
-    "notification",
-    "otel",
-    "prometheus",
-    "lokitempo",
-    "grafana"
-   ]
-  }
- ],
- "boxes": [
-  {
-   "id": "vpc",
-   "label": "VPC",
-   "tech": "AWS VPC",
-   "icon": "amazonaws",
-   "tone": "blue",
-   "layer": 0,
-   "col": 3,
-   "row": 1,
-   "says": "The VPC isolates the network.",
-   "detail": "Public and private subnets with route tables and security groups.",
-   "href": "#/tech/aws"
-  },
-  {
-   "id": "route53",
-   "label": "Route 53",
-   "tech": "Amazon Route 53",
-   "icon": "amazonroute53",
-   "tone": "blue",
-   "layer": 0,
-   "col": 4,
-   "row": 1,
-   "says": "Route 53 resolves the names.",
-   "detail": "DNS records and health-checked routing to the load balancer.",
-   "href": "#/tech/aws"
-  },
-  {
-   "id": "alb",
-   "label": "ALB",
-   "tech": "Application Load Balancer",
-   "icon": "amazonaws",
-   "tone": "blue",
-   "layer": 0,
-   "col": 5,
-   "row": 1,
-   "says": "The ALB accepts public traffic.",
-   "detail": "Terminates TLS with ACM certificates and forwards to private instances.",
-   "href": "#/tech/aws"
-  },
-  {
-   "id": "ec2",
-   "label": "EC2",
-   "tech": "Amazon EC2",
-   "icon": "amazonec2",
-   "tone": "blue",
-   "layer": 0,
-   "col": 5,
-   "row": 0,
-   "says": "EC2 runs the nodes.",
-   "detail": "Private instances reached through SSM, no open SSH ports.",
-   "href": "#/tech/aws"
-  },
-  {
-   "id": "ebs",
-   "label": "EBS",
-   "tech": "Amazon EBS",
-   "icon": "amazonaws",
-   "tone": "blue",
-   "layer": 0,
-   "col": 4,
-   "row": 0,
-   "says": "EBS backs the disks.",
-   "detail": "Encrypted volumes with scheduled snapshots.",
-   "href": "#/tech/aws"
-  },
-  {
-   "id": "s3",
-   "label": "S3",
-   "tech": "Amazon S3",
-   "icon": "amazons3",
-   "tone": "blue",
-   "layer": 0,
-   "col": 6,
-   "row": 0,
-   "says": "S3 stores objects and backups.",
-   "detail": "Versioned buckets for artifacts, logs and backups.",
-   "href": "#/tech/aws"
-  },
-  {
-   "id": "iam",
-   "label": "IAM",
-   "tech": "AWS IAM",
-   "icon": "amazonaws",
-   "tone": "blue",
-   "layer": 0,
-   "col": 3,
-   "row": 0,
-   "says": "IAM grants least privilege.",
-   "detail": "Roles and policies control who and what can reach each resource.",
-   "href": "#/tech/aws"
-  },
-  {
-   "id": "cloudwatch",
-   "label": "CloudWatch",
-   "tech": "Amazon CloudWatch",
-   "icon": "amazoncloudwatch",
-   "tone": "blue",
-   "layer": 0,
-   "col": 2,
-   "row": 0,
-   "says": "CloudWatch watches the account.",
-   "detail": "Metrics, logs and alarms for the infrastructure layer.",
-   "href": "#/tech/aws"
-  },
-  {
-   "id": "linux",
-   "label": "Linux",
-   "tech": "Linux (cgroups, namespaces)",
-   "icon": "linux",
-   "tone": "blue",
-   "layer": 1,
-   "col": 5,
-   "row": 0,
-   "says": "Linux isolates every workload.",
-   "detail": "Cgroups limit resources, namespaces isolate processes, mounts and networks. Every container is a Linux process.",
-   "href": "#/tech/linux-networking"
-  },
-  {
-   "id": "docker",
-   "label": "Containers",
-   "tech": "Docker / containerd",
-   "icon": "docker",
-   "tone": "blue",
-   "layer": 1,
-   "col": 6,
-   "row": 0,
-   "says": "Docker packages and runs containers.",
-   "detail": "Images built once run the same everywhere. containerd runs them under the kubelet.",
-   "href": "#/tech/docker"
-  },
-  {
-   "id": "ansible",
-   "label": "Ansible",
-   "tech": "Ansible",
-   "icon": "ansible",
-   "tone": "blue",
-   "layer": 5,
-   "col": 0,
-   "row": 3,
-   "says": "Ansible configures every host.",
-   "detail": "Idempotent playbooks set up users, packages, kernel settings and firewall rules on each node.",
-   "href": "#/tech/ansible"
-  },
-  {
-   "id": "kubernetes",
-   "label": "Control plane",
-   "tech": "Kubernetes",
-   "icon": "kubernetes",
-   "tone": "blue",
-   "layer": 2,
-   "col": 6,
-   "row": 0,
-   "says": "Kubernetes schedules and heals workloads.",
-   "detail": "The API server, etcd, scheduler and controllers keep declared state true across worker nodes.",
-   "href": "#/tech/kubernetes-okd"
-  },
-  {
-   "id": "istio",
-   "label": "Service mesh",
-   "tech": "Istio",
-   "icon": "istio",
-   "tone": "blue",
-   "layer": 2,
-   "col": 0,
-   "row": 0,
-   "says": "Istio gates ingress and secures service traffic.",
-   "detail": "The ingress gateway admits traffic. Sidecars enforce mTLS, retries and traffic policy between services.",
-   "href": "#/tech/istio"
-  },
-  {
-   "id": "web",
-   "label": "Frontend",
-   "tech": "Node.js",
-   "icon": "nodedotjs",
-   "tone": "blue",
-   "layer": 2,
-   "col": 0,
-   "row": 1,
-   "says": "The frontend serves the app and starts login.",
-   "detail": "Three replicas serve the UI, call backends, keep sessions in Redis and publish events to Kafka.",
-   "replicas": 3
-  },
-  {
-   "id": "kafka",
-   "label": "Queue",
-   "tech": "Apache Kafka",
-   "icon": "apachekafka",
-   "tone": "blue",
-   "layer": 2,
-   "col": 2,
-   "row": 1,
-   "says": "Kafka decouples frontend from services.",
-   "detail": "A durable log carries order, payment and notification events so each service consumes at its own pace.",
-   "href": "#/tech/kafka"
-  },
-  {
-   "id": "order",
-   "label": "Order",
-   "tech": "Python",
-   "icon": "python",
-   "tone": "blue",
-   "layer": 2,
-   "col": 3,
-   "row": 0,
-   "says": "Order owns the order lifecycle.",
-   "detail": "Three replicas consume events, write orders to PostgreSQL and validate tokens from Keycloak.",
-   "href": "#/tech/python",
-   "replicas": 3
-  },
-  {
-   "id": "payment",
-   "label": "Payment",
-   "tech": "Node.js",
-   "icon": "nodedotjs",
-   "tone": "blue",
-   "layer": 2,
-   "col": 4,
-   "row": 0,
-   "says": "Payment settles charges safely.",
-   "detail": "Two replicas process payment events idempotently and store results in PostgreSQL.",
-   "replicas": 2
-  },
-  {
-   "id": "notification",
-   "label": "Notification",
-   "tech": "Python",
-   "icon": "python",
-   "tone": "blue",
-   "layer": 2,
-   "col": 5,
-   "row": 0,
-   "says": "Notification tells users what happened.",
-   "detail": "Two replicas consume events and send email or push messages, retrying on failure.",
-   "href": "#/tech/python",
-   "replicas": 2
-  },
-  {
-   "id": "keycloak",
-   "label": "Keycloak",
-   "tech": "Keycloak",
-   "icon": "keycloak",
-   "tone": "blue",
-   "layer": 2,
-   "col": 1,
-   "row": 0,
-   "says": "Keycloak issues OIDC tokens.",
-   "detail": "Users log in once. Keycloak returns signed tokens that services validate.",
-   "href": "#/tech/keycloak"
-  },
-  {
-   "id": "redis",
-   "label": "Redis",
-   "tech": "Redis",
-   "icon": "redis",
-   "tone": "blue",
-   "layer": 2,
-   "col": 1,
-   "row": 1,
-   "says": "Redis keeps sessions and hot data.",
-   "detail": "An in-memory store for sessions and cache keeps the frontend fast and stateless.",
-   "href": "#/tech/redis"
-  },
-  {
-   "id": "openbao",
-   "label": "OpenBao",
-   "tech": "OpenBao (Vault)",
-   "icon": "vault",
-   "tone": "blue",
-   "layer": 2,
-   "col": 5,
-   "row": 1,
-   "says": "OpenBao hands out secrets on demand.",
-   "detail": "Services read short-lived secrets and credentials instead of storing them in images or manifests.",
-   "href": "#/tech/openbao"
-  },
-  {
-   "id": "elasticsearch",
-   "label": "Search",
-   "tech": "Elasticsearch",
-   "icon": "elasticsearch",
-   "tone": "blue",
-   "layer": 2,
-   "col": 4,
-   "row": 1,
-   "says": "Elasticsearch indexes search and logs.",
-   "detail": "A search index for orders and application logs, queried by the services and operators."
-  },
-  {
-   "id": "postgres",
-   "label": "PostgreSQL",
-   "tech": "PostgreSQL",
-   "icon": "postgresql",
-   "tone": "blue",
-   "layer": 2,
-   "col": 3,
-   "row": 1,
-   "says": "PostgreSQL stores the system of record.",
-   "detail": "Orders and payments live in a relational database with replication and tested backups.",
-   "href": "#/tech/postgresql"
-  },
-  {
-   "id": "git",
-   "label": "Git",
-   "tech": "Git",
-   "icon": "git",
-   "tone": "blue",
-   "layer": 5,
-   "col": 0,
-   "row": 0,
-   "says": "Git holds every change.",
-   "detail": "Code and manifests live in Git. Merges trigger the pipeline and Git is the source of truth."
-  },
-  {
-   "id": "jenkins",
-   "label": "Jenkins",
-   "tech": "Jenkins",
-   "icon": "jenkins",
-   "tone": "blue",
-   "layer": 5,
-   "col": 0,
-   "row": 1,
-   "says": "Jenkins builds, tests and scans.",
-   "detail": "Pipelines build images, run tests and security scans, then push artifacts and update manifests.",
-   "href": "#/tech/jenkins"
-  },
-  {
-   "id": "argo",
-   "label": "Argo CD",
-   "tech": "Argo CD",
-   "icon": "argo",
-   "tone": "blue",
-   "layer": 5,
-   "col": 0,
-   "row": 2,
-   "says": "Argo CD syncs Git to the cluster.",
-   "detail": "GitOps controller compares Git with the cluster and rolls out differences, with easy rollback.",
-   "href": "#/tech/jenkins"
-  },
-  {
-   "id": "python",
-   "label": "Automation",
-   "tech": "Python",
-   "icon": "python",
-   "tone": "blue",
-   "layer": 5,
-   "col": 0,
-   "row": 4,
-   "says": "Python automates the toil.",
-   "detail": "Scripts and small tools handle checks, reports and routine operations, then become runbooks.",
-   "href": "#/tech/python"
-  },
-  {
-   "id": "otel",
-   "label": "OpenTelemetry",
-   "tech": "OpenTelemetry",
-   "icon": "opentelemetry",
-   "tone": "blue",
-   "layer": 5,
-   "col": 1,
-   "row": 0,
-   "says": "OpenTelemetry collects traces, metrics and logs.",
-   "detail": "The collector receives telemetry from services and routes it to Loki, Tempo and Prometheus.",
-   "href": "#/tech/prometheus"
-  },
-  {
-   "id": "prometheus",
-   "label": "Prometheus",
-   "tech": "Prometheus",
-   "icon": "prometheus",
-   "tone": "blue",
-   "layer": 5,
-   "col": 1,
-   "row": 1,
-   "says": "Prometheus scrapes and alerts on metrics.",
-   "detail": "Pulls metrics from services, stores time series and fires alerts on SLO burn.",
-   "href": "#/tech/prometheus"
-  },
-  {
-   "id": "lokitempo",
-   "label": "Loki, Tempo",
-   "tech": "Loki and Tempo",
-   "icon": "grafana",
-   "tone": "blue",
-   "layer": 5,
-   "col": 1,
-   "row": 2,
-   "says": "Loki and Tempo store logs and traces.",
-   "detail": "Label-indexed logs and distributed traces on object storage. Jump from a slow span to its logs.",
-   "href": "#/tech/loki-minio"
-  },
-  {
-   "id": "grafana",
-   "label": "Grafana",
-   "tech": "Grafana",
-   "icon": "grafana",
-   "tone": "blue",
-   "layer": 5,
-   "col": 1,
-   "row": 3,
-   "says": "Grafana shows everything in one place.",
-   "detail": "Dashboards for metrics, logs and traces with alerts routed to the on-call engineer.",
-   "href": "#/tech/grafana"
-  },
-  {
-   "id": "haproxy",
-   "label": "HAProxy",
-   "tech": "HAProxy (VRRP)",
-   "icon": "haproxy",
-   "tone": "blue",
-   "layer": 3,
-   "col": 0,
-   "row": 0,
-   "says": "HAProxy balances and fails over.",
-   "detail": "Layer 4 and 7 load balancing with health checks. VRRP keeps a virtual IP alive.",
-   "href": "#/tech/haproxy"
-  },
-  {
-   "id": "nginx",
-   "label": "NGINX",
-   "tech": "NGINX",
-   "icon": "nginx",
-   "tone": "blue",
-   "layer": 3,
-   "col": 0,
-   "row": 1,
-   "says": "NGINX terminates TLS.",
-   "detail": "Handles TLS, caching and routing by host and path before the API gateway.",
-   "href": "#/tech/nginx"
-  },
-  {
-   "id": "kong",
-   "label": "Kong",
-   "tech": "Kong",
-   "icon": "kong",
-   "tone": "blue",
-   "layer": 3,
-   "col": 0,
-   "row": 2,
-   "says": "Kong enforces API policy.",
-   "detail": "The API gateway applies authentication, rate limits and routing to the mesh ingress.",
-   "href": "#/tech/kong"
-  },
-  {
-   "id": "devs",
-   "label": "Developers",
-   "tech": "Developers",
-   "icon": "actor-dev",
-   "tone": "blue",
-   "layer": 6,
-   "col": 0,
-   "row": 0,
-   "says": "Developers push code.",
-   "detail": "They build features and push changes to Git, which starts the delivery pipeline.",
-   "replicas": 3
-  },
-  {
-   "id": "ops",
-   "label": "DevOps engineer",
-   "tech": "DevOps engineer",
-   "icon": "actor-ops",
-   "tone": "blue",
-   "layer": 6,
-   "col": 0,
-   "row": 1,
-   "says": "DevOps engineers run the platform.",
-   "detail": "They build pipelines, run Ansible and operate the cluster with kubectl."
-  },
-  {
-   "id": "users",
-   "label": "End users",
-   "tech": "End users",
-   "icon": "actor-user",
-   "tone": "blue",
-   "layer": 4,
-   "col": 0,
-   "row": 0,
-   "says": "End users use the apps.",
-   "detail": "Real traffic enters through the edge and travels down the stack."
-  }
- ],
- "wires": [
-  {
-   "from": "route53",
-   "to": "alb",
-   "label": "DNS",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "alb",
-   "to": "ec2",
-   "label": "HTTP",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "ec2",
-   "to": "ebs",
-   "label": "disk",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "ec2",
-   "to": "s3",
-   "label": "objects",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "ec2",
-   "to": "iam",
-   "label": "roles",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "ec2",
-   "to": "cloudwatch",
-   "label": "metrics",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "ec2",
-   "to": "linux",
-   "label": "hosts",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "vpc",
-   "to": "alb",
-   "label": "contains",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "users",
-   "to": "haproxy",
-   "label": "HTTPS",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "haproxy",
-   "to": "nginx",
-   "label": "TCP",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "nginx",
-   "to": "kong",
-   "label": "HTTP",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "kong",
-   "to": "istio",
-   "label": "mTLS",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "istio",
-   "to": "web",
-   "label": "route",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "web",
-   "to": "kafka",
-   "label": "events",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "kafka",
-   "to": "order",
-   "label": "consume",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "kafka",
-   "to": "payment",
-   "label": "consume",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "kafka",
-   "to": "notification",
-   "label": "consume",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "web",
-   "to": "order",
-   "label": "call",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "order",
-   "to": "postgres",
-   "label": "SQL",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "payment",
-   "to": "postgres",
-   "label": "SQL",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "notification",
-   "to": "postgres",
-   "label": "SQL",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "web",
-   "to": "redis",
-   "label": "session",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "web",
-   "to": "keycloak",
-   "label": "login",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "order",
-   "to": "keycloak",
-   "label": "validate",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "payment",
-   "to": "keycloak",
-   "label": "validate",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "notification",
-   "to": "keycloak",
-   "label": "validate",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "openbao",
-   "to": "order",
-   "label": "secrets",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "openbao",
-   "to": "payment",
-   "label": "secrets",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "openbao",
-   "to": "notification",
-   "label": "secrets",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "order",
-   "to": "otel",
-   "label": "telemetry",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "payment",
-   "to": "otel",
-   "label": "telemetry",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "notification",
-   "to": "otel",
-   "label": "telemetry",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "otel",
-   "to": "lokitempo",
-   "label": "logs, traces",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "lokitempo",
-   "to": "grafana",
-   "label": "",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "prometheus",
-   "to": "grafana",
-   "label": "metrics",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "order",
-   "to": "elasticsearch",
-   "label": "index",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "notification",
-   "to": "elasticsearch",
-   "label": "index",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "prometheus",
-   "to": "order",
-   "label": "scrape",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "prometheus",
-   "to": "payment",
-   "label": "scrape",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "prometheus",
-   "to": "notification",
-   "label": "scrape",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "devs",
-   "to": "git",
-   "label": "push",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "git",
-   "to": "jenkins",
-   "label": "webhook",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "jenkins",
-   "to": "argo",
-   "label": "manifest",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "argo",
-   "to": "kubernetes",
-   "label": "sync",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "ops",
-   "to": "jenkins",
-   "label": "pipelines",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "ops",
-   "to": "ansible",
-   "label": "playbooks",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "ops",
-   "to": "python",
-   "label": "scripts",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "ops",
-   "to": "kubernetes",
-   "label": "kubectl",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "ansible",
-   "to": "linux",
-   "label": "configure",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "kubernetes",
-   "to": "docker",
-   "label": "runs",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "docker",
-   "to": "linux",
-   "label": "on",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  }
- ],
- "steps": [
-  {
-   "title": "Enter",
-   "text": "Users reach HAProxy over HTTPS.",
-   "boxes": [
-    "users",
-    "haproxy"
-   ],
-   "wires": [
-    [
-     "users",
-     "haproxy"
+  "title": "Platform v2",
+  "subtitle": "AWS",
+  "layers": [
+    {
+      "layer": 0,
+      "label": "Infrastructure"
+    },
+    {
+      "layer": 1,
+      "label": "Linux & runtime"
+    },
+    {
+      "layer": 2,
+      "label": "Kubernetes cluster"
+    },
+    {
+      "layer": 3,
+      "label": "Edge",
+      "kind": "outside",
+      "side": "left",
+      "arrange": "vertical"
+    },
+    {
+      "layer": 4,
+      "label": "Users",
+      "kind": "outside",
+      "side": "left",
+      "arrange": "vertical"
+    },
+    {
+      "layer": 5,
+      "label": "Platform services",
+      "kind": "outside",
+      "side": "right",
+      "arrange": "vertical"
+    },
+    {
+      "layer": 6,
+      "label": "Operators",
+      "kind": "outside",
+      "side": "right",
+      "arrange": "vertical"
+    }
+  ],
+  "groups": [
+    {
+      "id": "frontend-svc",
+      "label": "Frontend service",
+      "boxes": [
+        "web"
+      ]
+    },
+    {
+      "id": "backend-svc",
+      "label": "Backend services",
+      "boxes": [
+        "order",
+        "payment",
+        "notification"
+      ]
+    }
+  ],
+  "tabs": [
+    {
+      "id": "request",
+      "label": "Request",
+      "focus": [
+        "users",
+        "haproxy",
+        "nginx",
+        "kong",
+        "istio",
+        "web",
+        "order",
+        "payment",
+        "notification",
+        "postgres"
+      ]
+    },
+    {
+      "id": "sso",
+      "label": "SSO",
+      "focus": [
+        "users",
+        "kong",
+        "web",
+        "keycloak",
+        "redis",
+        "order"
+      ]
+    },
+    {
+      "id": "events",
+      "label": "Events",
+      "focus": [
+        "web",
+        "kafka",
+        "order",
+        "payment",
+        "notification"
+      ]
+    },
+    {
+      "id": "delivery",
+      "label": "Delivery",
+      "focus": [
+        "devs",
+        "git",
+        "jenkins",
+        "argo",
+        "kubernetes",
+        "ops"
+      ]
+    },
+    {
+      "id": "observe",
+      "label": "Observe",
+      "focus": [
+        "order",
+        "payment",
+        "notification",
+        "otel",
+        "prometheus",
+        "lokitempo",
+        "grafana"
+      ]
+    }
+  ],
+  "boxes": [
+    {
+      "id": "vpc",
+      "label": "VPC",
+      "tech": "AWS VPC",
+      "icon": "amazonaws",
+      "tone": "blue",
+      "layer": 0,
+      "col": 3,
+      "row": 1,
+      "says": "The VPC isolates the network.",
+      "detail": "Public and private subnets with route tables and security groups. Alternatives: Azure VNet, Google VPC, on-premises VLANs.",
+      "href": "#/tech/aws"
+    },
+    {
+      "id": "route53",
+      "label": "Route 53",
+      "tech": "Amazon Route 53",
+      "icon": "amazonroute53",
+      "tone": "blue",
+      "layer": 0,
+      "col": 4,
+      "row": 1,
+      "says": "Route 53 resolves the names.",
+      "detail": "DNS records and health-checked routing. Alternatives: Cloudflare, Azure DNS, BIND, CoreDNS.",
+      "href": "#/tech/aws"
+    },
+    {
+      "id": "alb",
+      "label": "ALB",
+      "tech": "Application Load Balancer",
+      "icon": "amazonaws",
+      "tone": "blue",
+      "layer": 0,
+      "col": 5,
+      "row": 1,
+      "says": "The ALB accepts public traffic.",
+      "detail": "Terminates TLS with ACM and forwards to private instances. Alternatives: NGINX, HAProxy, Envoy, Traefik, NLB.",
+      "href": "#/tech/aws"
+    },
+    {
+      "id": "ec2",
+      "label": "EC2",
+      "tech": "Amazon EC2",
+      "icon": "amazonec2",
+      "tone": "blue",
+      "layer": 0,
+      "col": 5,
+      "row": 0,
+      "says": "EC2 runs the nodes.",
+      "detail": "Private instances reached through SSM. Alternatives: Azure VMs, Compute Engine, KVM, ESXi.",
+      "href": "#/tech/aws"
+    },
+    {
+      "id": "ebs",
+      "label": "EBS",
+      "tech": "Amazon EBS",
+      "icon": "amazonaws",
+      "tone": "blue",
+      "layer": 0,
+      "col": 4,
+      "row": 0,
+      "says": "EBS backs the disks.",
+      "detail": "Encrypted volumes with scheduled snapshots. Alternatives: Ceph, SAN LUNs, Azure Disks.",
+      "href": "#/tech/aws"
+    },
+    {
+      "id": "s3",
+      "label": "S3",
+      "tech": "Amazon S3",
+      "icon": "amazons3",
+      "tone": "blue",
+      "layer": 0,
+      "col": 6,
+      "row": 0,
+      "says": "S3 stores objects and backups.",
+      "detail": "Versioned buckets for artifacts, logs and backups. Alternatives: MinIO, Ceph RGW, Azure Blob.",
+      "href": "#/tech/aws"
+    },
+    {
+      "id": "iam",
+      "label": "IAM",
+      "tech": "AWS IAM",
+      "icon": "amazonaws",
+      "tone": "blue",
+      "layer": 0,
+      "col": 3,
+      "row": 0,
+      "says": "IAM grants least privilege.",
+      "detail": "Roles and policies control who reaches each resource. Alternatives: Entra ID, Keycloak, Okta.",
+      "href": "#/tech/aws"
+    },
+    {
+      "id": "cloudwatch",
+      "label": "CloudWatch",
+      "tech": "Amazon CloudWatch",
+      "icon": "amazoncloudwatch",
+      "tone": "blue",
+      "layer": 0,
+      "col": 2,
+      "row": 0,
+      "says": "CloudWatch watches the account.",
+      "detail": "Metrics, logs and alarms for the infrastructure. Alternatives: Prometheus, Datadog, Grafana stack.",
+      "href": "#/tech/aws"
+    },
+    {
+      "id": "linux",
+      "label": "Linux",
+      "tech": "Linux (cgroups, namespaces)",
+      "icon": "linux",
+      "tone": "blue",
+      "layer": 1,
+      "col": 5,
+      "row": 0,
+      "says": "Linux isolates every workload.",
+      "detail": "Cgroups limit resources, namespaces isolate processes. Alternatives: other Linux distributions, Windows containers.",
+      "href": "#/tech/linux-networking"
+    },
+    {
+      "id": "docker",
+      "label": "Containers",
+      "tech": "Docker / containerd",
+      "icon": "docker",
+      "tone": "blue",
+      "layer": 1,
+      "col": 6,
+      "row": 0,
+      "says": "Docker packages and runs containers.",
+      "detail": "Images built once run the same everywhere; containerd runs them. Alternatives: Podman, CRI-O.",
+      "href": "#/tech/docker"
+    },
+    {
+      "id": "ansible",
+      "label": "Ansible",
+      "tech": "Ansible",
+      "icon": "ansible",
+      "tone": "blue",
+      "layer": 5,
+      "col": 0,
+      "row": 3,
+      "says": "Ansible configures every host.",
+      "detail": "Idempotent playbooks configure users, packages and kernel settings. Alternatives: Terraform, Puppet, Chef, Salt.",
+      "href": "#/tech/ansible"
+    },
+    {
+      "id": "kubernetes",
+      "label": "Control plane",
+      "tech": "Kubernetes",
+      "icon": "kubernetes",
+      "tone": "blue",
+      "layer": 2,
+      "col": 6,
+      "row": 0,
+      "says": "Kubernetes schedules and heals workloads.",
+      "detail": "API server, etcd, scheduler and controllers keep declared state true. Alternatives: Nomad, Docker Swarm, managed EKS, AKS, GKE.",
+      "href": "#/tech/kubernetes-okd"
+    },
+    {
+      "id": "istio",
+      "label": "Service mesh",
+      "tech": "Istio",
+      "icon": "istio",
+      "tone": "blue",
+      "layer": 2,
+      "col": 0,
+      "row": 0,
+      "says": "Istio gates ingress and secures service traffic.",
+      "detail": "Ingress gateway plus sidecars for mTLS, retries and traffic policy. Alternatives: Linkerd, Cilium, Consul.",
+      "href": "#/tech/istio"
+    },
+    {
+      "id": "web",
+      "label": "Frontend",
+      "tech": "Node.js",
+      "icon": "nodedotjs",
+      "tone": "blue",
+      "layer": 2,
+      "col": 0,
+      "row": 1,
+      "says": "The frontend serves the app and starts login.",
+      "detail": "Three replicas serve the UI, call backends, keep sessions in Redis and publish events to Kafka.",
+      "replicas": 3
+    },
+    {
+      "id": "kafka",
+      "label": "Queue",
+      "tech": "Apache Kafka",
+      "icon": "apachekafka",
+      "tone": "blue",
+      "layer": 2,
+      "col": 2,
+      "row": 1,
+      "says": "Kafka decouples frontend from services.",
+      "detail": "A durable log carries events so each service consumes at its own pace. Alternatives: RabbitMQ, NATS, cloud queues.",
+      "href": "#/tech/kafka"
+    },
+    {
+      "id": "order",
+      "label": "Order",
+      "tech": "Python",
+      "icon": "python",
+      "tone": "blue",
+      "layer": 2,
+      "col": 3,
+      "row": 0,
+      "says": "Order owns the order lifecycle.",
+      "detail": "Three replicas consume events, write orders to PostgreSQL and validate tokens from Keycloak.",
+      "href": "#/tech/python",
+      "replicas": 3
+    },
+    {
+      "id": "payment",
+      "label": "Payment",
+      "tech": "Node.js",
+      "icon": "nodedotjs",
+      "tone": "blue",
+      "layer": 2,
+      "col": 4,
+      "row": 0,
+      "says": "Payment settles charges safely.",
+      "detail": "Two replicas process payment events idempotently and store results in PostgreSQL.",
+      "replicas": 2
+    },
+    {
+      "id": "notification",
+      "label": "Notification",
+      "tech": "Python",
+      "icon": "python",
+      "tone": "blue",
+      "layer": 2,
+      "col": 5,
+      "row": 0,
+      "says": "Notification tells users what happened.",
+      "detail": "Two replicas consume events and send email or push messages, retrying on failure.",
+      "href": "#/tech/python",
+      "replicas": 2
+    },
+    {
+      "id": "keycloak",
+      "label": "Keycloak",
+      "tech": "Keycloak",
+      "icon": "keycloak",
+      "tone": "blue",
+      "layer": 2,
+      "col": 1,
+      "row": 0,
+      "says": "Keycloak issues OIDC tokens.",
+      "detail": "Users log in once; Keycloak returns signed tokens. Alternatives: Authentik, Auth0, Okta, Amazon Cognito.",
+      "href": "#/tech/keycloak"
+    },
+    {
+      "id": "redis",
+      "label": "Redis",
+      "tech": "Redis",
+      "icon": "redis",
+      "tone": "blue",
+      "layer": 2,
+      "col": 1,
+      "row": 1,
+      "says": "Redis keeps sessions and hot data.",
+      "detail": "In-memory store for sessions and cache. Alternatives: Memcached, Valkey, managed cloud cache.",
+      "href": "#/tech/redis"
+    },
+    {
+      "id": "openbao",
+      "label": "OpenBao",
+      "tech": "OpenBao (Vault)",
+      "icon": "vault",
+      "tone": "blue",
+      "layer": 2,
+      "col": 5,
+      "row": 1,
+      "says": "OpenBao hands out secrets on demand.",
+      "detail": "Services read short-lived secrets on demand. Alternatives: HashiCorp Vault, cloud secret managers, SOPS.",
+      "href": "#/tech/openbao"
+    },
+    {
+      "id": "elasticsearch",
+      "label": "Search",
+      "tech": "Elasticsearch",
+      "icon": "elasticsearch",
+      "tone": "blue",
+      "layer": 2,
+      "col": 4,
+      "row": 1,
+      "says": "Elasticsearch indexes search and logs.",
+      "detail": "Search index for orders and application logs. Alternatives: OpenSearch, Loki, Splunk."
+    },
+    {
+      "id": "postgres",
+      "label": "PostgreSQL",
+      "tech": "PostgreSQL",
+      "icon": "postgresql",
+      "tone": "blue",
+      "layer": 2,
+      "col": 3,
+      "row": 1,
+      "says": "PostgreSQL stores the system of record.",
+      "detail": "Relational system of record with replication and tested backups. Alternatives: MySQL, MariaDB, managed RDS.",
+      "href": "#/tech/postgresql"
+    },
+    {
+      "id": "git",
+      "label": "Git",
+      "tech": "Git",
+      "icon": "git",
+      "tone": "blue",
+      "layer": 5,
+      "col": 0,
+      "row": 0,
+      "says": "Git holds every change.",
+      "detail": "Code and manifests live in Git; merges start the pipeline. Alternatives: GitHub, GitLab, Gitea."
+    },
+    {
+      "id": "jenkins",
+      "label": "Jenkins",
+      "tech": "Jenkins",
+      "icon": "jenkins",
+      "tone": "blue",
+      "layer": 5,
+      "col": 0,
+      "row": 1,
+      "says": "Jenkins builds, tests and scans.",
+      "detail": "Pipelines build images, test, scan and push. Alternatives: GitLab CI, GitHub Actions, Tekton.",
+      "href": "#/tech/jenkins"
+    },
+    {
+      "id": "argo",
+      "label": "Argo CD",
+      "tech": "Argo CD",
+      "icon": "argo",
+      "tone": "blue",
+      "layer": 5,
+      "col": 0,
+      "row": 2,
+      "says": "Argo CD syncs Git to the cluster.",
+      "detail": "GitOps controller syncs Git to the cluster, with easy rollback. Alternatives: Flux, Rancher Fleet.",
+      "href": "#/tech/jenkins"
+    },
+    {
+      "id": "python",
+      "label": "Automation",
+      "tech": "Python",
+      "icon": "python",
+      "tone": "blue",
+      "layer": 5,
+      "col": 0,
+      "row": 4,
+      "says": "Python automates the toil.",
+      "detail": "Small scripts automate checks and routine operations. Alternatives: Bash, Go.",
+      "href": "#/tech/python"
+    },
+    {
+      "id": "otel",
+      "label": "OpenTelemetry",
+      "tech": "OpenTelemetry",
+      "icon": "opentelemetry",
+      "tone": "blue",
+      "layer": 5,
+      "col": 1,
+      "row": 0,
+      "says": "OpenTelemetry collects traces, metrics and logs.",
+      "detail": "Collector receives telemetry and routes it to the backends. Alternatives: Fluent Bit, Vector, vendor agents.",
+      "href": "#/tech/prometheus"
+    },
+    {
+      "id": "prometheus",
+      "label": "Prometheus",
+      "tech": "Prometheus",
+      "icon": "prometheus",
+      "tone": "blue",
+      "layer": 5,
+      "col": 1,
+      "row": 1,
+      "says": "Prometheus scrapes and alerts on metrics.",
+      "detail": "Pulls metrics, stores time series, fires alerts. Alternatives: VictoriaMetrics, Mimir, Datadog.",
+      "href": "#/tech/prometheus"
+    },
+    {
+      "id": "lokitempo",
+      "label": "Loki, Tempo",
+      "tech": "Loki and Tempo",
+      "icon": "grafana",
+      "tone": "blue",
+      "layer": 5,
+      "col": 1,
+      "row": 2,
+      "says": "Loki and Tempo store logs and traces.",
+      "detail": "Label-indexed logs and traces on object storage. Alternatives: Elasticsearch, OpenSearch, Jaeger.",
+      "href": "#/tech/loki-minio"
+    },
+    {
+      "id": "grafana",
+      "label": "Grafana",
+      "tech": "Grafana",
+      "icon": "grafana",
+      "tone": "blue",
+      "layer": 5,
+      "col": 1,
+      "row": 3,
+      "says": "Grafana shows everything in one place.",
+      "detail": "Dashboards for metrics, logs and traces; alerts reach on-call. Alternatives: Kibana, Datadog.",
+      "href": "#/tech/grafana"
+    },
+    {
+      "id": "haproxy",
+      "label": "HAProxy",
+      "tech": "HAProxy (VRRP)",
+      "icon": "haproxy",
+      "tone": "blue",
+      "layer": 3,
+      "col": 0,
+      "row": 0,
+      "says": "HAProxy balances and fails over.",
+      "detail": "Layer 4 and 7 load balancing with health checks; VRRP keeps a virtual IP alive. Alternatives: NGINX, Envoy, Traefik, Caddy, cloud load balancer.",
+      "href": "#/tech/haproxy"
+    },
+    {
+      "id": "nginx",
+      "label": "NGINX",
+      "tech": "NGINX",
+      "icon": "nginx",
+      "tone": "blue",
+      "layer": 3,
+      "col": 0,
+      "row": 1,
+      "says": "NGINX terminates TLS.",
+      "detail": "Terminates TLS and routes by host and path. Alternatives: HAProxy, Envoy, Traefik, Caddy, cloud load balancer.",
+      "href": "#/tech/nginx"
+    },
+    {
+      "id": "kong",
+      "label": "Kong",
+      "tech": "Kong",
+      "icon": "kong",
+      "tone": "blue",
+      "layer": 3,
+      "col": 0,
+      "row": 2,
+      "says": "Kong enforces API policy.",
+      "detail": "API gateway for authentication, rate limits and routing. Alternatives: Envoy Gateway, Traefik, Tyk, AWS API Gateway, Apigee.",
+      "href": "#/tech/kong"
+    },
+    {
+      "id": "devs",
+      "label": "Developers",
+      "tech": "Developers",
+      "icon": "actor-dev",
+      "tone": "blue",
+      "layer": 6,
+      "col": 0,
+      "row": 0,
+      "says": "Developers push code.",
+      "detail": "They build features and push changes to Git, which starts the delivery pipeline.",
+      "replicas": 3
+    },
+    {
+      "id": "ops",
+      "label": "DevOps engineer",
+      "tech": "DevOps engineer",
+      "icon": "actor-ops",
+      "tone": "blue",
+      "layer": 6,
+      "col": 0,
+      "row": 1,
+      "says": "DevOps engineers run the platform.",
+      "detail": "They build pipelines, run Ansible and operate the cluster with kubectl."
+    },
+    {
+      "id": "users",
+      "label": "End users",
+      "tech": "End users",
+      "icon": "actor-user",
+      "tone": "blue",
+      "layer": 4,
+      "col": 0,
+      "row": 0,
+      "says": "End users use the apps.",
+      "detail": "Real traffic enters through the edge and travels down the stack."
+    }
+  ],
+  "wires": [
+    {
+      "from": "route53",
+      "to": "alb",
+      "label": "DNS",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "alb",
+      "to": "ec2",
+      "label": "HTTP",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "ec2",
+      "to": "ebs",
+      "label": "disk",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "ec2",
+      "to": "s3",
+      "label": "objects",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "ec2",
+      "to": "iam",
+      "label": "roles",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "ec2",
+      "to": "cloudwatch",
+      "label": "metrics",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "ec2",
+      "to": "linux",
+      "label": "hosts",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "vpc",
+      "to": "alb",
+      "label": "contains",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "users",
+      "to": "haproxy",
+      "label": "HTTPS",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "haproxy",
+      "to": "nginx",
+      "label": "TCP",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "nginx",
+      "to": "kong",
+      "label": "HTTP",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "kong",
+      "to": "istio",
+      "label": "mTLS",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "istio",
+      "to": "web",
+      "label": "route",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "web",
+      "to": "kafka",
+      "label": "events",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "kafka",
+      "to": "order",
+      "label": "consume",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "kafka",
+      "to": "payment",
+      "label": "consume",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "kafka",
+      "to": "notification",
+      "label": "consume",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "web",
+      "to": "order",
+      "label": "call",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "order",
+      "to": "postgres",
+      "label": "SQL",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "payment",
+      "to": "postgres",
+      "label": "SQL",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "notification",
+      "to": "postgres",
+      "label": "SQL",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "web",
+      "to": "redis",
+      "label": "session",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "web",
+      "to": "keycloak",
+      "label": "login",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "order",
+      "to": "keycloak",
+      "label": "validate",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "payment",
+      "to": "keycloak",
+      "label": "validate",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "notification",
+      "to": "keycloak",
+      "label": "validate",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "openbao",
+      "to": "order",
+      "label": "secrets",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "openbao",
+      "to": "payment",
+      "label": "secrets",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "openbao",
+      "to": "notification",
+      "label": "secrets",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "order",
+      "to": "otel",
+      "label": "telemetry",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "payment",
+      "to": "otel",
+      "label": "telemetry",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "notification",
+      "to": "otel",
+      "label": "telemetry",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "otel",
+      "to": "lokitempo",
+      "label": "logs, traces",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "lokitempo",
+      "to": "grafana",
+      "label": "",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "prometheus",
+      "to": "grafana",
+      "label": "metrics",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "order",
+      "to": "elasticsearch",
+      "label": "index",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "notification",
+      "to": "elasticsearch",
+      "label": "index",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "prometheus",
+      "to": "order",
+      "label": "scrape",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "prometheus",
+      "to": "payment",
+      "label": "scrape",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "prometheus",
+      "to": "notification",
+      "label": "scrape",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "devs",
+      "to": "git",
+      "label": "push",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "git",
+      "to": "jenkins",
+      "label": "webhook",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "jenkins",
+      "to": "argo",
+      "label": "manifest",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "argo",
+      "to": "kubernetes",
+      "label": "sync",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "ops",
+      "to": "jenkins",
+      "label": "pipelines",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "ops",
+      "to": "ansible",
+      "label": "playbooks",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "ops",
+      "to": "python",
+      "label": "scripts",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "ops",
+      "to": "kubernetes",
+      "label": "kubectl",
+      "style": "dashed",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "ansible",
+      "to": "linux",
+      "label": "configure",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "kubernetes",
+      "to": "docker",
+      "label": "runs",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    },
+    {
+      "from": "docker",
+      "to": "linux",
+      "label": "on",
+      "style": "solid",
+      "flow": true,
+      "weight": "normal"
+    }
+  ],
+  "steps": [
+    {
+      "title": "Enter",
+      "text": "Users reach HAProxy over HTTPS.",
+      "boxes": [
+        "users",
+        "haproxy"
+      ],
+      "wires": [
+        [
+          "users",
+          "haproxy"
+        ]
+      ]
+    },
+    {
+      "title": "Route",
+      "text": "NGINX terminates TLS and Kong applies API policy.",
+      "boxes": [
+        "haproxy",
+        "nginx",
+        "kong"
+      ],
+      "wires": [
+        [
+          "haproxy",
+          "nginx"
+        ],
+        [
+          "nginx",
+          "kong"
+        ]
+      ]
+    },
+    {
+      "title": "Mesh",
+      "text": "Istio admits traffic and forwards it to the frontend.",
+      "boxes": [
+        "kong",
+        "istio",
+        "web"
+      ],
+      "wires": [
+        [
+          "kong",
+          "istio"
+        ],
+        [
+          "istio",
+          "web"
+        ]
+      ]
+    },
+    {
+      "title": "Login",
+      "text": "Frontend redirects to Keycloak for OIDC login.",
+      "boxes": [
+        "web",
+        "keycloak"
+      ],
+      "wires": [
+        [
+          "web",
+          "keycloak"
+        ]
+      ]
+    },
+    {
+      "title": "Session",
+      "text": "Frontend stores the session in Redis and calls services.",
+      "boxes": [
+        "web",
+        "redis",
+        "order"
+      ],
+      "wires": [
+        [
+          "web",
+          "redis"
+        ],
+        [
+          "web",
+          "order"
+        ]
+      ]
+    },
+    {
+      "title": "Persist",
+      "text": "Services validate the token and write to PostgreSQL.",
+      "boxes": [
+        "order",
+        "keycloak",
+        "postgres"
+      ],
+      "wires": [
+        [
+          "order",
+          "keycloak"
+        ],
+        [
+          "order",
+          "postgres"
+        ]
+      ]
+    }
+  ],
+  "run": {
+    "cmd": "kubectl get deploy -n shop",
+    "lines": [
+      "web 3/3  order 3/3",
+      "payment 2/2  notification 2/2"
     ]
-   ]
   },
-  {
-   "title": "Route",
-   "text": "NGINX terminates TLS and Kong applies API policy.",
-   "boxes": [
-    "haproxy",
-    "nginx",
-    "kong"
-   ],
-   "wires": [
-    [
-     "haproxy",
-     "nginx"
-    ],
-    [
-     "nginx",
-     "kong"
-    ]
-   ]
-  },
-  {
-   "title": "Mesh",
-   "text": "Istio admits traffic and forwards it to the frontend.",
-   "boxes": [
-    "kong",
-    "istio",
-    "web"
-   ],
-   "wires": [
-    [
-     "kong",
-     "istio"
-    ],
-    [
-     "istio",
-     "web"
-    ]
-   ]
-  },
-  {
-   "title": "Login",
-   "text": "Frontend redirects to Keycloak for OIDC login.",
-   "boxes": [
-    "web",
-    "keycloak"
-   ],
-   "wires": [
-    [
-     "web",
-     "keycloak"
-    ]
-   ]
-  },
-  {
-   "title": "Session",
-   "text": "Frontend stores the session in Redis and calls services.",
-   "boxes": [
-    "web",
-    "redis",
-    "order"
-   ],
-   "wires": [
-    [
-     "web",
-     "redis"
-    ],
-    [
-     "web",
-     "order"
-    ]
-   ]
-  },
-  {
-   "title": "Persist",
-   "text": "Services validate the token and write to PostgreSQL.",
-   "boxes": [
-    "order",
-    "keycloak",
-    "postgres"
-   ],
-   "wires": [
-    [
-     "order",
-     "keycloak"
-    ],
-    [
-     "order",
-     "postgres"
-    ]
-   ]
-  }
- ],
- "run": {
-  "cmd": "kubectl get deploy -n shop",
-  "lines": [
-   "web 3/3  order 3/3",
-   "payment 2/2  notification 2/2"
+  "declarations": [
+    "Istio secures service traffic.",
+    "Kafka decouples the services.",
+    "Git drives every deployment.",
+    "Grafana shows metrics, logs, traces."
   ]
- },
- "declarations": [
-  "Istio secures service traffic.",
-  "Kafka decouples the services.",
-  "Git drives every deployment.",
-  "Grafana shows metrics, logs, traces."
- ]
 }

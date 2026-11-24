@@ -21,11 +21,11 @@
     "category": "Edge",
     "icon": "haproxy",
     "level": "hands-on",
-    "blurb": "L4/L7 load balancing with health checks, PROXY protocol and VRRP failover."
+    "blurb": "L4/L7 load balancing with health checks and VRRP failover."
   },
   {
     "slug": "kubernetes-okd",
-    "name": "Kubernetes / OpenShift",
+    "name": "Kubernetes",
     "category": "Platform",
     "icon": "kubernetes",
     "level": "hands-on",

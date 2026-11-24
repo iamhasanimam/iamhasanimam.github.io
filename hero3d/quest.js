@@ -15,7 +15,7 @@ const LEVEL_DWELL = 0.075, SUMMIT_DWELL = 0.1;
 const DEFAULT_BADGES = {
   aws: 'AWS Certified Cloud Practitioner',
   throughput: '400 req/s at p95 under 50 ms',
-  runbook: '44-page production runbook',
+  runbook: 'Production readiness documentation',
   mentor: 'Mentored a team of 4',
 };
 const STOP_NAMES = ['cloud', 'sysadmin', 'support', 'wingify', 'platform'];
@@ -145,7 +145,7 @@ function createQuest(host, opts) {
     el('p', 'q-mono q-final-k', f, 'QUEST COMPLETE');
     el('h2', 'q-final-t', f, 'You made it');
     const st = el('ul', 'q-stats', f);
-    [['6+', 'years in production'], ['5', 'roles, one path'], ['400 req/s', 'p95 under 50 ms']].forEach(([v, l]) => {
+    [['6+', 'years of experience'], ['5', 'roles, one path'], ['400 req/s', 'p95 under 50 ms']].forEach(([v, l]) => {
       const li = el('li', '', st); el('b', '', li, v); el('span', '', li, l);
     });
     const row = el('div', 'q-final-btns', f);

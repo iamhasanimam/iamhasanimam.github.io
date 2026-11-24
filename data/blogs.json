@@ -94,11 +94,11 @@
       "source": "linkedin"
     },
     {
-      "title": "Where did the client IP go between NGINX, HAProxy and the app?",
-      "summary": "A lab video on source IP preservation across proxy tiers: X-Forwarded-For versus PROXY protocol.",
+      "title": "How does NGINX reach Kubernetes: NodePort, LoadBalancer or Ingress?",
+      "summary": "Three ways to connect a proxy tier to a cluster, and when to use each.",
       "tags": [
         "NGINX",
-        "HAProxy",
+        "Kubernetes",
         "Networking"
       ],
       "date": "2026-12",
@@ -108,26 +108,12 @@
       "source": "devops-lab"
     },
     {
-      "title": "How do you stop a Kong deploy from deleting production routes?",
-      "summary": "A lab video on decK diff guards: review the diff in the pipeline before anything is applied.",
+      "title": "How does Kong connect to Kubernetes and the services behind it?",
+      "summary": "Gateway, services, routes and upstreams, and where it sits between the edge and the mesh.",
       "tags": [
         "Kong",
-        "decK",
-        "CI/CD"
-      ],
-      "date": "2026-12",
-      "url": null,
-      "status": "draft",
-      "readMinutes": 6,
-      "source": "devops-lab"
-    },
-    {
-      "title": "Why does a JVM get OOMKilled with a heap that looks small enough?",
-      "summary": "A lab video on container memory limits, off-heap memory and how a Keycloak JVM is sized.",
-      "tags": [
-        "Keycloak",
         "Kubernetes",
-        "JVM"
+        "APIGateway"
       ],
       "date": "2026-12",
       "url": null,
@@ -136,12 +122,12 @@
       "source": "devops-lab"
     },
     {
-      "title": "Why does one slow SMS provider hang every login?",
-      "summary": "A lab video on timeouts, retries and circuit breakers between the gateway and an identity flow.",
+      "title": "Why does a JVM get OOMKilled with a small heap?",
+      "summary": "Container memory limits, off-heap memory and how to size them.",
       "tags": [
-        "Resilience",
-        "Kong",
-        "Keycloak"
+        "Kubernetes",
+        "JVM",
+        "Troubleshooting"
       ],
       "date": "2026-12",
       "url": null,
@@ -150,12 +136,26 @@
       "source": "devops-lab"
     },
     {
-      "title": "What moved p95 under load?",
-      "summary": "A lab video using k6 to separate real latency changes from noise.",
+      "title": "How do timeouts and circuit breakers protect a login flow?",
+      "summary": "Keeping one slow dependency from taking down everything else.",
+      "tags": [
+        "Reliability",
+        "Keycloak",
+        "Resilience"
+      ],
+      "date": "2026-12",
+      "url": null,
+      "status": "draft",
+      "readMinutes": 6,
+      "source": "devops-lab"
+    },
+    {
+      "title": "How do you read p95 latency under load?",
+      "summary": "Load testing with k6 and reading percentiles in Grafana.",
       "tags": [
         "k6",
-        "Performance",
-        "Observability"
+        "Prometheus",
+        "Grafana"
       ],
       "date": "2026-12",
       "url": null,
@@ -164,10 +164,11 @@
       "source": "devops-lab"
     },
     {
-      "title": "One request through NGINX, HAProxy and Kong, seen with tcpdump",
-      "summary": "A lab video following a single request hop by hop on the wire.",
+      "title": "How does a load balancer work?",
+      "summary": "Following a single request across the proxy tiers, hop by hop.",
       "tags": [
-        "tcpdump",
+        "NGINX",
+        "HAProxy",
         "Networking"
       ],
       "date": "2026-12",
@@ -177,11 +178,12 @@
       "source": "devops-lab"
     },
     {
-      "title": "Why does a Redis failover break logins?",
-      "summary": "A lab video on Redis cluster failover and what sessions and clients do when the master moves.",
+      "title": "What happens to sessions when a Redis node fails over?",
+      "summary": "Redis Cluster failover, replicas and session handling.",
       "tags": [
         "Redis",
-        "Reliability"
+        "Reliability",
+        "Sessions"
       ],
       "date": "2026-12",
       "url": null,
@@ -190,8 +192,8 @@
       "source": "devops-lab"
     },
     {
-      "title": "Two NGINX nodes sharing one IP with keepalived",
-      "summary": "A lab video on VRRP failover for a proxy tier.",
+      "title": "What is VRRP and how does failover work?",
+      "summary": "VRRP failover for a proxy tier, explained from the ground up.",
       "tags": [
         "keepalived",
         "VRRP",

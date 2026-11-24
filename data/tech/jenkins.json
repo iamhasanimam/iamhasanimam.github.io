@@ -4,40 +4,60 @@
  "category": "CI/CD",
  "icon": "jenkins",
  "level": "hands-on",
- "tagline": "Runs every commit through gated pipelines and ships it via GitOps.",
+ "tagline": "Automates build, test and release pipelines defined as code in Git.",
  "whatItIs": "",
  "howItWorks": [
   {
+   "title": "What it is and where it sits",
+   "body": "Jenkins is a Java automation server that runs pipelines on triggers.\nIt works at L7: HTTP for UI and webhooks, SSH or WebSocket to agents.\nThe controller schedules and stores; agents execute the work.\nIt sits between source control and the registry or cluster it releases to.\nIt does not store artifacts; it hands them to a registry."
+  },
+  {
    "title": "Controller and agents",
-   "body": "The controller holds config, credentials, job history and the queue.\nSet controller executors to 0; agents run every build.\nAgents join by SSH, inbound WebSocket, or as Docker and Kubernetes pods.\nJENKINS_HOME is the state to persist and back up."
+   "body": "The controller holds config, credentials, job history and the build queue.\nSet controller executors to 0; agents run every build.\nAgents join by SSH, inbound WebSocket, or as short-lived Docker and Kubernetes pods.\nLabels route a stage to the right agent, such as docker or arm64.\nJENKINS_HOME is the state to persist and back up."
   },
   {
    "title": "Declarative pipeline",
-   "body": "A Jenkinsfile in Git defines agent, environment, options, stages and post.\nThe parser validates structure before the first step runs.\nUse when conditions to restrict deploy stages to main.\nPut heavy logic in shared libraries, not Groovy in the Jenkinsfile."
+   "body": "A Jenkinsfile in Git defines agent, environment, options, stages and post.\nThe parser validates structure before the first step runs.\nwhen conditions restrict deploy stages to the main branch.\nparallel stages shorten feedback; post blocks handle cleanup and notifications.\nPut reusable logic in shared libraries, not copied Groovy."
   },
   {
-   "title": "Gated delivery stages",
-   "body": "Build, test, SonarQube, quality gate, image build, Trivy scan, push, GitOps, smoke.\nCheap checks run first; any failed gate stops the pipeline.\nPush to Nexus or a registry with an immutable commit tag.\nJenkins never runs kubectl; it commits the tag and Argo CD reconciles."
+   "title": "Triggers and source control",
+   "body": "A webhook from the Git host starts a build immediately; polling is the fallback.\nMultibranch pipelines create a job per branch and pull request automatically.\nBranch discovery reads the Jenkinsfile found in each branch.\nUse a read-only deploy key or token for checkout.\nSkip builds for docs-only changes with when and changeset conditions."
   },
   {
-   "title": "Credentials",
-   "body": "The Credentials plugin stores secrets encrypted under JENKINS_HOME/secrets.\nBind them with credentials() or withCredentials; logs mask the values.\nScope them to a folder and use least privilege.\nRotate a secret in the store; no pipeline edit needed."
+   "title": "Credentials and security",
+   "body": "The Credentials plugin stores secrets encrypted under JENKINS_HOME/secrets.\nBind them with credentials() or withCredentials; logs mask the values.\nScope credentials to a folder and grant least privilege.\nUse role-based or matrix authorisation; disable anonymous access.\nPut TLS on a reverse proxy and keep the agent port closed to the world."
   },
   {
-   "title": "decK diff-guard for Kong",
-   "body": "A pipeline validates, then backs up the live gateway with deck gateway dump.\ndeck gateway diff runs read-only and the stage fails on any deleting line.\nSync runs only after approval on main, then a smoke test.\nThe backup file is the rollback: sync it back."
+   "title": "Typical delivery stages",
+   "body": "Checkout, build, unit test, static analysis, quality gate, image build, scan, push.\nCheap checks run first; any failed gate stops the pipeline.\nTag images with the commit SHA, never only latest.\nArchive test reports with junit so trends show in the UI.\nKeep the pipeline short; slow end-to-end suites run on a schedule."
+  },
+  {
+   "title": "HA, observability and failure modes",
+   "body": "Open source Jenkins runs one active controller; recover by restoring JENKINS_HOME to a new node.\nConfigure it as code with JCasC and pin plugin versions.\nThe Prometheus plugin exposes queue length, executor use and job durations.\nCommon failures: offline agents, full disks, plugin upgrade breakage, expired credentials.\nRead the build console first, then the controller log under /var/log/jenkins."
+  },
+  {
+   "title": "What sits in front",
+   "body": "A push to Git fires a webhook, or a poll or schedule trigger, at the controller.\nUsers reach the controller UI through a reverse proxy at the Edge.\nThe Jenkinsfile lives in the repository, versioned with the code.\nThe controller holds credentials, queue and history; it runs no builds."
+  },
+  {
+   "title": "What sits behind",
+   "body": "Agents are Linux VMs joined over SSH, or pods started by the Kubernetes plugin.\nStages call SonarQube, Trivy, a registry and a cluster.\nDeploy by kubectl or helm from a stage, or commit an image tag to a config repo for a GitOps tool.\nArgo CD or Flux then reconciles the cluster from Git."
+  },
+  {
+   "title": "Alternatives",
+   "body": "GitLab CI: choose it when code, issues and CI should live in one product.\nGitHub Actions: choose it for hosted runners and a repository-native workflow.\nTekton: Kubernetes-native pipelines defined as cluster resources.\nArgo Workflows or CircleCI: pick them for in-cluster DAGs or a hosted service."
   }
  ],
  "flow": [
   "Developer pushes to Git; a webhook reaches the controller.",
   "Controller reads the Jenkinsfile and queues the build.",
-  "An agent checks out, builds and runs unit tests.",
-  "SonarQube analyses; the quality gate blocks bad code.",
-  "Trivy scans the image; HIGH and CRITICAL fail the build.",
-  "Image is pushed to Nexus with an immutable tag.",
-  "Pipeline commits the new tag to the GitOps repo.",
+  "An agent, VM or pod, checks out, builds and tests.",
+  "Static analysis and the quality gate must pass.",
+  "The image is scanned, then pushed with an immutable tag.",
+  "Pipeline commits the new tag to the config repo.",
   "Argo CD syncs the cluster to match Git.",
-  "Smoke test checks the live endpoint."
+  "Alternatively a stage runs kubectl or helm directly.",
+  "A smoke test checks the live endpoint."
  ],
  "deploy": {
   "summary": "Jenkins LTS on a Linux VM under systemd, hardened SSH, one SSH agent, then pipelines.",
@@ -79,16 +99,22 @@
     "note": "Add the agent to the docker group only if builds need it."
    },
    {
-    "title": "Pipeline: build to smoke test",
+    "title": "Pipeline: build, scan, push, GitOps",
     "lang": "groovy",
-    "code": "pipeline {\n  agent { label 'docker' }\n  options { timeout(time: 45, unit: 'MINUTES'); timestamps(); disableConcurrentBuilds(); buildDiscarder(logRotator(numToKeepStr: '20')) }\n  environment {\n    IMAGE = \"registry.example.com/team/app\"   // placeholder\n    TAG   = \"${env.GIT_COMMIT.take(8)}\"\n    REG   = credentials('registry-creds')\n  }\n  stages {\n    stage('Build')   { steps { sh './mvnw -B -DskipTests package' } }\n    stage('Test')    { steps { sh './mvnw -B test' } post { always { junit 'target/surefire-reports/*.xml' } } }\n    stage('Sonar')   { steps { withSonarQubeEnv('sonar') { sh './mvnw -B sonar:sonar' } } }\n    stage('Gate')    { steps { timeout(time: 10, unit: 'MINUTES') { waitForQualityGate abortPipeline: true } } }\n    stage('Image')   { steps { sh 'docker build -t $IMAGE:$TAG .' } }\n    stage('Trivy')   { steps { sh 'trivy image --exit-code 1 --severity HIGH,CRITICAL $IMAGE:$TAG' } }\n    stage('Push')    { steps { sh 'echo $REG_PSW | docker login registry.example.com -u $REG_USR --password-stdin && docker push $IMAGE:$TAG' } }\n    stage('GitOps')  { when { branch 'main' } steps { sh './ci/bump-tag.sh $IMAGE $TAG' } }\n    stage('Argo CD') { when { branch 'main' } steps { sh 'argocd app sync app --grpc-web && argocd app wait app --health --timeout 300' } }\n    stage('Smoke')   { when { branch 'main' } steps { sh 'curl -fsS https://app.example.com/health' } }\n  }\n  post { cleanup { cleanWs() } }\n}",
-    "note": "Save as Jenkinsfile. Registry, ci/ scripts and the sonar name are placeholders."
+    "code": "pipeline {\n  agent { label 'docker' }\n  options { timeout(time: 45, unit: 'MINUTES'); timestamps(); disableConcurrentBuilds(); buildDiscarder(logRotator(numToKeepStr: '20')) }\n  environment {\n    IMAGE = \"registry.example.com/team/app\"   // placeholder\n    TAG   = \"${env.GIT_COMMIT.take(8)}\"\n    REG   = credentials('registry-creds')\n  }\n  stages {\n    stage('Build') { steps { sh 'make build' } }\n    stage('Test')  { steps { sh 'make test' } post { always { junit 'reports/*.xml' } } }\n    stage('Image') { steps { sh 'docker build -t $IMAGE:$TAG .' } }\n    stage('Scan')  { steps { sh 'trivy image --exit-code 1 --severity HIGH,CRITICAL $IMAGE:$TAG' } }\n    stage('Push')  { steps { sh 'echo $REG_PSW | docker login registry.example.com -u $REG_USR --password-stdin && docker push $IMAGE:$TAG' } }\n    stage('GitOps') {\n      when { branch 'main' }\n      steps {\n        withCredentials([usernamePassword(credentialsId: 'config-repo', usernameVariable: 'GU', passwordVariable: 'GP')]) {\n          sh '''\n            git clone https://$GU:$GP@git.example.com/team/app-config.git cfg\n            cd cfg/overlays/dev && kustomize edit set image app=$IMAGE:$TAG\n            git commit -am \"app: $TAG\" && git push\n          '''\n        }\n      }\n    }\n    stage('Smoke') { when { branch 'main' } steps { sh 'curl -fsS https://app.example.com/health' } }\n  }\n  post { cleanup { cleanWs() } }\n}",
+    "note": "Save as Jenkinsfile. Registry, repo URLs and make targets are placeholders. Argo CD then syncs the config repo."
    },
    {
-    "title": "Kong decK diff-guard pipeline",
+    "title": "Kubernetes pod agent and direct deploy",
     "lang": "groovy",
-    "code": "pipeline {\n  agent { label 'deck' }\n  environment { KONG_ADDR = 'http://kong-admin.internal:8001' }   // placeholder\n  stages {\n    stage('Validate') { steps { sh 'deck gateway validate kong.yaml' } }\n    stage('Backup')   { steps { sh 'deck gateway dump -o backup-${BUILD_NUMBER}.yaml --kong-addr $KONG_ADDR'; archiveArtifacts 'backup-*.yaml' } }\n    stage('Diff')     { steps { sh '''\n      deck gateway diff -s kong.yaml --kong-addr $KONG_ADDR --no-color | tee diff.txt\n      if grep -E '^deleting ' diff.txt; then echo 'Deletions found: blocked'; exit 1; fi\n    ''' } }\n    stage('Approve')  { when { branch 'main' } steps { input message: 'Apply this diff?' } }\n    stage('Sync')     { when { branch 'main' } steps { sh 'deck gateway sync -s kong.yaml --kong-addr $KONG_ADDR' } }\n    stage('Smoke')    { when { branch 'main' } steps { sh 'curl -fsS https://api.example.com/health' } }\n  }\n  post { failure { sh 'echo \"restore: deck gateway sync -s backup-${BUILD_NUMBER}.yaml\"' } }\n}",
-    "note": "The guard greps decK's plain diff for deleting lines. Confirm the output format on your decK version."
+    "code": "pipeline {\n  agent {\n    kubernetes {\n      defaultContainer 'tools'\n      yaml '''\napiVersion: v1\nkind: Pod\nspec:\n  containers:\n  - name: tools\n    image: alpine/k8s:1.30.0   # placeholder: any image with kubectl and helm\n    command: [sleep]\n    args: [infinity]\n'''\n    }\n  }\n  environment { TAG = \"${env.GIT_COMMIT.take(8)}\" }\n  stages {\n    stage('Deploy') {\n      steps {\n        withKubeConfig([credentialsId: 'kubeconfig-dev', namespace: 'dev']) {\n          sh 'kubectl set image deployment/app app=registry.example.com/team/app:$TAG && kubectl rollout status deployment/app --timeout=120s'\n        }\n      }\n    }\n  }\n}",
+    "note": "Needs the Kubernetes and Kubernetes CLI plugins plus a cloud entry. Prefer the GitOps hand-off for production."
+   },
+   {
+    "title": "Hand off to Argo CD",
+    "lang": "bash",
+    "code": "# token created in Argo CD for a CI account, stored as Jenkins secret text\nexport ARGOCD_SERVER=argocd.example.com   # placeholder\nexport ARGOCD_AUTH_TOKEN=\"$ARGOCD_TOKEN\"\nargocd app sync app --grpc-web\nargocd app wait app --health --timeout 300",
+    "note": "Optional: with auto-sync on, Argo CD picks up the Git commit by itself."
    }
   ]
  },
@@ -97,7 +123,7 @@
   "UI responds: curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/login",
   "Agent online: Manage Jenkins > Nodes shows the agent without a red cross",
   "Backup exists: ls -lh /var/lib/jenkins/jobs | head",
-  "Guard works: deck gateway diff -s kong.yaml --no-color | grep -c '^deleting '"
+  "Deployed: kubectl -n dev rollout status deployment/app"
  ],
  "pitfalls": [
   "Builds on the controller expose credentials; keep executors at 0.",
@@ -105,7 +131,7 @@
   "Mounting the Docker socket gives builds root on the host.",
   "Hardcoded secrets in Jenkinsfile leak through Git history; use credentials().",
   "Without a JENKINS_HOME backup, a lost controller loses jobs and secrets.",
-  "deck sync deletes what is not in the file; always diff and back up first.",
+  "A cluster-admin kubeconfig in Jenkins is a blast-radius risk; scope it to a namespace.",
   "Stale workspaces fill the disk; use cleanWs() and buildDiscarder."
  ],
  "furtherReading": [
@@ -118,19 +144,19 @@
    "url": "https://www.jenkins.io/doc/book/installing/linux/"
   },
   {
-   "label": "Using credentials",
-   "url": "https://www.jenkins.io/doc/book/using/using-credentials/"
+   "label": "Kubernetes plugin",
+   "url": "https://plugins.jenkins.io/kubernetes/"
   },
   {
-   "label": "decK documentation",
-   "url": "https://developer.konghq.com/deck/"
+   "label": "Argo CD: CI automation",
+   "url": "https://argo-cd.readthedocs.io/en/stable/user-guide/ci_automation/"
   }
  ],
  "keyPoints": [
   "The controller schedules and records; agents run the builds.",
-  "Declarative Jenkinsfile in Git defines every stage and gate.",
+  "A declarative Jenkinsfile in Git defines every stage and gate.",
   "Credentials are injected at runtime and masked in logs.",
-  "Jenkins commits the image tag; Argo CD deploys it."
+  "Deploy by direct kubectl or by committing a tag for Argo CD."
  ],
  "quickDeploy": [
   "Install Java 17 and the Jenkins LTS package.",

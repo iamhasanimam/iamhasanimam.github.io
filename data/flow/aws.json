@@ -1,6 +1,6 @@
 {
  "title": "AWS",
- "subtitle": "Private VPC behind TLS, reached by SSM, watched by CloudWatch.",
+ "subtitle": "Private VPC behind TLS load balancers, reached by SSM, watched by CloudWatch.",
  "layers": [
   {
    "layer": 2,
@@ -8,11 +8,11 @@
   },
   {
    "layer": 1,
-   "label": "VPC"
+   "label": "Infrastructure"
   },
   {
    "layer": 0,
-   "label": "Operate"
+   "label": "Operators"
   }
  ],
  "groups": [
@@ -43,7 +43,7 @@
     "igw",
     "nat",
     "ec2",
-    "atlas"
+    "ext"
    ]
   },
   {
@@ -67,7 +67,7 @@
    "col": 0,
    "row": 0,
    "says": "Route 53 resolves the domain.",
-   "detail": "Alias records point the domain at CloudFront and the ALB."
+   "detail": "Alias records point the domain at CloudFront and the ALB. Alternatives: Cloudflare, Azure DNS, BIND."
   },
   {
    "id": "cdn",
@@ -78,7 +78,7 @@
    "col": 1,
    "row": 0,
    "says": "CloudFront caches at the edge.",
-   "detail": "Serves the React build over HTTPS and fetches from S3 using OAC."
+   "detail": "Serves the React build over HTTPS from S3 via OAC. Alternatives: Cloudflare, Fastly, Akamai."
   },
   {
    "id": "s3",
@@ -89,18 +89,18 @@
    "col": 2,
    "row": 0,
    "says": "S3 stays private behind OAC.",
-   "detail": "Block Public Access is on; the bucket policy admits one distribution."
+   "detail": "Block Public Access is on; one distribution may read. Alternatives: MinIO, Ceph, Azure Blob."
   },
   {
    "id": "alb",
-   "label": "ALB/ACM",
-   "tech": "Application Load Balancer",
+   "label": "Load Balancer",
+   "tech": "Elastic Load Balancing",
    "icon": "amazonaws",
    "layer": 2,
    "col": 3,
    "row": 0,
-   "says": "The ALB terminates TLS.",
-   "detail": "Holds the ACM certificate and forwards HTTP to healthy private targets."
+   "says": "The load balancer terminates TLS.",
+   "detail": "ALB routes at L7 with ACM; NLB balances L4. Alternatives: NGINX, HAProxy, Envoy, Traefik."
   },
   {
    "id": "igw",
@@ -111,7 +111,7 @@
    "col": 0,
    "row": 0,
    "says": "The IGW opens the public subnet.",
-   "detail": "Public subnets route 0.0.0.0/0 here; only ALB and NAT live there."
+   "detail": "Public subnets route 0.0.0.0/0 here; only ALB and NAT live there. Alternatives: on-premises router."
   },
   {
    "id": "nat",
@@ -122,7 +122,7 @@
    "col": 1,
    "row": 0,
    "says": "NAT gives one fixed egress IP.",
-   "detail": "Private hosts reach out through it; Atlas allow-lists this address."
+   "detail": "Private hosts reach out through it. Alternatives: NAT instance, forward proxy, VPC endpoints."
   },
   {
    "id": "ec2",
@@ -133,7 +133,7 @@
    "col": 2,
    "row": 0,
    "says": "EC2 runs Nginx and the app.",
-   "detail": "No public IP, no port 22. Docker Compose on bridge networks.",
+   "detail": "Runs Docker or a Kubernetes worker; admits only the load balancer group. Alternatives: Azure VMs, KVM, ESXi.",
    "inner": [
     {
      "id": "docker",
@@ -154,15 +154,15 @@
    ]
   },
   {
-   "id": "atlas",
-   "label": "MongoDB Atlas",
-   "tech": "MongoDB Atlas",
-   "icon": "mongodb",
+   "id": "ext",
+   "label": "External API",
+   "tech": "External service",
+   "icon": null,
    "layer": 1,
    "col": 3,
    "row": 0,
-   "says": "Atlas trusts only the NAT IP.",
-   "detail": "The app connects over TLS from the allow-listed egress address."
+   "says": "Egress reaches the internet via NAT.",
+   "detail": "Services that allow-list IPs see the NAT gateway Elastic IP."
   },
   {
    "id": "ssm",
@@ -173,7 +173,7 @@
    "col": 0,
    "row": 0,
    "says": "SSM replaces SSH.",
-   "detail": "IAM-authenticated, logged shell through the agent; no inbound port."
+   "detail": "IAM-authenticated, logged shell through the agent. Alternatives: SSH bastion, Teleport."
   },
   {
    "id": "ps",
@@ -184,7 +184,7 @@
    "col": 1,
    "row": 0,
    "says": "Parameter Store holds secrets.",
-   "detail": "SecureString values are fetched at start by the instance role."
+   "detail": "SecureString values fetched by the instance role. Alternatives: Secrets Manager, Vault, OpenBao, SOPS."
   },
   {
    "id": "cw",
@@ -195,7 +195,7 @@
    "col": 2,
    "row": 0,
    "says": "CloudWatch evaluates alarms.",
-   "detail": "Watches UnHealthyHostCount, 5XX and latency."
+   "detail": "Watches UnHealthyHostCount, 5XX and latency. Alternatives: Prometheus, Datadog."
   },
   {
    "id": "sns",
@@ -206,7 +206,7 @@
    "col": 3,
    "row": 0,
    "says": "SNS notifies the operator.",
-   "detail": "Alarm state changes publish to a topic that emails on-call."
+   "detail": "Alarm state changes publish to a topic that emails on-call. Alternatives: Alertmanager, PagerDuty."
   }
  ],
  "wires": [
@@ -267,7 +267,7 @@
   },
   {
    "from": "nat",
-   "to": "atlas",
+   "to": "ext",
    "style": "dashed",
    "flow": true,
    "weight": "normal",
@@ -356,12 +356,12 @@
   },
   {
    "title": "Egress",
-   "text": "EC2 leaves through NAT; Atlas allows only that IP.",
+   "text": "EC2 leaves through NAT with one fixed IP.",
    "boxes": [
     "ec2",
     "nat",
     "igw",
-    "atlas"
+    "ext"
    ],
    "wires": [
     [
@@ -374,7 +374,7 @@
     ],
     [
      "nat",
-     "atlas"
+     "ext"
     ]
    ]
   },

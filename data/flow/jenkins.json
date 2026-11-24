@@ -1,14 +1,14 @@
 {
  "title": "Jenkins",
- "subtitle": "Every commit gated, scanned and shipped by GitOps.",
+ "subtitle": "Pipelines as code: build, verify, then deploy to Kubernetes.",
  "layers": [
   {
    "layer": 0,
-   "label": "Deploy"
+   "label": "Platform: deploy"
   },
   {
    "layer": 1,
-   "label": "CI"
+   "label": "Operators: CI"
   },
   {
    "layer": 2,
@@ -41,21 +41,21 @@
   },
   {
    "id": "cd",
-   "label": "Publish and deploy",
+   "label": "GitOps deploy",
    "focus": [
-    "nexus",
+    "registry",
     "gitops",
     "argocd",
     "cluster"
    ]
   },
   {
-   "id": "guard",
-   "label": "Kong guard",
+   "id": "direct",
+   "label": "Direct deploy",
    "focus": [
     "controller",
-    "deck",
-    "kong"
+    "agent",
+    "cluster"
    ]
   }
  ],
@@ -80,7 +80,7 @@
    "col": 0,
    "row": 0,
    "says": "Jenkins schedules and records.",
-   "detail": "Reads the Jenkinsfile, queues stages, stores credentials and history. Runs no builds.",
+   "detail": "Reads the Jenkinsfile, queues stages, stores history. Alternatives: GitLab CI, GitHub Actions.",
    "href": "#/tech/jenkins",
    "inner": [
     {
@@ -103,14 +103,14 @@
   },
   {
    "id": "agent",
-   "label": "SSH Agent",
-   "tech": "Linux VM",
+   "label": "Agent",
+   "tech": "Linux VM or pod",
    "icon": null,
    "layer": 1,
    "col": 1,
    "row": 0,
    "says": "Agents run the stages.",
-   "detail": "A Linux VM joined over SSH. Checks out, builds and tests in the workspace."
+   "detail": "Joined over SSH or started as a Kubernetes pod. Checks out, builds and tests in a workspace."
   },
   {
    "id": "sonar",
@@ -135,15 +135,15 @@
    "detail": "Scans the built image for known CVEs before anything is pushed."
   },
   {
-   "id": "nexus",
-   "label": "Nexus",
-   "tech": "Nexus",
-   "icon": "sonatype",
+   "id": "registry",
+   "label": "Registry",
+   "tech": "OCI registry",
+   "icon": null,
    "layer": 0,
    "col": 0,
    "row": 0,
-   "says": "Nexus stores immutable image tags.",
-   "detail": "Only the scanned image is pushed, tagged by commit."
+   "says": "The registry stores immutable image tags.",
+   "detail": "Only the scanned image is pushed, tagged by commit SHA. Alternatives: Harbor, cloud registries."
   },
   {
    "id": "gitops",
@@ -154,7 +154,7 @@
    "col": 1,
    "row": 0,
    "says": "Jenkins commits the new tag.",
-   "detail": "A Kustomize overlay gets the new image tag. No kubectl in the pipeline."
+   "detail": "A Kustomize overlay or Helm values file gets the new image tag."
   },
   {
    "id": "argocd",
@@ -165,7 +165,7 @@
    "col": 2,
    "row": 0,
    "says": "Argo CD syncs Git to cluster.",
-   "detail": "Detects the commit and reconciles the cluster state."
+   "detail": "Detects the commit and reconciles the cluster. Alternative: Flux."
   },
   {
    "id": "cluster",
@@ -176,31 +176,8 @@
    "col": 3,
    "row": 0,
    "says": "Kubernetes runs the release.",
-   "detail": "Pulls the tag from Nexus. Smoke test hits the live endpoint.",
+   "detail": "Pulls the tag from the registry. Updated by Argo CD or a direct kubectl stage.",
    "href": "#/tech/kubernetes-okd"
-  },
-  {
-   "id": "deck",
-   "label": "decK Guard",
-   "tech": "decK",
-   "icon": "kong",
-   "layer": 2,
-   "col": 2,
-   "row": 0,
-   "says": "decK diff fails on deletions.",
-   "detail": "Back up, diff, block deleting lines, sync after approval, smoke test."
-  },
-  {
-   "id": "kong",
-   "label": "Kong",
-   "tech": "Kong Gateway",
-   "icon": "kong",
-   "layer": 2,
-   "col": 3,
-   "row": 0,
-   "says": "Kong holds the live gateway config.",
-   "detail": "The Admin API is the target of dump, diff and sync.",
-   "href": "#/tech/kong"
   }
  ],
  "wires": [
@@ -238,14 +215,14 @@
   },
   {
    "from": "trivy",
-   "to": "nexus",
+   "to": "registry",
    "style": "solid",
    "flow": true,
    "weight": "bold",
    "label": "push"
   },
   {
-   "from": "nexus",
+   "from": "registry",
    "to": "gitops",
    "style": "solid",
    "flow": true,
@@ -269,20 +246,12 @@
    "label": "apply"
   },
   {
-   "from": "controller",
-   "to": "deck",
+   "from": "agent",
+   "to": "cluster",
    "style": "dashed",
    "flow": true,
    "weight": "normal",
-   "label": "guard"
-  },
-  {
-   "from": "deck",
-   "to": "kong",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal",
-   "label": "diff, sync"
+   "label": "kubectl, helm"
   }
  ],
  "steps": [
@@ -302,7 +271,7 @@
   },
   {
    "title": "Build",
-   "text": "An SSH agent builds and tests the commit.",
+   "text": "An agent VM or pod builds and tests the commit.",
    "boxes": [
     "controller",
     "agent"
@@ -316,7 +285,7 @@
   },
   {
    "title": "Gate",
-   "text": "SonarQube and Trivy must pass.",
+   "text": "Static analysis and the image scan must pass.",
    "boxes": [
     "agent",
     "sonar",
@@ -335,15 +304,15 @@
   },
   {
    "title": "Publish",
-   "text": "The scanned image goes to Nexus.",
+   "text": "The scanned image goes to the registry.",
    "boxes": [
     "trivy",
-    "nexus"
+    "registry"
    ],
    "wires": [
     [
      "trivy",
-     "nexus"
+     "registry"
     ]
    ]
   },
@@ -351,14 +320,14 @@
    "title": "Deploy",
    "text": "Tag committed; Argo CD syncs the cluster.",
    "boxes": [
-    "nexus",
+    "registry",
     "gitops",
     "argocd",
     "cluster"
    ],
    "wires": [
     [
-     "nexus",
+     "registry",
      "gitops"
     ],
     [
@@ -372,21 +341,16 @@
    ]
   },
   {
-   "title": "Guard Kong",
-   "text": "decK diff blocks deletions before sync.",
+   "title": "Direct deploy",
+   "text": "Or a stage runs kubectl or helm on the cluster.",
    "boxes": [
-    "controller",
-    "deck",
-    "kong"
+    "agent",
+    "cluster"
    ],
    "wires": [
     [
-     "controller",
-     "deck"
-    ],
-    [
-     "deck",
-     "kong"
+     "agent",
+     "cluster"
     ]
    ]
   }
@@ -394,14 +358,14 @@
  "declarations": [
   "Jenkins runs the gates.",
   "Agents do the work.",
-  "Argo CD deploys.",
-  "decK diff blocks deletes."
+  "Argo CD deploys from Git.",
+  "Pipelines live in Git."
  ],
  "run": {
-  "cmd": "deck gateway diff -s kong.yaml --no-color",
+  "cmd": "argocd app sync app --grpc-web",
   "lines": [
-   "updating service orders",
-   "Summary: Created: 0 Updated: 1 Deleted: 0"
+   "Sync Status:   Synced",
+   "Health Status: Healthy"
   ]
  }
 }

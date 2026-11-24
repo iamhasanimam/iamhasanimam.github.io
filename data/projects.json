@@ -1,122 +1,122 @@
 {
-  "projects": [
-    {
-      "slug": "cloud-native-microservice-aws",
-      "title": "Cloud-Native Microservice Infrastructure on AWS",
-      "summary": "Multi-AZ AWS reference architecture for a containerised microservice backend and React frontend.",
-      "stack": [
-        "AWS VPC",
-        "ALB",
-        "ACM",
-        "Route 53",
-        "EC2",
-        "SSM",
-        "MongoDB Atlas",
-        "Docker Compose",
-        "Nginx",
-        "React",
-        "S3",
-        "CloudFront",
-        "CloudWatch",
-        "SNS"
-      ],
-      "highlights": [
-        "Private EC2 instances reachable only through SSM Session Manager, no SSH",
-        "ALB with ACM TLS certificate and Route 53 DNS",
-        "React on S3 behind CloudFront with Origin Access Control",
-        "CloudWatch 4xx/5xx alarms via SNS; secrets in SSM Parameter Store"
-      ],
-      "status": "shipped",
-      "repo": null,
-      "demo": null
-    },
-    {
-      "slug": "secure-vdi-vmware-esxi",
-      "title": "Secure Virtual Desktop Infrastructure on VMware ESXi",
-      "summary": "Bare-metal remote-desktop platform on VMware ESXi where internal servers never face the internet.",
-      "stack": [
-        "VMware ESXi",
-        "Windows Server",
-        "Active Directory",
-        "Remote Desktop Services",
-        "Network segmentation"
-      ],
-      "highlights": [
-        "Seven-server design: domain controller, gateway, broker, session hosts, file server, jumpbox",
-        "Dual-NIC gateway is the only controlled entry point",
-        "Isolated file server segment away from user-facing hosts",
-        "Published with SOPs and network diagrams"
-      ],
-      "status": "shipped",
-      "repo": null,
-      "demo": null
-    },
-    {
-      "slug": "devops-intelligence-dashboard",
-      "title": "DevOps Intelligence Dashboard",
-      "summary": "Python pipeline turning version-control and project-management API data into Superset dashboards on Kubernetes.",
-      "stack": [
-        "Python",
-        "REST APIs",
-        "Apache Superset",
-        "Kubernetes",
-        "PostgreSQL",
-        "Redis",
-        "NFS"
-      ],
-      "highlights": [
-        "Python pipeline consuming version-control and project-management REST APIs",
-        "Tracks PR velocity, deployment frequency, sprint burndown and SLA breaches",
-        "Superset on Kubernetes with StatefulSet PostgreSQL and Redis",
-        "NFS-backed PersistentVolumes for stateful components"
-      ],
-      "status": "shipped",
-      "repo": null,
-      "demo": null
-    },
-    {
-      "slug": "devops-lab-series",
-      "title": "DevOps Lab Series",
-      "summary": "Fifty reproducible Docker labs sized for a 16 GB machine, each turning a platform concept into something to break and fix.",
-      "stack": [
-        "Docker",
-        "Docker Compose",
-        "Redis",
-        "Kong",
-        "k6",
-        "keepalived",
-        "HAProxy",
-        "Prometheus",
-        "Grafana"
-      ],
-      "highlights": [
-        "Redis failover lab: primary loss, promotion and client behaviour",
-        "Client-IP preservation with PROXY protocol across proxy hops",
-        "Kong decK diff-guard catches unintended gateway config drift",
-        "Runs on a 16 GB laptop with no cloud account"
-      ],
-      "status": "in-progress",
-      "repo": null,
-      "demo": null
-    },
-    {
-      "slug": "platform-engineering-portfolio",
-      "title": "Platform Engineering Portfolio Site",
-      "summary": "This site: technology guides with reproducible deployment steps, alongside projects and career history.",
-      "stack": [
-        "HTML",
-        "CSS",
-        "JavaScript",
-        "JSON data files"
-      ],
-      "highlights": [
-        "Each guide explains internals and reproducible deployment",
-        "Content driven by JSON data files, separate from presentation",
-        "Guides link to official docs and related lab videos"
-      ],
-      "status": "shipped",
-      "repo": null,
-      "demo": null
-    }
-  ]
+ "projects": [
+  {
+   "slug": "cloud-native-microservice-aws",
+   "title": "Cloud-Native Microservice Infrastructure on AWS",
+   "summary": "Multi-AZ AWS reference architecture for a containerised microservice backend and React frontend.",
+   "stack": [
+    "AWS VPC",
+    "ALB",
+    "ACM",
+    "Route 53",
+    "EC2",
+    "SSM",
+    "MongoDB Atlas",
+    "Docker Compose",
+    "Nginx",
+    "React",
+    "S3",
+    "CloudFront",
+    "CloudWatch",
+    "SNS"
+   ],
+   "highlights": [
+    "Private EC2 instances reachable only through SSM Session Manager, no SSH",
+    "ALB with ACM TLS certificate and Route 53 DNS",
+    "React on S3 behind CloudFront with Origin Access Control",
+    "CloudWatch 4xx/5xx alarms via SNS; secrets in SSM Parameter Store"
+   ],
+   "status": "shipped",
+   "repo": null,
+   "demo": null
+  },
+  {
+   "slug": "secure-vdi-vmware-esxi",
+   "title": "Secure Virtual Desktop Infrastructure on VMware ESXi",
+   "summary": "Bare-metal remote-desktop platform on VMware ESXi where internal servers never face the internet.",
+   "stack": [
+    "VMware ESXi",
+    "Windows Server",
+    "Active Directory",
+    "Remote Desktop Services",
+    "Network segmentation"
+   ],
+   "highlights": [
+    "Seven-server design: domain controller, gateway, broker, session hosts, file server, jumpbox",
+    "Dual-NIC gateway is the only controlled entry point",
+    "Isolated file server segment away from user-facing hosts",
+    "Published with SOPs and network diagrams"
+   ],
+   "status": "shipped",
+   "repo": null,
+   "demo": null
+  },
+  {
+   "slug": "devops-intelligence-dashboard",
+   "title": "DevOps Intelligence Dashboard",
+   "summary": "Python pipeline turning version-control and project-management API data into Superset dashboards on Kubernetes.",
+   "stack": [
+    "Python",
+    "REST APIs",
+    "Apache Superset",
+    "Kubernetes",
+    "PostgreSQL",
+    "Redis",
+    "NFS"
+   ],
+   "highlights": [
+    "Python pipeline consuming version-control and project-management REST APIs",
+    "Tracks PR velocity, deployment frequency, sprint burndown and SLA breaches",
+    "Superset on Kubernetes with StatefulSet PostgreSQL and Redis",
+    "NFS-backed PersistentVolumes for stateful components"
+   ],
+   "status": "shipped",
+   "repo": null,
+   "demo": null
+  },
+  {
+   "slug": "devops-lab-series",
+   "title": "DevOps Lab Series",
+   "summary": "Fifty reproducible Docker labs sized for a 16 GB machine, each turning a platform concept into something to break and fix.",
+   "stack": [
+    "Docker",
+    "Docker Compose",
+    "Redis",
+    "Kong",
+    "k6",
+    "keepalived",
+    "HAProxy",
+    "Prometheus",
+    "Grafana"
+   ],
+   "highlights": [
+    "Redis failover lab: primary loss, promotion and client behaviour",
+    "Reverse proxy chain lab: NGINX and HAProxy in front of an application",
+    "Kong declarative configuration with decK",
+    "Runs on a 16 GB laptop with no cloud account"
+   ],
+   "status": "in-progress",
+   "repo": null,
+   "demo": null
+  },
+  {
+   "slug": "platform-engineering-portfolio",
+   "title": "Platform Engineering Portfolio Site",
+   "summary": "This site: technology guides with reproducible deployment steps, alongside projects and career history.",
+   "stack": [
+    "HTML",
+    "CSS",
+    "JavaScript",
+    "JSON data files"
+   ],
+   "highlights": [
+    "Each guide explains internals and reproducible deployment",
+    "Content driven by JSON data files, separate from presentation",
+    "Guides link to official docs and related lab videos"
+   ],
+   "status": "shipped",
+   "repo": null,
+   "demo": null
+  }
+ ]
 }

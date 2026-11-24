@@ -17,7 +17,7 @@
   },
   {
    "title": "Labels and cardinality",
-   "body": "One unique label set is one stream with its own chunks.\nKeep labels few and stable: namespace, app, env, level.\nNever label by user ID, request ID or IP.\nPut variable data in the line or structured metadata."
+   "body": "One unique label set is one stream with its own chunks.\nKeep labels few and stable: namespace, app, env, level.\nNever label by user ID, request ID or session ID.\nPut variable data in the line or structured metadata."
   },
   {
    "title": "LogQL",
@@ -26,6 +26,18 @@
   {
    "title": "Traces, storage and retention",
    "body": "Alloy sends traces to Tempo; trace_id links a log line to its trace.\nLoki uses the s3 backend with s3forcepathstyle against MinIO.\nThe compactor deletes data older than retention_period.\nPer-stream retention overrides apply through retention_stream rules."
+  },
+  {
+   "title": "What sits in front",
+   "body": "Collectors push logs: Grafana Alloy or an OpenTelemetry Collector sends batches over HTTP or OTLP.\nOn Kubernetes, run Alloy as a DaemonSet; discovery turns pod metadata into labels.\nPlatform services write to stdout or files; the collector tails them.\nUsers read logs through Grafana, never by hitting Loki directly."
+  },
+  {
+   "title": "What sits behind",
+   "body": "MinIO supplies the S3 endpoint: give Loki a bucket, path-style addressing and keys from a secret.\nGrafana adds Loki on port 3100; derivedFields link a trace ID to Tempo.\nThe ruler evaluates LogQL alert rules and sends them to Alertmanager.\nRun Loki monolithic on one node or as distributed microservices for scale."
+  },
+  {
+   "title": "Alternatives",
+   "body": "Elasticsearch or OpenSearch: choose them for full-text search over every log line.\nCloud log services (CloudWatch, Cloud Logging): choose them to avoid running storage.\nFluent Bit or Vector: collectors that can replace Alloy in front of Loki.\nCeph RGW or cloud S3: other object stores that can replace MinIO behind Loki."
   }
  ],
  "flow": [

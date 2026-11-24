@@ -1,22 +1,22 @@
 {
  "title": "HAProxy",
- "subtitle": "Layer 4 and 7 load balancer with a floating IP",
+ "subtitle": "L4 and L7 load balancer with a floating IP, in front of VMs and Kubernetes.",
  "layers": [
   {
-   "layer": 3,
-   "label": "Edge"
-  },
-  {
-   "layer": 2,
-   "label": "HAProxy node"
+   "layer": 0,
+   "label": "Platform"
   },
   {
    "layer": 1,
-   "label": "Upstream path"
+   "label": "Backends"
   },
   {
-   "layer": 0,
-   "label": "Upstreams"
+   "layer": 2,
+   "label": "Edge"
+  },
+  {
+   "layer": 3,
+   "label": "Users"
   }
  ],
  "boxes": [
@@ -29,33 +29,22 @@
    "col": 1,
    "row": 0,
    "says": "Clients target one floating address.",
-   "detail": "Users and services connect to one VIP and port. HAProxy decides which server answers."
+   "detail": "Users and services connect to one VIP and port."
   },
   {
    "id": "vip",
-   "label": "Floating IP",
-   "tech": "VRRP virtual IP",
-   "icon": null,
-   "layer": 3,
-   "col": 0,
-   "row": 0,
-   "says": "One VIP follows the healthy node.",
-   "detail": "One HAProxy node owns the address at a time. On failure it moves to the peer in seconds."
-  },
-  {
-   "id": "keepalived",
    "label": "keepalived",
-   "tech": "keepalived",
+   "tech": "keepalived VIP",
    "icon": null,
    "layer": 2,
    "col": 0,
    "row": 0,
-   "href": "#/tech/linux-networking",
-   "says": "keepalived elects the VRRP master.",
-   "detail": "Highest priority owns the VIP. A track_script demotes the node when haproxy stops."
+   "says": "keepalived floats the VIP.",
+   "detail": "VRRP moves the address to the peer when haproxy stops.",
+   "href": "#/tech/linux-networking"
   },
   {
-   "id": "frontend",
+   "id": "haproxy",
    "label": "HAProxy",
    "tech": "HAProxy",
    "icon": "haproxy",
@@ -63,149 +52,155 @@
    "col": 1,
    "row": 0,
    "says": "HAProxy binds, matches and balances.",
-   "detail": "Frontends bind ports and TLS and pick a backend by ACL. Backends balance across servers.",
+   "detail": "Frontends bind ports and apply ACLs; backends pick a healthy server. Alternatives: NGINX, Envoy, Traefik, Caddy, cloud load balancers.",
+   "href": "#/tech/haproxy",
    "inner": [
     {
-     "id": "bind",
-     "label": "Frontend bind"
+     "id": "frontend",
+     "label": "Frontend"
     },
     {
      "id": "acl",
-     "label": "ACL match"
+     "label": "ACLs"
     },
     {
      "id": "backend",
      "label": "Backend"
     },
     {
-     "id": "check",
-     "label": "Health check"
+     "id": "checks",
+     "label": "Checks"
     }
    ]
   },
   {
-   "id": "sni",
-   "label": "SNI routing",
-   "tech": "TLS SNI",
-   "icon": null,
+   "id": "prom",
+   "label": "Prometheus",
+   "tech": "Prometheus",
+   "icon": "prometheus",
    "layer": 2,
    "col": 2,
    "row": 0,
-   "says": "SNI routes TLS without decrypting it.",
-   "detail": "In tcp mode HAProxy reads the server name from the ClientHello and selects a backend."
+   "says": "Prometheus scrapes /metrics.",
+   "detail": "The built-in exporter feeds alerts on 5xx, queues and servers down.",
+   "href": "#/tech/prometheus"
   },
   {
-   "id": "proxyproto",
-   "label": "PROXY protocol",
-   "tech": "PROXY protocol v2",
+   "id": "vm",
+   "label": "VM pool",
+   "tech": "Upstream VMs",
+   "icon": null,
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "L7 routes to plain VM apps.",
+   "detail": "http mode routes by Host and path to health-checked servers."
+  },
+  {
+   "id": "nodeport",
+   "label": "NodePort",
+   "tech": "Service NodePort",
    "icon": null,
    "layer": 1,
    "col": 1,
    "row": 0,
-   "says": "send-proxy-v2 keeps the client IP.",
-   "detail": "A header carries the original source address. The upstream must accept PROXY protocol."
+   "says": "NodePort backends need health checks.",
+   "detail": "List every worker IP and port; a failed check removes the node."
   },
   {
-   "id": "health",
-   "label": "Health checks",
-   "tech": "HAProxy checks",
+   "id": "kapi",
+   "label": "API servers",
+   "tech": "Kubernetes API",
    "icon": null,
    "layer": 1,
    "col": 2,
    "row": 0,
-   "says": "Checks eject dead servers.",
-   "detail": "TCP or HTTP probes run every inter. Failing servers leave rotation until they pass again."
+   "says": "L4 balances the API on 6443.",
+   "detail": "mode tcp gives kubectl one stable endpoint across control-plane nodes.",
+   "href": "#/tech/kubernetes-okd"
   },
   {
-   "id": "servers",
-   "label": "Upstreams",
-   "tech": "Backend servers",
+   "id": "kproxy",
+   "label": "kube-proxy",
+   "tech": "kube-proxy",
    "icon": null,
    "layer": 0,
    "col": 1,
    "row": 0,
-   "says": "Upstreams do the real work.",
-   "detail": "Web, API or database servers. leastconn, roundrobin or source hash picks among healthy ones."
+   "says": "kube-proxy maps node ports to pods.",
+   "detail": "Rules on each node send traffic to a Service endpoint."
   },
   {
-   "id": "stats",
-   "label": "Stats",
-   "tech": "Stats and /metrics",
-   "icon": "prometheus",
+   "id": "svc",
+   "label": "Service",
+   "tech": "Service and Pods",
+   "icon": null,
    "layer": 0,
    "col": 2,
    "row": 0,
-   "href": "#/tech/prometheus",
-   "says": "Stats and /metrics expose health.",
-   "detail": "The stats page and Prometheus exporter show session rates, queues and server state."
+   "says": "The Service selects ready pods.",
+   "detail": "Endpoints list ready pods; the Service spreads traffic across them.",
+   "href": "#/tech/kubernetes-okd"
   }
  ],
  "wires": [
   {
    "from": "client",
    "to": "vip",
-   "label": "VIP",
+   "label": "TCP / HTTPS",
    "style": "solid",
    "flow": true,
    "weight": "bold"
   },
   {
    "from": "vip",
-   "to": "frontend",
+   "to": "haproxy",
    "style": "solid",
    "flow": true,
    "weight": "bold"
   },
   {
-   "from": "keepalived",
-   "to": "vip",
-   "label": "owns",
-   "style": "dashed",
-   "flow": false,
-   "weight": "normal"
-  },
-  {
-   "from": "frontend",
-   "to": "sni",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "sni",
-   "to": "proxyproto",
-   "label": "by name",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "proxyproto",
-   "to": "servers",
-   "label": "send-proxy",
+   "from": "haproxy",
+   "to": "vm",
+   "label": "HTTP",
    "style": "solid",
    "flow": true,
    "weight": "bold"
   },
   {
-   "from": "frontend",
-   "to": "health",
-   "style": "dashed",
+   "from": "haproxy",
+   "to": "nodeport",
+   "label": "TCP",
+   "style": "solid",
    "flow": true,
    "weight": "normal"
   },
   {
-   "from": "health",
-   "to": "servers",
-   "label": "probes",
-   "style": "dashed",
+   "from": "haproxy",
+   "to": "kapi",
+   "label": "TCP 6443",
+   "style": "solid",
    "flow": true,
    "weight": "normal"
   },
   {
-   "from": "frontend",
-   "to": "stats",
-   "label": "metrics",
+   "from": "nodeport",
+   "to": "kproxy",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "kproxy",
+   "to": "svc",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "prom",
+   "to": "haproxy",
+   "label": "scrape",
    "style": "dashed",
    "flow": false,
    "weight": "normal"
@@ -214,44 +209,43 @@
  "tabs": [
   {
    "id": "balance",
-   "label": "Frontend to backend",
+   "label": "Balancing",
    "focus": [
     "client",
-    "frontend",
-    "health",
-    "servers"
+    "vip",
+    "haproxy",
+    "vm"
    ]
   },
   {
-   "id": "ip",
-   "label": "Client IP and SNI",
+   "id": "k8s",
+   "label": "To Kubernetes",
    "focus": [
-    "frontend",
-    "sni",
-    "proxyproto",
-    "servers"
+    "haproxy",
+    "nodeport",
+    "kapi",
+    "kproxy",
+    "svc"
    ]
   },
   {
    "id": "ha",
-   "label": "HA and stats",
+   "label": "HA and ops",
    "focus": [
     "vip",
-    "keepalived",
-    "frontend",
-    "stats"
+    "haproxy",
+    "prom"
    ]
   }
  ],
  "steps": [
   {
-   "title": "Float the address",
-   "text": "keepalived places the VIP on the live node.",
+   "title": "Connect",
+   "text": "Clients reach the VIP on the MASTER node.",
    "boxes": [
     "client",
     "vip",
-    "keepalived",
-    "frontend"
+    "haproxy"
    ],
    "wires": [
     [
@@ -259,87 +253,85 @@
      "vip"
     ],
     [
-     "keepalived",
-     "vip"
-    ],
-    [
      "vip",
-     "frontend"
+     "haproxy"
     ]
    ]
   },
   {
-   "title": "Accept and classify",
-   "text": "The frontend matches ACLs or SNI.",
+   "title": "Match",
+   "text": "ACLs pick a backend by SNI, Host or path.",
    "boxes": [
-    "frontend",
-    "sni"
+    "haproxy"
+   ],
+   "wires": []
+  },
+  {
+   "title": "Balance",
+   "text": "A healthy VM server takes the request.",
+   "boxes": [
+    "haproxy",
+    "vm"
    ],
    "wires": [
     [
-     "frontend",
-     "sni"
+     "haproxy",
+     "vm"
     ]
    ]
   },
   {
-   "title": "Keep the client IP",
-   "text": "send-proxy-v2 prepends the real source address.",
+   "title": "Cluster",
+   "text": "NodePort or API backends enter Kubernetes.",
    "boxes": [
-    "sni",
-    "proxyproto",
-    "servers"
+    "haproxy",
+    "nodeport",
+    "kapi"
    ],
    "wires": [
     [
-     "sni",
-     "proxyproto"
+     "haproxy",
+     "nodeport"
     ],
     [
-     "proxyproto",
-     "servers"
+     "haproxy",
+     "kapi"
     ]
    ]
   },
   {
-   "title": "Check health",
-   "text": "Probes remove failing servers from rotation.",
+   "title": "Reach pods",
+   "text": "kube-proxy forwards to a ready pod.",
    "boxes": [
-    "frontend",
-    "health",
-    "servers"
+    "nodeport",
+    "kproxy",
+    "svc"
    ],
    "wires": [
     [
-     "frontend",
-     "health"
+     "nodeport",
+     "kproxy"
     ],
     [
-     "health",
-     "servers"
+     "kproxy",
+     "svc"
     ]
    ]
   },
   {
-   "title": "Expose metrics",
-   "text": "Stats and /metrics feed Prometheus alerts.",
+   "title": "Observe",
+   "text": "Prometheus scrapes metrics and alerts.",
    "boxes": [
-    "frontend",
-    "stats"
+    "prom",
+    "haproxy"
    ],
    "wires": [
     [
-     "frontend",
-     "stats"
+     "prom",
+     "haproxy"
     ]
    ]
   }
- ],
- "declarations": [
-  "HAProxy fronts and balances upstreams.",
-  "Frontends match, backends balance.",
-  "Health checks eject dead servers.",
-  "VRRP keeps one address alive."
  ],
  "run": {
   "cmd": "haproxy -c -f /etc/haproxy/haproxy.cfg",
@@ -347,5 +339,11 @@
    "Configuration file is valid",
    "backend be_web: 2 servers UP"
   ]
- }
+ },
+ "declarations": [
+  "HAProxy fronts and balances upstreams.",
+  "Frontends match, backends balance.",
+  "Health checks eject dead servers.",
+  "VRRP keeps one address alive."
+ ]
 }

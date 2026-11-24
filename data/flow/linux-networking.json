@@ -95,7 +95,7 @@
    "col": 2,
    "row": 0,
    "says": "iptables translates addresses.",
-   "detail": "MASQUERADE rewrites private sources. conntrack maps replies back."
+   "detail": "MASQUERADE rewrites private sources; conntrack maps replies. Alternative: nftables."
   },
   {
    "id": "vrrp",
@@ -139,7 +139,7 @@
    "col": 2,
    "row": 0,
    "says": "HAProxy rides the floating IP.",
-   "detail": "The load balancer binds the VIP that keepalived moves between nodes.",
+   "detail": "Binds the VIP that keepalived moves. Alternatives: NGINX, Envoy, cloud load balancers.",
    "href": "#/tech/haproxy"
   }
  ],

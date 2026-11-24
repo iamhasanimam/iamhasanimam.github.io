@@ -26,6 +26,18 @@
   {
    "title": "Load test before release",
    "body": "The pipeline runs k6 as a gate after deploy to staging.\nA failed threshold fails the stage and blocks promotion.\nCompare p95 against the previous release in Grafana."
+  },
+  {
+   "title": "What sits in front",
+   "body": "A CI stage or an engineer starts k6 with a script and an environment-supplied base URL.\nThe k6 exit code fails the build when a threshold breaks.\nThe k6 Operator can run distributed tests on Kubernetes.\nKeep the load generator off the target nodes."
+  },
+  {
+   "title": "What sits behind",
+   "body": "Virtual users hit the real entry path: load balancer, gateway, then the Service.\nTokens come from the identity provider in setup(), then are reused.\nResults flow out by Prometheus remote write, or other outputs such as InfluxDB or OpenTelemetry.\nGrafana plots them beside server-side metrics (Platform)."
+  },
+  {
+   "title": "Alternatives",
+   "body": "JMeter: GUI and plugin ecosystem; choose it for protocol breadth.\nLocust: load scripts written in Python.\nGatling: Scala or Java DSL with rich reports.\nVegeta or wrk: choose them for a quick single-endpoint rate test."
   }
  ],
  "flow": [

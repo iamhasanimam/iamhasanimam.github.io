@@ -33,7 +33,9 @@
     "replica",
     "bus",
     "refresh",
-    "client"
+    "client",
+    "k8s",
+    "prom"
    ]
   },
   {
@@ -57,7 +59,7 @@
    "col": 0,
    "row": 0,
    "says": "Lettuce routes by hash slot.",
-   "detail": "The client keeps a slot map and sends each command straight to the owning master."
+   "detail": "Cluster-aware clients such as Lettuce keep a slot map. Alternatives: Jedis, redis-py."
   },
   {
    "id": "refresh",
@@ -90,7 +92,7 @@
    "col": 1,
    "row": 0,
    "says": "Masters own slots and serve writes.",
-   "detail": "Three masters give a majority. Each owns a slot range and streams writes to its replica.",
+   "detail": "Three masters give a majority. Alternatives: Memcached for cache only, Sentinel without sharding, Valkey.",
    "href": "#/tech/redis",
    "inner": [
     {
@@ -165,6 +167,30 @@
    "row": 0,
    "says": "AOF logs every write.",
    "detail": "Loss is bounded to about one second. Rewritten in the background."
+  },
+  {
+   "id": "k8s",
+   "label": "Kubernetes",
+   "tech": "Kubernetes",
+   "icon": "kubernetes",
+   "layer": 0,
+   "col": 3,
+   "row": 0,
+   "says": "Kubernetes runs the nodes.",
+   "detail": "A StatefulSet with a headless Service gives each pod a stable name and volume.",
+   "href": "#/tech/kubernetes-okd"
+  },
+  {
+   "id": "prom",
+   "label": "Prometheus",
+   "tech": "Prometheus",
+   "icon": "prometheus",
+   "layer": 2,
+   "col": 3,
+   "row": 0,
+   "says": "Prometheus scrapes redis_exporter.",
+   "detail": "The exporter turns INFO output into metrics for memory and failover alerts.",
+   "href": "#/tech/prometheus"
   }
  ],
  "wires": [
@@ -230,6 +256,20 @@
    "label": "append",
    "style": "dashed",
    "flow": true
+  },
+  {
+   "from": "k8s",
+   "to": "master",
+   "label": "runs pods",
+   "style": "dashed",
+   "flow": true
+  },
+  {
+   "from": "prom",
+   "to": "master",
+   "label": "scrape exporter",
+   "style": "dashed",
+   "flow": false
   }
  ],
  "steps": [

@@ -270,7 +270,7 @@
       "icon": "istio",
       "tone": "blue",
       "says": "Istio routes by weight, not by redeploy.",
-      "detail": "The ingress gateway applies VirtualService and DestinationRule rules for canary, blue-green and ringHash affinity.",
+      "detail": "The ingress gateway applies VirtualService and DestinationRule rules for canary and blue-green releases.",
       "href": "#/tech/istio",
       "layer": 4,
       "col": 0,

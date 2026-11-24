@@ -25,7 +25,19 @@
   },
   {
    "title": "On-prem bring-up",
-   "body": "Create users, keys and sudoers drop-ins first.\nHarden sshd: no passwords, no root, AllowUsers.\nSet chrony, firewall rules and cron jobs.\nCron or CI re-runs the baseline to correct drift."
+   "body": "Create users, keys and sudoers drop-ins first.\nHarden sshd: no passwords, no root, AllowUsers.\nSet chrony, firewall rules and cron jobs.\nCron or CI re-runs the baseline to restore the baseline."
+  },
+  {
+   "title": "What sits in front",
+   "body": "An operator or a CI job runs ansible-playbook from the control node.\nPlaybooks and inventory live in Git; a pull request runs --check --diff.\nSecrets come from ansible-vault or a lookup plugin at run time.\nAnsible talks to hosts over SSH; no agent runs on them."
+  },
+  {
+   "title": "What sits behind",
+   "body": "Managed hosts are Linux VMs or bare metal (Infrastructure); modules change only what differs.\nInventory can be a static file or a plugin such as aws_ec2.\nTerraform creates the machines; Ansible configures what runs on them.\nThe kubernetes.core collection manages cluster objects through a kubeconfig."
+  },
+  {
+   "title": "Alternatives",
+   "body": "Terraform: choose it to create infrastructure rather than configure it.\nPuppet or Chef: agent-based, continuous convergence on a schedule.\nSalt: choose it for fast event-driven fan-out to many nodes.\nShell scripts or cloud-init: fine for one-time bootstrap of a single machine."
   }
  ],
  "flow": [
@@ -108,24 +120,24 @@
  "furtherReading": [
   {
    "label": "Getting started",
-   "url": "https://docs.ansible.com/ansible/latest/getting_started/index.html"
+   "url": "https://docs.ansible.com/projects/ansible/latest/getting_started/index.html"
   },
   {
    "label": "Check mode and diff",
-   "url": "https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_checkmode.html"
+   "url": "https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_checkmode.html"
   },
   {
    "label": "Ad-hoc commands",
-   "url": "https://docs.ansible.com/ansible/latest/command_guide/intro_adhoc.html"
+   "url": "https://docs.ansible.com/projects/ansible/latest/command_guide/intro_adhoc.html"
   },
   {
    "label": "lineinfile module",
-   "url": "https://docs.ansible.com/ansible/latest/collections/ansible/builtin/lineinfile_module.html"
+   "url": "https://docs.ansible.com/projects/ansible/latest/collections/ansible/builtin/lineinfile_module.html"
   }
  ],
  "keyPoints": [
   "Agentless: the control node pushes modules over SSH.",
-  "Idempotent tasks converge state and report changed only on drift.",
+  "Idempotent tasks converge state and report changed only when something differs.",
   "Inventory, roles and handlers make bring-up repeatable.",
   "Run --check --diff first; keep secrets in Ansible Vault."
  ],

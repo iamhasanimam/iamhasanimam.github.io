@@ -1,18 +1,22 @@
 {
  "title": "NGINX edge",
- "subtitle": "One VIP, TLS at NGINX, HTTP routed at L7, TCP proxied at L4.",
+ "subtitle": "TLS and HTTP routing at the edge, with generic ways into Kubernetes.",
  "layers": [
   {
    "layer": 0,
-   "label": "Upstreams"
+   "label": "Platform"
   },
   {
    "layer": 1,
-   "label": "Edge"
+   "label": "Backends"
   },
   {
    "layer": 2,
-   "label": "Clients"
+   "label": "Edge"
+  },
+  {
+   "layer": 3,
+   "label": "Users"
   }
  ],
  "boxes": [
@@ -21,34 +25,22 @@
    "label": "Client",
    "tech": "Browser",
    "icon": null,
-   "layer": 2,
-   "col": 0,
-   "row": 0,
-   "says": "Clients connect to one address.",
-   "detail": "Browsers and services reach the edge through a single virtual IP."
-  },
-  {
-   "id": "vip",
-   "label": "VIP",
-   "tech": "keepalived",
-   "icon": "linux",
-   "layer": 2,
+   "layer": 3,
    "col": 1,
    "row": 0,
-   "says": "keepalived floats the VIP.",
-   "detail": "VRRP moves the address to the standby node when the active NGINX fails.",
-   "href": "#/tech/linux-networking"
+   "says": "Clients connect over HTTPS.",
+   "detail": "Browsers and services reach NGINX by DNS name on port 443 (Users layer)."
   },
   {
    "id": "nginx",
    "label": "NGINX",
    "tech": "NGINX",
    "icon": "nginx",
-   "layer": 1,
+   "layer": 2,
    "col": 1,
    "row": 0,
    "says": "NGINX terminates TLS and routes.",
-   "detail": "Workers handle TLS, PROXY protocol, HTTP routing and TCP proxying on an event loop.",
+   "detail": "Workers handle TLS, HTTP routing and TCP proxying. Alternatives: HAProxy, Envoy, Traefik, Caddy, cloud load balancers.",
    "href": "#/tech/nginx",
    "inner": [
     {
@@ -74,68 +66,95 @@
    "label": "Prometheus",
    "tech": "Prometheus",
    "icon": "prometheus",
-   "layer": 1,
+   "layer": 2,
    "col": 2,
    "row": 0,
    "says": "Prometheus scrapes edge metrics.",
-   "detail": "stub_status via an exporter feeds alerts on 5xx rate and upstream latency.",
+   "detail": "An exporter turns stub_status into metrics for alerts on 5xx and latency.",
    "href": "#/tech/prometheus"
-  },
-  {
-   "id": "app",
-   "label": "App",
-   "tech": "Upstream",
-   "icon": null,
-   "layer": 0,
-   "col": 0,
-   "row": 0,
-   "says": "NGINX proxies HTTP to apps.",
-   "detail": "proxy_pass reuses keepalive connections to the upstream pool."
-  },
-  {
-   "id": "kong",
-   "label": "Kong",
-   "tech": "Kong",
-   "icon": "kong",
-   "layer": 0,
-   "col": 1,
-   "row": 0,
-   "says": "NGINX can front the API gateway.",
-   "detail": "Host-based routes hand API traffic to Kong for auth and rate limits.",
-   "href": "#/tech/kong"
   },
   {
    "id": "pg",
    "label": "PostgreSQL",
    "tech": "PostgreSQL",
    "icon": "postgresql",
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "Stream proxies raw TCP to PostgreSQL.",
+   "detail": "The stream block forwards a TCP port at L4 without parsing the protocol.",
+   "href": "#/tech/postgresql"
+  },
+  {
+   "id": "vm",
+   "label": "App VM",
+   "tech": "Upstream",
+   "icon": null,
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "proxy_pass reaches plain VM apps.",
+   "detail": "An upstream pool reuses keepalive connections to app servers."
+  },
+  {
+   "id": "nodeport",
+   "label": "NodePort",
+   "tech": "Service NodePort",
+   "icon": null,
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "NodePort opens one port per node.",
+   "detail": "NGINX lists every node IP and port as upstreams; you own health checks.",
+   "href": "#/tech/kubernetes-okd"
+  },
+  {
+   "id": "lb",
+   "label": "LoadBalancer",
+   "tech": "MetalLB / cloud LB",
+   "icon": null,
+   "layer": 1,
+   "col": 3,
+   "row": 0,
+   "says": "LoadBalancer gives one stable VIP.",
+   "detail": "A cloud balancer or MetalLB fronts the nodes; NGINX targets that address."
+  },
+  {
+   "id": "kproxy",
+   "label": "kube-proxy",
+   "tech": "kube-proxy",
+   "icon": null,
    "layer": 0,
    "col": 2,
    "row": 0,
-   "says": "Stream proxies raw TCP to PostgreSQL.",
-   "detail": "The stream block forwards port 15432 at L4 without parsing the protocol.",
-   "href": "#/tech/postgresql"
+   "says": "kube-proxy maps node ports to pods.",
+   "detail": "Rules on each node send traffic to a Service endpoint."
+  },
+  {
+   "id": "svc",
+   "label": "Service",
+   "tech": "Service and Pods",
+   "icon": null,
+   "layer": 0,
+   "col": 3,
+   "row": 0,
+   "says": "The Service selects healthy pods.",
+   "detail": "Endpoints list ready pods; the Service spreads traffic across them.",
+   "href": "#/tech/kubernetes-okd"
   }
  ],
  "wires": [
   {
    "from": "client",
-   "to": "vip",
+   "to": "nginx",
    "label": "HTTPS",
    "style": "solid",
    "flow": true,
    "weight": "bold"
   },
   {
-   "from": "vip",
-   "to": "nginx",
-   "style": "solid",
-   "flow": true,
-   "weight": "bold"
-  },
-  {
    "from": "nginx",
-   "to": "app",
+   "to": "vm",
    "label": "HTTP",
    "style": "solid",
    "flow": true,
@@ -143,7 +162,15 @@
   },
   {
    "from": "nginx",
-   "to": "kong",
+   "to": "nodeport",
+   "label": "HTTP",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "nginx",
+   "to": "lb",
    "label": "HTTP",
    "style": "solid",
    "flow": true,
@@ -153,6 +180,27 @@
    "from": "nginx",
    "to": "pg",
    "label": "TCP stream",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "nodeport",
+   "to": "kproxy",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "lb",
+   "to": "kproxy",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "kproxy",
+   "to": "svc",
    "style": "solid",
    "flow": true,
    "weight": "normal"
@@ -172,26 +220,27 @@
    "label": "HTTP path",
    "focus": [
     "client",
-    "vip",
     "nginx",
-    "app",
-    "kong"
+    "vm"
    ]
   },
   {
-   "id": "stream",
-   "label": "Stream L4",
+   "id": "k8s",
+   "label": "To Kubernetes",
    "focus": [
     "nginx",
-    "pg"
+    "nodeport",
+    "lb",
+    "kproxy",
+    "svc"
    ]
   },
   {
    "id": "ops",
-   "label": "Operations",
+   "label": "Stream and ops",
    "focus": [
-    "vip",
     "nginx",
+    "pg",
     "prom"
    ]
   }
@@ -199,53 +248,78 @@
  "steps": [
   {
    "title": "Connect",
-   "text": "The client reaches the VIP held by keepalived.",
+   "text": "The client opens HTTPS to NGINX.",
    "boxes": [
     "client",
-    "vip",
     "nginx"
    ],
    "wires": [
     [
      "client",
-     "vip"
-    ],
-    [
-     "vip",
      "nginx"
     ]
    ]
   },
   {
-   "title": "Terminate",
-   "text": "NGINX terminates TLS and restores the client IP.",
-   "boxes": [
-    "nginx"
-   ],
-   "wires": []
-  },
-  {
    "title": "Route",
-   "text": "server_name and location pick the upstream.",
+   "text": "server_name and location pick the upstream pool.",
    "boxes": [
     "nginx",
-    "app",
-    "kong"
+    "vm"
    ],
    "wires": [
     [
      "nginx",
-     "app"
+     "vm"
+    ]
+   ]
+  },
+  {
+   "title": "Enter cluster",
+   "text": "Use a NodePort, or one LoadBalancer VIP.",
+   "boxes": [
+    "nginx",
+    "nodeport",
+    "lb"
+   ],
+   "wires": [
+    [
+     "nginx",
+     "nodeport"
     ],
     [
      "nginx",
-     "kong"
+     "lb"
+    ]
+   ]
+  },
+  {
+   "title": "Reach pods",
+   "text": "kube-proxy sends traffic to a ready pod.",
+   "boxes": [
+    "nodeport",
+    "lb",
+    "kproxy",
+    "svc"
+   ],
+   "wires": [
+    [
+     "nodeport",
+     "kproxy"
+    ],
+    [
+     "lb",
+     "kproxy"
+    ],
+    [
+     "kproxy",
+     "svc"
     ]
    ]
   },
   {
    "title": "Stream",
-   "text": "The stream block forwards raw TCP to PostgreSQL.",
+   "text": "Stream relays raw TCP to PostgreSQL.",
    "boxes": [
     "nginx",
     "pg"
@@ -282,7 +356,7 @@
  "declarations": [
   "NGINX listens on HTTP and stream.",
   "TLS terminates at the edge.",
-  "proxy_protocol preserves the client IP.",
+  "Pick NodePort or LoadBalancer.",
   "Reload drains, never drops."
  ]
 }

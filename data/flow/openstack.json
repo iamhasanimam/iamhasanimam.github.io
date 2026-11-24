@@ -2,50 +2,376 @@
  "title": "OpenStack",
  "subtitle": "Private cloud: identity, compute, networking and storage on KVM hosts.",
  "layers": [
-  {"layer": 2, "label": "Interface"},
-  {"layer": 1, "label": "Services"},
-  {"layer": 0, "label": "Hosts"}
+  {
+   "layer": 2,
+   "label": "Edge"
+  },
+  {
+   "layer": 1,
+   "label": "Platform services"
+  },
+  {
+   "layer": 0,
+   "label": "Infrastructure"
+  }
  ],
  "groups": [
-  {"id": "ident", "label": "Identity and images", "boxes": ["keystone", "glance"]},
-  {"id": "core", "label": "Compute, network, storage", "boxes": ["nova", "neutron", "cinder"]}
+  {
+   "id": "ident",
+   "label": "Identity and images",
+   "boxes": [
+    "keystone",
+    "glance"
+   ]
+  },
+  {
+   "id": "core",
+   "label": "Compute, network, storage",
+   "boxes": [
+    "nova",
+    "neutron",
+    "cinder"
+   ]
+  }
  ],
  "tabs": [
-  {"id": "ident", "label": "Identity", "focus": ["client", "horizon", "keystone", "glance"]},
-  {"id": "launch", "label": "Launch", "focus": ["nova", "kvm", "glance", "cinder", "lvm"]},
-  {"id": "net", "label": "Network", "focus": ["neutron", "ovn", "nova"]}
+  {
+   "id": "ident",
+   "label": "Identity",
+   "focus": [
+    "client",
+    "horizon",
+    "keystone",
+    "glance"
+   ]
+  },
+  {
+   "id": "launch",
+   "label": "Launch",
+   "focus": [
+    "nova",
+    "kvm",
+    "glance",
+    "cinder",
+    "lvm"
+   ]
+  },
+  {
+   "id": "net",
+   "label": "Network",
+   "focus": [
+    "neutron",
+    "ovn",
+    "nova"
+   ]
+  }
  ],
  "boxes": [
-  {"id": "client", "label": "OpenStack CLI", "tech": "OpenStack client", "icon": "openstack", "layer": 2, "col": 0, "row": 0, "says": "The CLI calls every API.", "detail": "Authenticates once with Keystone, then calls service APIs with the token."},
-  {"id": "horizon", "label": "Horizon", "tech": "Horizon dashboard", "icon": "openstack", "layer": 2, "col": 1, "row": 0, "says": "Horizon is the web console.", "detail": "A Django front end that uses the same public APIs as the CLI."},
-  {"id": "keystone", "label": "Keystone", "tech": "Keystone identity", "icon": "openstack", "layer": 2, "col": 2, "row": 0, "says": "Keystone issues tokens.", "detail": "Holds users, projects, roles and the service catalog."},
-  {"id": "glance", "label": "Glance", "tech": "Glance images", "icon": "openstack", "layer": 2, "col": 3, "row": 0, "says": "Glance serves boot images.", "detail": "Stores qcow2 images that Nova copies onto compute hosts."},
-  {"id": "nova", "label": "Nova", "tech": "Nova compute", "icon": "openstack", "layer": 1, "col": 0, "row": 0, "says": "Nova schedules instances.", "detail": "API and scheduler pick a host; nova-compute boots the guest."},
-  {"id": "neutron", "label": "Neutron", "tech": "Neutron networking", "icon": "openstack", "layer": 1, "col": 1, "row": 0, "says": "Neutron builds the networks.", "detail": "Creates L2 networks, routers, security groups and floating IPs.", "inner": [{"id": "ml2", "label": "ML2 plugin"}, {"id": "l3", "label": "L3 router"}, {"id": "dhcp", "label": "DHCP, metadata"}, {"id": "sg", "label": "Security groups"}]},
-  {"id": "cinder", "label": "Cinder", "tech": "Cinder block storage", "icon": "openstack", "layer": 1, "col": 2, "row": 0, "says": "Cinder owns the volumes.", "detail": "Creates, snapshots and attaches block volumes to instances."},
-  {"id": "kvm", "label": "Linux KVM", "tech": "Linux KVM and libvirt", "icon": "linux", "layer": 0, "col": 0, "row": 0, "says": "KVM runs the guests.", "detail": "libvirt starts hardware-accelerated virtual machines on the compute host."},
-  {"id": "ovn", "label": "OVN, OVS", "tech": "Open vSwitch and OVN", "icon": null, "layer": 0, "col": 1, "row": 0, "says": "OVS forwards the frames.", "detail": "Bridges instance ports; OVN programs logical switches and routers."},
-  {"id": "lvm", "label": "LVM, Ceph", "tech": "Storage backend", "icon": null, "layer": 0, "col": 2, "row": 0, "says": "The backend holds the data.", "detail": "LVM for a lab; replicated Ceph for production volumes."}
+  {
+   "id": "client",
+   "label": "OpenStack CLI",
+   "tech": "OpenStack client",
+   "icon": "openstack",
+   "layer": 2,
+   "col": 0,
+   "row": 0,
+   "says": "The CLI calls every API.",
+   "detail": "Authenticates once with Keystone, then calls service APIs. Alternatives: Terraform, Ansible, Horizon."
+  },
+  {
+   "id": "horizon",
+   "label": "Horizon",
+   "tech": "Horizon dashboard",
+   "icon": "openstack",
+   "layer": 2,
+   "col": 1,
+   "row": 0,
+   "says": "Horizon is the web console.",
+   "detail": "A Django front end using the same public APIs as the CLI. Alternatives: Skyline, CLI."
+  },
+  {
+   "id": "keystone",
+   "label": "Keystone",
+   "tech": "Keystone identity",
+   "icon": "openstack",
+   "layer": 2,
+   "col": 2,
+   "row": 0,
+   "says": "Keystone issues tokens.",
+   "detail": "Holds users, projects, roles and the service catalog. Alternatives: Keycloak federation, cloud IAM."
+  },
+  {
+   "id": "glance",
+   "label": "Glance",
+   "tech": "Glance images",
+   "icon": "openstack",
+   "layer": 2,
+   "col": 3,
+   "row": 0,
+   "says": "Glance serves boot images.",
+   "detail": "Stores qcow2 images that Nova copies onto compute hosts."
+  },
+  {
+   "id": "nova",
+   "label": "Nova",
+   "tech": "Nova compute",
+   "icon": "openstack",
+   "layer": 1,
+   "col": 0,
+   "row": 0,
+   "says": "Nova schedules instances.",
+   "detail": "API and scheduler pick a host; nova-compute boots the guest. Alternatives: Proxmox, vCenter."
+  },
+  {
+   "id": "neutron",
+   "label": "Neutron",
+   "tech": "Neutron networking",
+   "icon": "openstack",
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "Neutron builds the networks.",
+   "detail": "Creates L2 networks, routers, security groups and floating IPs. Alternatives: VMware NSX, cloud VPC.",
+   "inner": [
+    {
+     "id": "ml2",
+     "label": "ML2 plugin"
+    },
+    {
+     "id": "l3",
+     "label": "L3 router"
+    },
+    {
+     "id": "dhcp",
+     "label": "DHCP, metadata"
+    },
+    {
+     "id": "sg",
+     "label": "Security groups"
+    }
+   ]
+  },
+  {
+   "id": "cinder",
+   "label": "Cinder",
+   "tech": "Cinder block storage",
+   "icon": "openstack",
+   "layer": 1,
+   "col": 2,
+   "row": 0,
+   "says": "Cinder owns the volumes.",
+   "detail": "Creates, snapshots and attaches block volumes. Alternatives: Ceph RBD, vSAN, cloud EBS."
+  },
+  {
+   "id": "kvm",
+   "label": "Linux KVM",
+   "tech": "Linux KVM and libvirt",
+   "icon": "linux",
+   "layer": 0,
+   "col": 0,
+   "row": 0,
+   "says": "KVM runs the guests.",
+   "detail": "libvirt starts hardware-accelerated virtual machines. Alternatives: ESXi, Hyper-V, Xen."
+  },
+  {
+   "id": "ovn",
+   "label": "OVN, OVS",
+   "tech": "Open vSwitch and OVN",
+   "icon": null,
+   "layer": 0,
+   "col": 1,
+   "row": 0,
+   "says": "OVS forwards the frames.",
+   "detail": "Bridges instance ports; OVN programs logical switches and routers."
+  },
+  {
+   "id": "lvm",
+   "label": "LVM, Ceph",
+   "tech": "Storage backend",
+   "icon": null,
+   "layer": 0,
+   "col": 2,
+   "row": 0,
+   "says": "The backend holds the data.",
+   "detail": "LVM for a lab; replicated Ceph for production volumes. Alternatives: NFS, iSCSI SAN."
+  }
  ],
  "wires": [
-  {"from": "client", "to": "keystone", "style": "solid", "flow": true, "weight": "bold", "label": "token"},
-  {"from": "horizon", "to": "keystone", "style": "dashed", "flow": true, "weight": "normal", "label": "auth"},
-  {"from": "client", "to": "nova", "style": "solid", "flow": true, "weight": "bold", "label": "boot"},
-  {"from": "nova", "to": "glance", "style": "solid", "flow": true, "weight": "normal", "label": "image"},
-  {"from": "nova", "to": "neutron", "style": "solid", "flow": true, "weight": "normal", "label": "port"},
-  {"from": "nova", "to": "cinder", "style": "dashed", "flow": true, "weight": "normal", "label": "attach"},
-  {"from": "nova", "to": "kvm", "style": "solid", "flow": true, "weight": "bold", "label": "libvirt"},
-  {"from": "neutron", "to": "ovn", "style": "solid", "flow": true, "weight": "normal", "label": "L2/L3"},
-  {"from": "cinder", "to": "lvm", "style": "solid", "flow": true, "weight": "normal", "label": "volume"},
-  {"from": "kvm", "to": "ovn", "style": "dashed", "flow": false, "weight": "normal"}
+  {
+   "from": "client",
+   "to": "keystone",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "token"
+  },
+  {
+   "from": "horizon",
+   "to": "keystone",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal",
+   "label": "auth"
+  },
+  {
+   "from": "client",
+   "to": "nova",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "boot"
+  },
+  {
+   "from": "nova",
+   "to": "glance",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "image"
+  },
+  {
+   "from": "nova",
+   "to": "neutron",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "port"
+  },
+  {
+   "from": "nova",
+   "to": "cinder",
+   "style": "dashed",
+   "flow": true,
+   "weight": "normal",
+   "label": "attach"
+  },
+  {
+   "from": "nova",
+   "to": "kvm",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold",
+   "label": "libvirt"
+  },
+  {
+   "from": "neutron",
+   "to": "ovn",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "L2/L3"
+  },
+  {
+   "from": "cinder",
+   "to": "lvm",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal",
+   "label": "volume"
+  },
+  {
+   "from": "kvm",
+   "to": "ovn",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  }
  ],
  "steps": [
-  {"title": "Authenticate", "text": "Keystone returns a scoped token.", "boxes": ["client", "keystone"], "wires": [["client", "keystone"]]},
-  {"title": "Schedule", "text": "Nova picks a compute host.", "boxes": ["client", "nova"], "wires": [["client", "nova"]]},
-  {"title": "Fetch image", "text": "Glance supplies the boot image.", "boxes": ["nova", "glance"], "wires": [["nova", "glance"]]},
-  {"title": "Wire network", "text": "Neutron creates the port on OVS.", "boxes": ["nova", "neutron", "ovn"], "wires": [["nova", "neutron"], ["neutron", "ovn"]]},
-  {"title": "Attach storage", "text": "Cinder attaches the volume.", "boxes": ["nova", "cinder", "lvm"], "wires": [["nova", "cinder"], ["cinder", "lvm"]]},
-  {"title": "Boot", "text": "libvirt starts the KVM guest.", "boxes": ["nova", "kvm"], "wires": [["nova", "kvm"]]}
+  {
+   "title": "Authenticate",
+   "text": "Keystone returns a scoped token.",
+   "boxes": [
+    "client",
+    "keystone"
+   ],
+   "wires": [
+    [
+     "client",
+     "keystone"
+    ]
+   ]
+  },
+  {
+   "title": "Schedule",
+   "text": "Nova picks a compute host.",
+   "boxes": [
+    "client",
+    "nova"
+   ],
+   "wires": [
+    [
+     "client",
+     "nova"
+    ]
+   ]
+  },
+  {
+   "title": "Fetch image",
+   "text": "Glance supplies the boot image.",
+   "boxes": [
+    "nova",
+    "glance"
+   ],
+   "wires": [
+    [
+     "nova",
+     "glance"
+    ]
+   ]
+  },
+  {
+   "title": "Wire network",
+   "text": "Neutron creates the port on OVS.",
+   "boxes": [
+    "nova",
+    "neutron",
+    "ovn"
+   ],
+   "wires": [
+    [
+     "nova",
+     "neutron"
+    ],
+    [
+     "neutron",
+     "ovn"
+    ]
+   ]
+  },
+  {
+   "title": "Attach storage",
+   "text": "Cinder attaches the volume.",
+   "boxes": [
+    "nova",
+    "cinder",
+    "lvm"
+   ],
+   "wires": [
+    [
+     "nova",
+     "cinder"
+    ],
+    [
+     "cinder",
+     "lvm"
+    ]
+   ]
+  },
+  {
+   "title": "Boot",
+   "text": "libvirt starts the KVM guest.",
+   "boxes": [
+    "nova",
+    "kvm"
+   ],
+   "wires": [
+    [
+     "nova",
+     "kvm"
+    ]
+   ]
+  }
  ],
  "declarations": [
   "Keystone authenticates every call.",
@@ -53,5 +379,11 @@
   "Nova schedules; KVM runs.",
   "Volumes outlive instances."
  ],
- "run": {"cmd": "openstack server list", "lines": ["test-server  ACTIVE  private=10.0.0.12, 172.24.4.25", "data01  in-use  1 GB  /dev/vdb"]}
+ "run": {
+  "cmd": "openstack server list",
+  "lines": [
+   "test-server  ACTIVE  private=10.0.0.12, 172.24.4.25",
+   "data01  in-use  1 GB  /dev/vdb"
+  ]
+ }
 }
