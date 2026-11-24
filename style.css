@@ -505,9 +505,11 @@ details.more > summary { padding: 2px 0 6px var(--s4); list-style: none; cursor:
 @keyframes hint-shift { from { background-position: 0 0; } to { background-position: 100% 0; } }
 @keyframes caret-blink { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .hero-hint .ht, .hero-hint .caret { animation: none; } }
-/* phones: the infrastructure options sit in a 3-column grid so every option (OpenStack, VMware ESXi, AWS, GCP, Azure) is always visible and tappable */
+/* phones: the infrastructure options stay on one line and scroll sideways, with a soft fade at the edge as a hint */
 @media (max-width: 760px) {
-  .flow-bar .flow-ctl { flex-direction: column; align-items: stretch; gap: 6px; }
-  .flow-bar .flow-ctl .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); height: auto; overflow: visible; width: 100%; gap: 4px; padding: 4px; }
-  .flow-bar .flow-ctl .seg button { height: 36px; padding: 0 6px; white-space: nowrap; flex: none; min-width: 0; font-size: 13px; }
+  .flow-bar .flow-ctl { flex-direction: row; align-items: center; flex-wrap: nowrap; gap: 8px; min-width: 0; }
+  .flow-bar .flow-ctl .flow-ctl-l { flex: none; }
+  .flow-bar .flow-ctl .seg { display: flex; flex-wrap: nowrap; height: 34px; overflow-x: auto; overflow-y: hidden; width: auto; max-width: 100%; min-width: 0; gap: 2px; padding: 2px; scrollbar-width: none; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
+  .flow-bar .flow-ctl .seg::-webkit-scrollbar { display: none; }
+  .flow-bar .flow-ctl .seg button { flex: none; height: 30px; padding: 0 14px; white-space: nowrap; scroll-snap-align: start; font-size: 13px; }
 }
