@@ -49,10 +49,10 @@
   }
  ],
  "flow": [
-  "Client opens TLS to the Kong listener on 8443, usually via a balancer.",
+  "The client opens TLS to the Kong listener on 8443, usually via a balancer.",
   "The router matches a Route by host, path and method.",
   "The plugin chain for the Route, Service and Consumer is resolved.",
-  "Access phase runs authentication, then rate limiting.",
+  "The access phase runs authentication, then rate limiting.",
   "The balancer picks a healthy Target and reuses a keepalive connection.",
   "Targets can be VM APIs or Kubernetes Services and pods.",
   "The response returns through header and body filters; logs and metrics ship."

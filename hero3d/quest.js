@@ -15,7 +15,7 @@ const LEVEL_DWELL = 0.075, SUMMIT_DWELL = 0.1;
 const DEFAULT_BADGES = {
   aws: 'AWS Certified Cloud Practitioner',
   throughput: '400 req/s at p95 under 50 ms',
-  runbook: 'Runbooks cut resolution time 40%',
+  runbook: 'Runbooks cut resolution time 12%',
   mentor: 'Mentored a team of 4',
 };
 const STOP_NAMES = ['cloud', 'sysadmin', 'support', 'wingify', 'platform'];

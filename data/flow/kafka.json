@@ -111,7 +111,7 @@
    "col": 2,
    "row": 0,
    "says": "A topic is a set of partitions.",
-   "detail": "Order holds within a partition. The key picks the partition.",
+   "detail": "Ordering holds within a partition. The key picks the partition.",
    "inner": [
     {
      "id": "p0",

@@ -2,7 +2,7 @@
   "posts": [
     {
       "title": "What does a DevOps engineer actually do?",
-      "summary": "Three levels explained from the ground up. Linux: two ports, CORS enforced by the browser, a reverse proxy for one origin. Docker: bridge networks, name resolution, veth pairs as cables. Kubernetes: a Service as a stable virtual IP and DNS name for changing pod IPs. Then lean VPC and multi-AZ design, and the path DNS, L4 load balancer, API gateway (Kong, Gateway API, AWS API Gateway), Service, Pod, database. Start of a 90-day hands-on series.",
+      "summary": "Three levels explained from the ground up. Linux: two ports, CORS enforced by the browser, a reverse proxy for one origin. Docker: bridge networks, name resolution, veth pairs as cables. Kubernetes: a Service as a stable virtual IP and DNS name for changing pod IPs. Then lean VPC and multi-AZ design, and the request path: DNS, L4 load balancer, API gateway (Kong, Gateway API, AWS API Gateway), Service, Pod, database. The start of a 90-day hands-on series.",
       "tags": [
         "DevOps",
         "Kubernetes",
@@ -20,11 +20,11 @@
     },
     {
       "title": "End-to-end MERN deployment on AWS: Docker bridge networks, ACM on ALB, Route 53, private subnets",
-      "summary": "Compose with an Nginx reverse proxy and request-level log correlation; a VPC with public and private subnets, IGW and NAT; a private EC2 with no public IP reached through SSM Session Manager; HTTPS on the ALB via ACM; a Route 53 domain; MongoDB Atlas restricted to the NAT public IP; secrets in SSM Parameter Store through a deploy script; CloudWatch logs and metrics. Path: Route 53, ALB, Nginx, containers, MongoDB Atlas.",
+      "summary": "Compose with an NGINX reverse proxy and request-level log correlation; a VPC with public and private subnets, IGW and NAT; a private EC2 with no public IP reached through SSM Session Manager; HTTPS on the ALB via ACM; a Route 53 domain; MongoDB Atlas restricted to the NAT public IP; secrets in SSM Parameter Store through a deploy script; CloudWatch logs and metrics. Path: Route 53, ALB, NGINX, containers, MongoDB Atlas.",
       "tags": [
         "AWS",
         "Docker",
-        "Nginx",
+        "NGINX",
         "Route53"
       ],
       "date": "2025-11",
@@ -36,7 +36,7 @@
     },
     {
       "title": "How to deploy a MERN stack application on AWS",
-      "summary": "A three-tier build: VPC, subnets, IGW and Route 53; Node and Express on EC2 with PM2 behind Nginx and Let's Encrypt TLS; React on a private S3 bucket served by CloudFront with OAC and ACM; MongoDB Atlas with an IP allow list; CloudWatch alarms and AMI snapshots.",
+      "summary": "A three-tier build: VPC, subnets, IGW and Route 53; Node and Express on EC2 with PM2 behind NGINX and Let's Encrypt TLS; React on a private S3 bucket served by CloudFront with OAC and ACM; MongoDB Atlas with an IP allow list; CloudWatch alarms and AMI snapshots.",
       "tags": [
         "AWS",
         "CloudFront",

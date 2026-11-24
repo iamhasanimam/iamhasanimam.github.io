@@ -81,7 +81,7 @@
     "title": "Primary: listen, WAL, archive, TLS",
     "lang": "bash",
     "code": "sudo openssl req -new -x509 -days 365 -nodes -subj '/CN=pg1.lab.local' \\\n  -out /var/lib/postgresql/server.crt -keyout /var/lib/postgresql/server.key\nsudo chown postgres: /var/lib/postgresql/server.* && sudo chmod 600 /var/lib/postgresql/server.key\nsudo tee /etc/postgresql/16/main/conf.d/10-prod.conf <<'EOF'\nlisten_addresses = '10.0.0.11'\nwal_level = replica\nmax_wal_senders = 5\nmax_replication_slots = 5\narchive_mode = on\narchive_command = 'aws s3 cp %p s3://pg-wal/pg1/%f --endpoint-url http://minio.lab.local:9000'\nssl = on\nssl_cert_file = '/var/lib/postgresql/server.crt'\nssl_key_file = '/var/lib/postgresql/server.key'\nEOF",
-    "note": "Self-signed cert is for the lab; use your CA in production. Credentials live in ~postgres/.aws."
+    "note": "A self-signed certificate is for the lab only; use your CA in production. Credentials live in ~postgres/.aws."
    },
    {
     "title": "Roles and pg_hba.conf",
@@ -123,7 +123,7 @@
   "Transaction pooling breaks advisory locks, SET and session prepared statements.",
   "The TLS key must be mode 0600 and owned by postgres.",
   "trust or 0.0.0.0/0 in pg_hba.conf exposes the database.",
-  "Backups never restored are untested; rehearse PITR."
+  "Backups that are never restored are untested; rehearse PITR."
  ],
  "labVideos": [],
  "furtherReading": [

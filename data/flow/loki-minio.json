@@ -118,7 +118,7 @@
    "col": 1,
    "row": 0,
    "says": "Ingesters buffer and flush chunks.",
-   "detail": "Append lines to in-memory chunks with a WAL, then flush by size or age.",
+   "detail": "Each ingester appends lines to in-memory chunks with a WAL, then flushes by size or age.",
    "inner": [
     {
      "id": "wal",
@@ -143,7 +143,7 @@
    "col": 2,
    "row": 0,
    "says": "Queriers read the index, then chunks.",
-   "detail": "Reads index and chunks. Alternatives: Elasticsearch or OpenSearch for full-text search."
+   "detail": "Reads the index and chunks. Alternatives: Elasticsearch or OpenSearch for full-text search."
   },
   {
    "id": "tempo",
@@ -317,7 +317,7 @@
   },
   {
    "title": "Push",
-   "text": "Alloy pushes logs to Loki, traces to Tempo.",
+   "text": "Alloy pushes logs to Loki and traces to Tempo.",
    "boxes": [
     "alloy",
     "distributor",

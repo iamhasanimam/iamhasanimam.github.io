@@ -41,10 +41,10 @@
   }
  ],
  "flow": [
-  "Client hashes the key: CRC16 mod 16384 gives the slot.",
+  "The client hashes the key: CRC16 mod 16384 gives the slot.",
   "The command goes to the master that owns the slot.",
   "A wrong guess returns MOVED; the client updates its slot map.",
-  "The master writes to memory, appends to AOF, streams to replicas.",
+  "The master writes to memory, appends to the AOF and streams to replicas.",
   "At maxmemory the eviction policy drops keys or rejects the write.",
   "Peers mark an unresponsive master PFAIL, then FAIL by majority.",
   "A replica wins the election and takes over the slots.",
@@ -75,7 +75,7 @@
     "title": "Firewall",
     "lang": "bash",
     "code": "sudo ufw allow from 10.0.0.0/24 to any port 22 proto tcp\nsudo ufw allow from 10.0.0.0/24 to any port 7000:7001 proto tcp\nsudo ufw allow from 10.0.0.0/24 to any port 17000:17001 proto tcp\nsudo ufw --force enable",
-    "note": "17000:17001 is the cluster bus (port plus 10000). Subnet is a placeholder."
+    "note": "17000:17001 is the cluster bus (port plus 10000). The subnet is a placeholder."
    },
    {
     "title": "Build Redis",
@@ -146,7 +146,7 @@
  ],
  "keyPoints": [
   "CRC16(key) mod 16384 maps every key to one hash slot.",
-  "Each master owns slots; replicas promote when a majority marks it FAIL.",
+  "Each master owns slots; replicas promote when a majority marks their master FAIL.",
   "maxmemory plus an eviction policy decides what happens at the cap.",
   "Lettuce adaptive refresh moves clients to the new master without a restart."
  ],

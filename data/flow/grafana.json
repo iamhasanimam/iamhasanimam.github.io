@@ -143,7 +143,7 @@
    "col": 0,
    "row": 0,
    "says": "Four golden signals, top to bottom.",
-   "detail": "Latency p95, traffic, 5xx ratio and CPU saturation read in on-call order."
+   "detail": "Latency p95, traffic, 5xx ratio and CPU saturation appear in on-call order."
   },
   {
    "id": "alerting",
@@ -340,7 +340,7 @@
   },
   {
    "title": "Correlate",
-   "text": "Exemplar opens the trace; the span opens logs.",
+   "text": "An exemplar opens the trace; the span opens its logs.",
    "boxes": [
     "prom",
     "tempo",
@@ -380,7 +380,7 @@
  "declarations": [
   "Grafana queries, never stores.",
   "Dashboards are code.",
-  "Four signals tell truth.",
+  "The four signals tell the truth.",
   "Exemplars link symptom to trace."
  ],
  "run": {

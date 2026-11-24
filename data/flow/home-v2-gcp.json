@@ -1301,7 +1301,7 @@
   {
    "from": "giam",
    "to": "gke",
-   "label": "roles (Workload Identity)",
+   "label": "roles via Workload Identity",
    "style": "solid",
    "flow": true,
    "weight": "normal"
@@ -1725,6 +1725,6 @@
   "Istio secures service traffic.",
   "Kafka decouples the services.",
   "Git drives every deployment.",
-  "Grafana shows metrics, logs, traces."
+  "Grafana shows metrics, logs and traces."
  ]
 }

@@ -25,7 +25,7 @@
   },
   {
    "title": "On-prem bring-up",
-   "body": "Create users, keys and sudoers drop-ins first.\nHarden sshd: no passwords, no root, AllowUsers.\nSet chrony, firewall rules and cron jobs.\nCron or CI re-runs the baseline to restore the baseline."
+   "body": "Create users, keys and sudoers drop-ins first.\nHarden sshd: no passwords, no root, AllowUsers.\nSet chrony, firewall rules and cron jobs.\nCron or CI re-runs the role to restore the baseline."
   },
   {
    "title": "What sits in front",
@@ -41,8 +41,8 @@
   }
  ],
  "flow": [
-  "Control node reads inventory and selects the hosts.",
-  "It opens SSH sessions in parallel, default five forks.",
+  "The control node reads inventory and selects the hosts.",
+  "It opens SSH sessions in parallel; the default is five forks.",
   "Modules are copied to each host and executed.",
   "Each module compares desired state with actual state.",
   "Changed tasks notify handlers, such as an sshd restart.",
@@ -104,7 +104,7 @@
  },
  "verify": [
   "ansible all -m ping returns SUCCESS and pong for every host.",
-  "Second ansible-playbook run ends with changed=0 and failed=0.",
+  "A second ansible-playbook run ends with changed=0 and failed=0.",
   "ssh -o PubkeyAuthentication=no ops@web01 is refused.",
   "ssh root@web01 is denied; sshd -t exits 0.",
   "chronyc tracking shows a reference ID and small offset."
@@ -113,8 +113,8 @@
   "Enabling ufw before allowing port 22 locks you out.",
   "shell and command report changed unless creates: or changed_when: is set.",
   "Ubuntu sshd_config.d drop-ins can override your sshd_config lines.",
-  "Missing AllowUsers entry for your own user blocks your own login.",
-  "Skip validate: on sshd_config and a typo kills SSH.",
+  "A missing AllowUsers entry for your user blocks your login.",
+  "Without validate: on sshd_config, a typo can break SSH.",
   "Unpinned collections change behaviour between runs."
  ],
  "furtherReading": [
@@ -142,7 +142,7 @@
   "Run --check --diff first; keep secrets in Ansible Vault."
  ],
  "quickDeploy": [
-  "Install pinned ansible-core and an SSH key",
+  "Install a pinned ansible-core and an SSH key",
   "Write inventory and test with ping",
   "Apply a baseline role: users, SSH, chrony, firewall",
   "Dry-run with --check --diff, apply, rerun"

@@ -87,7 +87,7 @@
    "layer": 2,
    "col": 1,
    "row": 0,
-   "says": "Agent logs in and renders secrets.",
+   "says": "The agent logs in and renders secrets.",
    "detail": "Authenticates with AppRole, renews the token and rewrites templates when secrets change."
   },
   {
@@ -144,7 +144,7 @@
    "col": 3,
    "row": 0,
    "says": "Dynamic engines mint leased credentials.",
-   "detail": "Unique credentials per request. Expiry or revoke removes the user."
+   "detail": "Unique credentials per request. Expiry or revocation removes the user."
   },
   {
    "id": "audit",
@@ -317,7 +317,7 @@
  "steps": [
   {
    "title": "Login",
-   "text": "Agent presents role ID and secret ID.",
+   "text": "The agent presents its role ID and secret ID.",
    "boxes": [
     "workload",
     "agent",
@@ -369,7 +369,7 @@
   },
   {
    "title": "Mint",
-   "text": "Dynamic engine creates a leased database user.",
+   "text": "A dynamic engine creates a leased database user.",
    "boxes": [
     "policy",
     "dynamic",

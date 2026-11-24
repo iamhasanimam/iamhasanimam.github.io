@@ -33,7 +33,7 @@
     },
     {
       "title": "HA, observability and failure modes",
-      "body": "Open source Jenkins runs one active controller; recover by restoring JENKINS_HOME to a new node.\nConfigure it as code with JCasC and pin plugin versions.\nThe Prometheus plugin exposes queue length, executor use and job durations.\nCommon failures: offline agents, full disks, plugin upgrade breakage, expired credentials.\nRead the build console first, then the controller log under /var/log/jenkins."
+      "body": "Open-source Jenkins runs one active controller; recover by restoring JENKINS_HOME to a new node.\nConfigure it as code with JCasC and pin plugin versions.\nThe Prometheus plugin exposes queue length, executor use and job durations.\nCommon failures: offline agents, full disks, plugin upgrade breakage, expired credentials.\nRead the build console first, then the controller log under /var/log/jenkins."
     },
     {
       "title": "What sits in front",
@@ -49,14 +49,14 @@
     }
   ],
   "flow": [
-    "Developer pushes to Git; a webhook reaches the controller.",
-    "Controller reads the Jenkinsfile and queues the build.",
-    "An agent, VM or pod, checks out, builds and tests.",
+    "A developer pushes to Git; a webhook reaches the controller.",
+    "The controller reads the Jenkinsfile and queues the build.",
+    "An agent, either a VM or a pod, checks out, builds and tests.",
     "Static analysis and the quality gate must pass.",
     "The image is scanned, then pushed with an immutable tag.",
-    "Pipeline commits the new tag to the config repo.",
+    "The pipeline commits the new tag to the config repo.",
     "Argo CD syncs the cluster to match Git.",
-    "Alternatively a stage runs kubectl or helm directly.",
+    "Alternatively, a stage runs kubectl or helm directly.",
     "A smoke test checks the live endpoint."
   ],
   "deploy": {
@@ -129,7 +129,7 @@
     "Builds on the controller expose credentials; keep executors at 0.",
     "Unpinned plugins break upgrades; pin versions and test updates on a copy.",
     "Mounting the Docker socket gives builds root on the host.",
-    "Hardcoded secrets in Jenkinsfile leak through Git history; use credentials().",
+    "Hardcoded secrets in a Jenkinsfile leak through Git history; use credentials().",
     "Without a JENKINS_HOME backup, a lost controller loses jobs and secrets.",
     "A cluster-admin kubeconfig in Jenkins is a blast-radius risk; scope it to a namespace.",
     "Stale workspaces fill the disk; use cleanWs() and buildDiscarder."
@@ -169,7 +169,7 @@
   ],
   "osiNote": "Orchestrates over HTTP, SSH and webhooks; builds run on agents.",
   "production": [
-    "Run controller with zero executors; builds only on agents.",
+    "Run the controller with zero executors; build only on agents.",
     "Back up JENKINS_HOME nightly and test the restore.",
     "Define the controller in JCasC and pin plugin versions.",
     "Role-based access, no anonymous read, TLS on a reverse proxy.",

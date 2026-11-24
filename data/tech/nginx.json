@@ -29,7 +29,7 @@
   },
   {
    "title": "Load balancing, HA and scaling",
-   "body": "upstream pools balance round robin by default; least_conn, hash and random are built in.\nOpen source health is passive: max_fails and fail_timeout mark a peer down after errors.\nActive health checks need NGINX Plus or an external checker.\nkeepalived VRRP floats one VIP between two NGINX nodes for HA.\nScale out by adding nodes behind a VIP or cloud balancer; keep config identical."
+   "body": "upstream pools balance round robin by default; least_conn, hash and random are built in.\nOpen-source health checking is passive: max_fails and fail_timeout mark a peer down after errors.\nActive health checks need NGINX Plus or an external checker.\nkeepalived VRRP floats one VIP between two NGINX nodes for HA.\nScale out by adding nodes behind a VIP or cloud balancer; keep config identical."
   },
   {
    "title": "Observability",
@@ -41,7 +41,7 @@
   },
   {
    "title": "Connecting to its neighbours",
-   "body": "In front (Users): DNS resolves the name to NGINX, or to a cloud load balancer that forwards to it.\nBehind, on VMs (Infrastructure): proxy_pass to app servers; stream relays TCP to databases.\nBehind, on Kubernetes (Platform): NodePort opens one port, default 30000 to 32767, on every node; list node IPs as upstreams.\nService type LoadBalancer asks a cloud balancer or MetalLB for one VIP; point NGINX at it.\nAn Ingress or Gateway API controller routes by Host and path inside the cluster when many apps share one entry.\nA ClusterIP is not reachable from outside; never point an external NGINX at it."
+   "body": "In front (Users): DNS resolves the name to NGINX, or to a cloud load balancer that forwards to it.\nBehind, on VMs (Infrastructure): proxy_pass to app servers; stream relays TCP to databases.\nBehind, on Kubernetes (Platform): NodePort opens one port on every node, by default in the range 30000 to 32767; list node IPs as upstreams.\nService type LoadBalancer asks a cloud balancer or MetalLB for one VIP; point NGINX at it.\nAn Ingress or Gateway API controller routes by Host and path inside the cluster when many apps share one entry.\nA ClusterIP is not reachable from outside; never point an external NGINX at it."
   },
   {
    "title": "Alternatives",
@@ -49,7 +49,7 @@
   }
  ],
  "flow": [
-  "Client resolves the name and connects to the address NGINX listens on.",
+  "The client resolves the name and connects to the address NGINX listens on.",
   "NGINX accepts the connection on a worker and completes the TLS handshake.",
   "server_name and location select the route.",
   "proxy_pass picks a peer from the upstream pool and reuses keepalive.",
@@ -101,7 +101,7 @@
     "title": "Add the TLS server",
     "lang": "nginx",
     "code": "# /etc/nginx/conf.d/tls.conf\nserver {\n    listen 443 ssl;\n    server_name example.test;\n    ssl_certificate     /etc/nginx/certs/tls.crt;\n    ssl_certificate_key /etc/nginx/certs/tls.key;\n    ssl_protocols TLSv1.2 TLSv1.3;\n    ssl_session_cache shared:SSL:10m;\n    location / {\n        proxy_pass http://app;\n        proxy_http_version 1.1;\n        proxy_set_header Connection \"\";\n        proxy_set_header Host $host;\n    }\n}",
-    "note": "On NGINX 1.25.1 or newer add http2 on; inside the server block."
+    "note": "On NGINX 1.25.1 or newer, add http2 on; inside the server block."
    },
    {
     "title": "Proxy to a Kubernetes NodePort",
@@ -125,13 +125,13 @@
   "tail /var/log/nginx/access.log shows upstream address and timing"
  ],
  "pitfalls": [
-  "No proxy_http_version 1.1 and empty Connection means no upstream keepalive.",
+  "Without proxy_http_version 1.1 and an empty Connection header, there is no upstream keepalive.",
   "proxy_set_header in a location replaces every inherited header from the server.",
   "proxy_pass http://app/ versus http://app rewrites the URI differently.",
   "Two proxies in a row each need their own timeouts; the smallest one wins.",
   "A hostname in proxy_pass resolves once at startup; use a resolver and variable.",
-  "Open source NGINX has no active health checks; failed requests mark peers down.",
-  "Low worker_connections or file limits log 'Too many open files' under load."
+  "Open-source NGINX has no active health checks; failed requests mark peers down.",
+  "Low worker_connections or file limits cause 'Too many open files' errors under load."
  ],
  "furtherReading": [
   {

@@ -1,5 +1,5 @@
 /* Portfolio SPA: hash routing, static JSON data, no build. All data text is inserted with textContent (no innerHTML on data). */
-import { parseRoute, nextRoute } from './route.js?v=20261127q';
+import { parseRoute, nextRoute } from './route.js?v=20261128e';
 (() => {
   'use strict';
 
@@ -8,7 +8,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261127q';
   const LINKEDIN_URL = 'https://www.linkedin.com/in/iamhasanimam';
   const TYPE_CODE_MS = 22; // code typing speed in the hero editor, git log and code blocks (ms per character)
   const PAUSE_MS = 1800;   // pause after a snippet is typed, before the next tab
-  const ASSET_V = '20261127q'; // cache-busting for dynamic imports; keep in sync with index.html
+  const ASSET_V = '20261128e'; // cache-busting for dynamic imports; keep in sync with index.html
 
   // Brand colours (tuned for the dark banner). Slugs missing from simple-icons get a monogram.
   const COLORS = {
@@ -464,10 +464,14 @@ import { parseRoute, nextRoute } from './route.js?v=20261127q';
     });
     return wrap;
   }
-  let careerView = (() => { const v = new URLSearchParams(location.search).get('view'); if (v === 'git' || v === 'story' || v === 'quest') return v; try { return matchMedia('(max-width: 640px)').matches ? 'story' : 'quest'; } catch (e) { return 'quest'; } })();
+  let careerView = (() => { const v = new URLSearchParams(location.search).get('view'); return v === 'git' || v === 'quest' ? v : 'story'; })(); // Story is the default
 
   // employer name plus its industry type (product based or service based); no logos
   const coTag = (r) => h('span', { class: 'ind-wrap' }, h('span', { class: 'ind ' + (/product/i.test(r.industry || '') ? 'prod' : 'svc') }, r.industry || ''), r.sector ? h('span', { class: 'sector' }, r.sector) : null);
+  // what was done at every level (Platform, Delivery, API layer, Edge, Observability), ending with the outcome
+  const levelsBlock = (r) => h('div', { class: 'levels' },
+    r.levels.map((l) => h('div', { class: 'lv' }, h('div', { class: 'lv-t' }, l.level), h('ul', { class: 'lv-l' }, l.items.map((x) => h('li', null, x))))),
+    r.outcome ? h('div', { class: 'lv-out' }, h('span', { class: 'lv-k' }, 'Outcome'), h('strong', null, r.outcome)) : null);
   function careerCompact(c) {
     const body = h('ol', { class: 'trail' }, orderedRoles(c, false).map((r) => {
       const p = roleParts(r);
@@ -522,8 +526,8 @@ import { parseRoute, nextRoute } from './route.js?v=20261127q';
             h('div', { class: 'ryear' }, p.years),
             h('h2', null, r.title), h('div', { class: 'cat co' }, h('span', null, [r.company, r.location].filter(Boolean).join(' \u00b7 ')), coTag(r)),
             h('p', { class: 'headline' }, p.headline),
-            p.imp ? h('div', { class: 'impact' }, h('strong', null, p.imp.value), h('span', null, p.imp.label)) : null,
-            p.bullets.length ? bulletList(p.bullets, 3) : null,
+            p.imp && !(r.levels && r.levels.length) ? h('div', { class: 'impact' }, h('strong', null, p.imp.value), h('span', null, p.imp.label)) : null,
+            r.levels && r.levels.length ? levelsBlock(r) : (p.bullets.length ? bulletList(p.bullets, 3) : null),
             r.stack && r.stack.length ? h('div', { class: 'chips' }, r.stack.slice(0, 8).map((x) => h('span', { class: 'chip' }, x))) : null);
         }));
       const rail = h('aside', { class: 'rail', 'aria-hidden': 'true' }, h('span', { class: 'ry' }, label(first, true)), h('div', { class: 'rbar' }, rFill), h('span', { class: 'ry' }, label(last)));
@@ -761,7 +765,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261127q';
     ['CloudWatch', 'amazoncloudwatch', PU, 'Logs, metrics and ALB 4xx/5xx alarms via SNS'],
     ['Parameter Store', 'svg:param', PU, 'Secrets kept out of the repository'],
     ['IAM roles', 'svg:iam', PU, 'Instance profile enabling Session Manager access'],
-    ['Nginx + Let’s Encrypt', 'nginx', '#009639', 'Reverse proxy with Let’s Encrypt TLS']
+    ['NGINX + Let’s Encrypt', 'nginx', '#009639', 'Reverse proxy with Let’s Encrypt TLS']
   ];
   function tileIcon(key, color) {
     const bi = h('span', { class: 'bi', style: `--tile:${color}` });
@@ -770,7 +774,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261127q';
     return bi;
   }
   function awsBuilt() {
-    const flow = [['Route 53', 'amazonroute53', OR, ''], ['ALB', 'awselasticloadbalancing', OR, ''], ['Nginx container', 'nginx', '#009639', ''],
+    const flow = [['Route 53', 'amazonroute53', OR, ''], ['ALB', 'awselasticloadbalancing', OR, ''], ['NGINX container', 'nginx', '#009639', ''],
       ['App containers', 'docker', '#2496ed', ''], ['MongoDB Atlas', 'mongodb', '#47a248', 'NAT egress IP allow-list']];
     const strip = h('div', { class: 'pathstrip', role: 'list', 'aria-label': 'Request path' });
     flow.forEach(([n, k, c, sub], i) => {

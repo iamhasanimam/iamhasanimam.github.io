@@ -37,7 +37,7 @@
    "col": 1,
    "row": 0,
    "says": "cgroups cap CPU, memory and pids.",
-   "detail": "Over the memory cap the kernel OOM-kills: OOMKilled true, exit 137."
+   "detail": "Past the memory cap the kernel OOM-kills the process: OOMKilled true, exit 137."
   },
   {
    "id": "overlay",
@@ -111,7 +111,7 @@
    "col": 0,
    "row": 0,
    "says": "An image is immutable layers.",
-   "detail": "Content-addressed layers plus metadata. Order instructions stable to volatile."
+   "detail": "Content-addressed layers plus metadata. Order instructions from stable to volatile."
   },
   {
    "id": "container",

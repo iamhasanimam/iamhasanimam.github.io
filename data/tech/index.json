@@ -165,7 +165,7 @@
     "category": "Virtualization",
     "icon": "vmware",
     "level": "hands-on",
-    "blurb": "Bare-metal virtualization, vSwitches and VDI."
+    "blurb": "Bare-metal virtualisation, vSwitches and VDI."
   },
   {
     "slug": "python",

@@ -13,7 +13,7 @@
   },
   {
    "title": "API clients",
-   "body": "requests.Session reuses connections.\nEvery call sets timeout=; retries only for idempotent GET and HEAD.\nPaginate until the page is empty.\nTokens come from the environment, never arguments."
+   "body": "requests.Session reuses connections.\nEvery call sets timeout=; retries only for idempotent GET and HEAD.\nPaginate until the page is empty.\nTokens come from the environment, never from arguments."
   },
   {
    "title": "SDKs and CLIs",
@@ -37,11 +37,11 @@
   },
   {
    "title": "Alternatives",
-   "body": "Bash: choose it for short glue around existing commands.\nGo: a single static binary, common for operators and CLIs.\nAnsible modules: choose them for declarative host configuration instead of scripts.\nNode.js or Ruby: valid where the team and libraries already live there."
+   "body": "Bash: choose it for short glue around existing commands.\nGo: a single static binary, common for operators and CLIs.\nAnsible modules: choose them for declarative host configuration instead of scripts.\nNode.js or Ruby: valid where the team and its libraries already use them."
   }
  ],
  "flow": [
-  "systemd timer or CI job starts the script.",
+  "A systemd timer or CI job starts the script.",
   "argparse reads options; secrets come from the environment.",
   "Collectors call REST APIs, boto3 and Docker with timeouts.",
   "Responses are paginated and normalised into records.",
@@ -67,7 +67,7 @@
     "title": "2. Paginated REST client (client.py)",
     "lang": "python",
     "code": "\"\"\"client.py: paginated REST client. API_URL and API_TOKEN come from the environment.\"\"\"\nimport os\nimport requests\nfrom requests.adapters import HTTPAdapter\nfrom urllib3.util.retry import Retry\n\n\ndef session() -> requests.Session:\n    retry = Retry(total=3, backoff_factor=0.5, status_forcelist=(502, 503, 504),\n                  allowed_methods=(\"GET\", \"HEAD\"))\n    s = requests.Session()\n    s.mount(\"https://\", HTTPAdapter(max_retries=retry))\n    s.headers[\"Authorization\"] = \"Bearer \" + os.environ[\"API_TOKEN\"]\n    return s\n\n\ndef pages(path: str, per_page: int = 100):\n    s, page = session(), 1\n    while True:\n        r = s.get(os.environ[\"API_URL\"] + path, params={\"page\": page, \"per_page\": per_page}, timeout=10)\n        r.raise_for_status()\n        rows = r.json()\n        if not rows:\n            return\n        yield from rows\n        page += 1",
-    "note": "Timeout on every call. Retries only for GET and HEAD."
+    "note": "Set a timeout on every call. Retry only GET and HEAD."
    },
    {
     "title": "3. Docker SDK housekeeping (docker_tidy.py)",
@@ -116,12 +116,12 @@
  ],
  "pitfalls": [
   "requests has no default timeout; a missing timeout= hangs the job forever.",
-  "pip into system Python breaks OS tooling; always use a venv.",
+  "Running pip against the system Python breaks OS tooling; always use a venv.",
   "shell=True with untrusted input is command injection; pass an argument list.",
   "Tokens in arguments leak via ps and shell history; use an env file.",
   "Plain INSERT duplicates rows on rerun; upsert on a primary key.",
   "Docker group membership grants root; keep prune behind --apply.",
-  "Timer without Persistent=true skips runs missed while the host was down."
+  "A timer without Persistent=true skips runs missed while the host was down."
  ],
  "furtherReading": [
   {
@@ -143,7 +143,7 @@
  ],
  "keyPoints": [
   "Every network call gets a timeout, bounded retries and an exit code.",
-  "Pin dependencies in a virtualenv; run the same on laptop, CI and host.",
+  "Pin dependencies in a virtualenv; run the same code on laptop, CI and host.",
   "Read-only by default; mutate only behind an explicit --apply flag.",
   "Collectors write to PostgreSQL; Superset turns the history into decisions."
  ],

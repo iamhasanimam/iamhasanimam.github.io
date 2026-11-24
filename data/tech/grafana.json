@@ -4,7 +4,7 @@
  "category": "Observability",
  "icon": "grafana",
  "level": "hands-on",
- "tagline": "Queries Prometheus, Loki and Tempo; draws dashboards, alerts, links signals.",
+ "tagline": "Queries Prometheus, Loki and Tempo; draws dashboards, sends alerts and links signals.",
  "whatItIs": "",
  "howItWorks": [
   {
@@ -17,11 +17,11 @@
   },
   {
    "title": "Four golden signals",
-   "body": "Latency: histogram_quantile(0.95, sum by (le) (rate(x_bucket[5m]))).\nTraffic: sum(rate(x_count[5m])) in requests per second.\nErrors: 5xx rate divided by total rate.\nSaturation: CPU, memory, queue depth from node_exporter.\nPanels follow that order so on-call reads top to bottom."
+   "body": "Latency: histogram_quantile(0.95, sum by (le) (rate(x_bucket[5m]))).\nTraffic: sum(rate(x_count[5m])) in requests per second.\nErrors: 5xx rate divided by total rate.\nSaturation: CPU, memory, queue depth from node_exporter.\nPanels follow that order so on-call engineers read top to bottom."
   },
   {
    "title": "Alerting",
-   "body": "Alert rules query a datasource, apply a threshold, hold for a duration.\nNotification policies route by label to contact points.\nRules and policies provision from YAML like everything else.\nAlert on symptoms users feel, not on every cause."
+   "body": "Alert rules query a datasource, apply a threshold and hold for a duration.\nNotification policies route by label to contact points.\nRules and policies provision from YAML like everything else.\nAlert on symptoms users feel, not on every cause."
   },
   {
    "title": "Trace-to-logs correlation",
@@ -29,7 +29,7 @@
   },
   {
    "title": "What sits in front",
-   "body": "Users open dashboards over HTTPS, usually through the Edge reverse proxy.\nSign-in uses OIDC through generic OAuth against an identity provider such as Keycloak.\nBehind a reverse proxy, set root_url, and serve_from_sub_path if it lives under a path.\nDashboards and datasources arrive as provisioned files from Git."
+   "body": "Users open dashboards over HTTPS, usually through the Edge reverse proxy.\nSign-in uses OIDC through generic OAuth against an identity provider such as Keycloak.\nBehind a reverse proxy, set root_url, plus serve_from_sub_path if it lives under a path.\nDashboards and datasources arrive as provisioned files from Git."
   },
   {
    "title": "What sits behind",
@@ -74,7 +74,7 @@
     "title": "Compose file",
     "lang": "yaml",
     "code": "services:\n  grafana:\n    image: grafana/grafana:11.1.0\n    environment:\n      GF_SECURITY_ADMIN_USER: admin\n      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD}\n      GF_USERS_ALLOW_SIGN_UP: \"false\"\n    volumes:\n      - ./provisioning:/etc/grafana/provisioning:ro\n      - ./dashboards:/var/lib/grafana/dashboards:ro\n      - grafana-data:/var/lib/grafana\n    ports: [\"3000:3000\"]\nnetworks:\n  default:\n    name: monitoring\nvolumes:\n  grafana-data: {}",
-    "note": "Export GRAFANA_ADMIN_PASSWORD first; compose refuses to start without it. Network is shared with Prometheus."
+    "note": "Export GRAFANA_ADMIN_PASSWORD first; compose refuses to start without it. The network is shared with Prometheus."
    },
    {
     "title": "Datasources with correlation",
@@ -116,13 +116,13 @@
   "Provisioning errors: docker compose logs grafana | grep -i provisioning"
  ],
  "pitfalls": [
-  "Dashboards without fixed datasource uid break when imported elsewhere.",
-  "Editing a provisioned dashboard in the UI is lost on restart.",
+  "Dashboards without a fixed datasource uid break when imported elsewhere.",
+  "Edits to a provisioned dashboard made in the UI are lost on restart.",
   "Default SQLite blocks running two replicas; use PostgreSQL.",
   "Exemplars need the app to emit them and Prometheus exemplar storage on.",
   "Alerting on every cause pages humans for noise; alert on symptoms.",
-  "'No data' state silently hides outages; set noDataState deliberately.",
-  "Admin password in compose files ends up in Git; use secrets."
+  "The 'No data' state silently hides outages; set noDataState deliberately.",
+  "An admin password in a Compose file ends up in Git; use secrets."
  ],
  "furtherReading": [
   {
@@ -145,19 +145,19 @@
  "keyPoints": [
   "Grafana queries datasources; it stores no metrics itself.",
   "Datasources, dashboards and alerts are provisioned from Git.",
-  "Four golden signals: latency, traffic, errors, saturation.",
+  "Four golden signals: latency, traffic, errors and saturation.",
   "Exemplars and derived fields jump from metric to trace to logs."
  ],
  "quickDeploy": [
   "Mount provisioning files read-only.",
-  "Define Prometheus, Loki, Tempo datasources.",
-  "Load golden-signals dashboard from JSON.",
+  "Define Prometheus, Loki and Tempo datasources.",
+  "Load the golden-signals dashboard from JSON.",
   "Start and check the datasources API."
  ],
  "osi": [
   "L7"
  ],
- "osiNote": "HTTP application: queries backends, serves dashboards over HTTPS.",
+ "osiNote": "HTTP application: queries backends and serves dashboards over HTTPS.",
  "production": [
   "Provision everything as code; disable UI edits on shared dashboards.",
   "Store state in PostgreSQL and run two replicas behind a load balancer.",

@@ -64,7 +64,7 @@
    "layer": 0,
    "col": 0,
    "row": 0,
-   "says": "node_exporter exposes host CPU, memory, disk, network.",
+   "says": "node_exporter exposes host CPU, memory, disk and network.",
    "detail": "Reads /proc and /sys, serves text on :9100/metrics. Shows node saturation under every workload."
   },
   {
@@ -349,7 +349,7 @@
   },
   {
    "title": "Query",
-   "text": "Grafana asks PromQL; histograms give p95.",
+   "text": "Grafana queries PromQL; histograms give p95.",
    "boxes": [
     "grafana",
     "prom"

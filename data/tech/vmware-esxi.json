@@ -66,7 +66,7 @@
     "title": "1. Static management address, DNS and hostname",
     "lang": "bash",
     "code": "esxcli network ip interface ipv4 set -i vmk0 -t static -I 192.168.1.10 -N 255.255.255.0\nesxcli network ip route ipv4 add --network default --gateway 192.168.1.1\nesxcli network ip dns server add --server 192.168.1.1\nesxcli system hostname set --host esx01 --domain lab.local",
-    "note": "Run in the console shell after install. Placeholders match your WAN subnet."
+    "note": "Run in the console shell after install. Replace the placeholders to match your WAN subnet."
    },
    {
     "title": "2. SSH with keys, scoped by firewall",
@@ -139,13 +139,13 @@
  "keyPoints": [
   "ESXi 8.0 runs on bare metal; vSwitch0 uplinks, vSwitch1 stays private.",
   "A dual-NIC gateway VM routes and NATs the private network.",
-  "Windows Server 2022 DC provides AD DS, DNS and DHCP.",
+  "A Windows Server 2022 DC provides AD DS, DNS and DHCP.",
   "RD Gateway, Connection Broker and session hosts deliver desktops over HTTPS."
  ],
  "quickDeploy": [
   "Install ESXi; set a static management IP.",
   "Create the private vSwitch and gateway VM.",
-  "Promote DC01; add RDS roles and file server.",
+  "Promote DC01; add RDS roles and a file server.",
   "Migrate to DC02: adprep, replicate, move FSMO roles."
  ],
  "osi": [

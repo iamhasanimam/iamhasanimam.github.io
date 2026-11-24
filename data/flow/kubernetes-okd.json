@@ -1,6 +1,6 @@
 {
  "title": "Kubernetes",
- "subtitle": "A control plane plus worker nodes that run containerized applications.",
+ "subtitle": "A control plane plus worker nodes that run containerised applications.",
  "layers": [
   {
    "layer": 0,
@@ -53,7 +53,7 @@
    "col": 1,
    "row": 0,
    "says": "etcd stores all cluster data.",
-   "detail": "Consistent, highly available key value store behind the API server. Back it up."
+   "detail": "Consistent, highly available key-value store behind the API server. Back it up."
   },
   {
    "id": "sched",
@@ -162,7 +162,7 @@
    "col": 1,
    "row": 0,
    "says": "The Dashboard is a web UI.",
-   "detail": "General purpose web UI to manage and troubleshoot applications and the cluster."
+   "detail": "General-purpose web UI to manage and troubleshoot applications and the cluster."
   },
   {
    "id": "mon",
@@ -174,7 +174,7 @@
    "col": 2,
    "row": 0,
    "says": "Monitoring records metrics.",
-   "detail": "Time-series metrics about containers in a central database with a UI.",
+   "detail": "Records time-series metrics about containers in a central database with a UI.",
    "href": "#/tech/prometheus"
   },
   {

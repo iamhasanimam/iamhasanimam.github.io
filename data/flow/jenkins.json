@@ -110,7 +110,7 @@
    "col": 1,
    "row": 0,
    "says": "Agents run the stages.",
-   "detail": "Joined over SSH or started as a Kubernetes pod. Checks out, builds and tests in a workspace."
+   "detail": "Connects over SSH or starts as a Kubernetes pod. Checks out, builds and tests in a workspace."
   },
   {
    "id": "sonar",
@@ -121,7 +121,7 @@
    "col": 2,
    "row": 0,
    "says": "SonarQube enforces the quality gate.",
-   "detail": "Static analysis result gates the pipeline via waitForQualityGate."
+   "detail": "The static analysis result gates the pipeline via waitForQualityGate."
   },
   {
    "id": "trivy",
@@ -176,7 +176,7 @@
    "col": 3,
    "row": 0,
    "says": "Kubernetes runs the release.",
-   "detail": "Pulls the tag from the registry. Updated by Argo CD or a direct kubectl stage.",
+   "detail": "Pulls the tag from the registry. Argo CD or a direct kubectl stage triggers the update.",
    "href": "#/tech/kubernetes-okd"
   }
  ],
@@ -318,7 +318,7 @@
   },
   {
    "title": "Deploy",
-   "text": "Tag committed; Argo CD syncs the cluster.",
+   "text": "The tag is committed; Argo CD syncs the cluster.",
    "boxes": [
     "registry",
     "gitops",
@@ -342,7 +342,7 @@
   },
   {
    "title": "Direct deploy",
-   "text": "Or a stage runs kubectl or helm on the cluster.",
+   "text": "Alternatively, a stage runs kubectl or helm directly.",
    "boxes": [
     "agent",
     "cluster"

@@ -468,7 +468,7 @@
    "layer": 0.5,
    "role": "Direct VPC link",
    "says": "Peering joins two VPCs directly.",
-   "detail": "A one-to-one private route between two VPCs. Address ranges must not overlap and it is not transitive.",
+   "detail": "A one-to-one private route between two VPCs. Address ranges must not overlap, and peering is not transitive.",
    "alts": [
     {
      "label": "VPC Peering",
@@ -1956,7 +1956,7 @@
    "style": "solid",
    "flow": true,
    "weight": "thin",
-   "label": "roles (IRSA)"
+   "label": "roles via IRSA"
   },
   {
    "from": "eks",
@@ -2113,6 +2113,6 @@
   "Istio secures service traffic.",
   "Kafka decouples the services.",
   "Git drives every deployment.",
-  "Grafana shows metrics, logs, traces."
+  "Grafana shows metrics, logs and traces."
  ]
 }

@@ -9,7 +9,7 @@
   "howItWorks": [
     {
       "title": "What it is and where it sits",
-      "body": "Kubernetes keeps declared state true: you describe pods, it converges the cluster toward them.\nPod networking is L3, Services balance at L4, Ingress and Gateway API route at L7.\nEvery pod gets its own IP; a CNI plugin wires pods across nodes.\nOne cluster is a failure domain; plan several for blast-radius isolation.\nSide note: OKD and OpenShift add Routes, SCCs and an installer on this same core."
+      "body": "Kubernetes keeps the cluster in its declared state: you describe the pods and it converges the cluster towards them.\nPod networking is L3, Services balance at L4, Ingress and Gateway API route at L7.\nEvery pod gets its own IP; a CNI plugin wires pods across nodes.\nOne cluster is a failure domain; plan several for blast-radius isolation.\nSide note: OKD and OpenShift add Routes, SCCs and an installer on this same core."
     },
     {
       "title": "Components and architecture",
@@ -17,7 +17,7 @@
     },
     {
       "title": "Request and data flow",
-      "body": "kubectl sends a manifest; the API server authenticates, authorizes, validates and persists it.\nThe Deployment controller creates a ReplicaSet, which creates pods.\nThe scheduler picks a node; the kubelet pulls the image and starts containers.\nPassing readiness adds the pod to Service endpoints (EndpointSlices).\nInbound traffic hits a node; kube-proxy rewrites the destination to a ready pod IP."
+      "body": "kubectl sends a manifest; the API server authenticates, authorises, validates and persists it.\nThe Deployment controller creates a ReplicaSet, which creates pods.\nThe scheduler picks a node; the kubelet pulls the image and starts containers.\nPassing readiness adds the pod to Service endpoints (EndpointSlices).\nInbound traffic hits a node; kube-proxy rewrites the destination to a ready pod IP."
     },
     {
       "title": "Services and Ingress (L4 and L7)",
@@ -50,7 +50,7 @@
   ],
   "flow": [
     "kubectl applies a manifest to the API server.",
-    "The API server authenticates, authorizes via RBAC and persists to etcd.",
+    "The API server authenticates, authorises via RBAC and persists to etcd.",
     "The Deployment controller creates a ReplicaSet and pods.",
     "The scheduler binds each pod to a node.",
     "The kubelet pulls the image and starts containers.",
@@ -130,8 +130,8 @@
     "NetworkPolicy does nothing without an enforcing CNI.",
     "A failing readiness probe keeps the Service endpoints empty.",
     "Default-deny also blocks DNS; allow egress to kube-dns.",
-    "NodePort range is 30000-32767; firewalls and the external LB must allow it.",
-    "Memory limit hit means OOMKilled; check with kubectl describe pod.",
+    "The NodePort range is 30000-32767; firewalls and the external LB must allow it.",
+    "Hitting the memory limit means OOMKilled; check with kubectl describe pod.",
     "A Service with no ready pods has empty endpoints; check selectors first."
   ],
   "furtherReading": [
@@ -153,7 +153,7 @@
     }
   ],
   "keyPoints": [
-    "Control plane decides; kubelets on nodes execute.",
+    "The control plane decides; kubelets on nodes execute.",
     "Services balance at L4; Ingress and Gateway route at L7.",
     "NodePort, LoadBalancer or Ingress connect outside traffic to pods.",
     "NetworkPolicy and RBAC isolate; HPA and rollouts scale and ship safely."

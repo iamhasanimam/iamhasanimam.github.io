@@ -21,7 +21,7 @@
     },
     {
       "title": "HA with Infinispan",
-      "body": "Nodes form one Infinispan cluster; discovery uses the database (jdbc-ping).\nDistributed caches hold sessions and auth sessions across nodes.\nAll nodes share one PostgreSQL for users, clients and realms.\nOpen TCP 7800 and 57800 between nodes. JBoss grouping works the same way, via JGroups."
+      "body": "Nodes form one Infinispan cluster; discovery uses the database (jdbc-ping).\nDistributed caches hold sessions and auth sessions across nodes.\nAll nodes share one PostgreSQL for users, clients and realms.\nOpen TCP 7800 and 57800 between nodes. Cluster communication between nodes runs through JGroups."
     },
     {
       "title": "Realm import, export and heap",
@@ -29,7 +29,7 @@
     },
     {
       "title": "What sits in front",
-      "body": "Users (Users layer) open a browser to the Keycloak hostname over HTTPS.\nA reverse proxy or load balancer in the Edge layer usually fronts it; common modes are re-encrypt and passthrough.\nLimit network access so only the proxy reaches Keycloak.\nSet the public hostname so issuer URLs match what clients see."
+      "body": "Users (Users layer) open the Keycloak hostname in a browser over HTTPS.\nA reverse proxy or load balancer in the Edge layer usually fronts it; common modes are re-encrypt and passthrough.\nLimit network access so only the proxy reaches Keycloak.\nSet the public hostname so issuer URLs match what clients see."
     },
     {
       "title": "What sits behind",
@@ -83,7 +83,7 @@
         "title": "Configure and run under systemd",
         "lang": "ini",
         "code": "# /opt/keycloak/conf/keycloak.conf\ndb=postgres\ndb-url=jdbc:postgresql://<DB_HOST>:5432/keycloak\ndb-username=keycloak\ndb-password=<DB_PASSWORD>\nhostname=https://sso.example.com:8443\nhttps-port=8443\nhttps-certificate-file=/etc/keycloak/tls.crt\nhttps-certificate-key-file=/etc/keycloak/tls.key\nhealth-enabled=true\nmetrics-enabled=true\n\n# /etc/systemd/system/keycloak.service\n[Unit]\nAfter=network-online.target\n[Service]\nUser=keycloak\nEnvironment=JAVA_OPTS_KC_HEAP=\"-Xms1g -Xmx2g\"\nEnvironment=KC_BOOTSTRAP_ADMIN_USERNAME=admin KC_BOOTSTRAP_ADMIN_PASSWORD=<ADMIN_PASSWORD>\nExecStart=/opt/keycloak/bin/kc.sh start\nRestart=on-failure\n[Install]\nWantedBy=multi-user.target",
-        "note": "Two files in one block. Then daemon-reload and enable --now keycloak."
+        "note": "Two files in one block. Then run daemon-reload and enable --now keycloak."
       },
       {
         "title": "Create realm, client, role and user",
@@ -126,7 +126,7 @@
   ],
   "pitfalls": [
     "Issuer mismatch behind a proxy: set the public hostname correctly.",
-    "Missing audience mapper makes API aud checks fail.",
+    "A missing audience mapper makes API aud checks fail.",
     "Redirect URI wildcards that are too broad invite token theft.",
     "Open 7800 and 57800 between nodes, or the cluster never forms.",
     "Heap near the container limit gets the JVM OOM-killed.",

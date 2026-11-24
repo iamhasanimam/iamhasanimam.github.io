@@ -69,7 +69,7 @@
     "title": "Install Docker Engine",
     "lang": "bash",
     "code": "sudo apt-get update && sudo apt-get install -y ca-certificates curl\nsudo install -m 0755 -d /etc/apt/keyrings\nsudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc\necho \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable\" | sudo tee /etc/apt/sources.list.d/docker.list\nsudo apt-get update\nsudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin\nsudo usermod -aG docker $USER",
-    "note": "Log out and in for the group change. The docker group is root-equivalent."
+    "note": "Log out and back in for the group change to apply. The docker group is root-equivalent."
    },
    {
     "title": "Daemon defaults",
@@ -145,7 +145,7 @@
  ],
  "keyPoints": [
   "Namespaces isolate what a container sees.",
-  "cgroups cap what it uses; over memory means OOMKilled.",
+  "cgroups cap what it uses; exceeding the memory limit means OOMKilled.",
   "Images are read-only layers; the container adds one writable layer.",
   "Bridge networks connect containers over veth pairs and NAT."
  ],

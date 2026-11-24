@@ -41,14 +41,14 @@
   }
  ],
  "flow": [
-  "Pipeline starts k6 with a script and a testid tag.",
-  "Scenario ramps virtual users or holds an arrival rate.",
+  "The pipeline starts k6 with a script and a testid tag.",
+  "The scenario ramps virtual users or holds an arrival rate.",
   "Each VU sends requests to the target through the gateway.",
   "k6 records http_req_duration for every request.",
   "Thresholds are evaluated continuously during the run.",
   "Metrics are pushed to Prometheus by remote write.",
   "Grafana plots p95, throughput and errors per testid.",
-  "Exit code gates the release."
+  "The exit code gates the release."
  ],
  "deploy": {
   "summary": "Run k6 on a Linux VM with Docker against a target, ship metrics to Prometheus, chart in Grafana.",
@@ -72,7 +72,7 @@
     "note": "Save as script.js. Set TARGET to your service."
    },
    {
-    "title": "Run it with pinned k6",
+    "title": "Run it with a pinned k6",
     "lang": "bash",
     "code": "docker run --rm -i --network host -e TARGET=http://localhost:8081 grafana/k6:0.52.0 run - < script.js\necho \"exit code: $?\"",
     "note": "Exit 0 means thresholds passed; 99 means one failed."
@@ -93,7 +93,7 @@
     "title": "Grafana dashboard provisioning",
     "lang": "json",
     "code": "{\n  \"title\": \"k6 load test\",\n  \"uid\": \"k6-lab\",\n  \"schemaVersion\": 39,\n  \"panels\": [\n    { \"type\": \"timeseries\", \"title\": \"http_req_duration p95\", \"gridPos\": {\"h\": 8, \"w\": 12, \"x\": 0, \"y\": 0},\n      \"targets\": [ { \"expr\": \"k6_http_req_duration_p95{testid=\\\"$testid\\\"}\" } ] },\n    { \"type\": \"timeseries\", \"title\": \"Requests per second\", \"gridPos\": {\"h\": 8, \"w\": 12, \"x\": 12, \"y\": 0},\n      \"targets\": [ { \"expr\": \"sum(rate(k6_http_reqs_total{testid=\\\"$testid\\\"}[30s]))\" } ] }\n  ],\n  \"templating\": { \"list\": [ { \"name\": \"testid\", \"type\": \"textbox\", \"query\": \"release\" } ] }\n}",
-    "note": "Save as /var/lib/grafana/dashboards/k6.json. Provide it with a file provider in /etc/grafana/provisioning/dashboards/k6.yaml, then restart Grafana."
+    "note": "Save as /var/lib/grafana/dashboards/k6.json. Load it with a file provider in /etc/grafana/provisioning/dashboards/k6.yaml, then restart Grafana."
    },
    {
     "title": "Nightly run as a systemd unit",
@@ -117,13 +117,13 @@
   "Dashboard loads: Grafana > Dashboards > k6 load test, set testid"
  ],
  "pitfalls": [
-  "Load generator saturates its own CPU and reports false latency; watch it.",
+  "A load generator can saturate its own CPU and report false latency; monitor it.",
   "Closed models with VUs hide overload; use constant-arrival-rate for throughput targets.",
   "Testing through a CDN or cache measures the cache, not your service.",
   "Forgetting the remote-write receiver flag gives 404 and no series.",
   "Unscoped thresholds average away a slow endpoint; tag requests and scope them.",
-  "Think time missing from the script makes unrealistic traffic; add sleep().",
-  "Output names and metric naming change by version; pin k6 and check docs."
+  "Missing think time makes traffic unrealistic; add sleep().",
+  "Output and metric names change between versions; pin k6 and check the docs."
  ],
  "furtherReading": [
   {

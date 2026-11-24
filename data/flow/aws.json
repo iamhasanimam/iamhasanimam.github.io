@@ -282,7 +282,7 @@
    "icon": "amazonaws",
    "layer": 5,
    "says": "Peering joins two VPCs directly.",
-   "detail": "A one-to-one private route between two VPCs. Address ranges must not overlap and it is not transitive.",
+   "detail": "A one-to-one private route between two VPCs. Address ranges must not overlap, and peering is not transitive.",
    "col": 0,
    "row": 1
   },

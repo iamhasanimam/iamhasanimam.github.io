@@ -121,7 +121,7 @@
     "title": "6. Run the installer",
     "lang": "bash",
     "code": "./stack.sh\nsource openrc admin admin\nopenstack service list",
-    "note": "Takes 15 to 30 minutes. It prints the Horizon URL and credentials at the end."
+    "note": "The install takes 15 to 30 minutes. It prints the Horizon URL and credentials at the end."
    },
    {
     "title": "7. Image, keypair and security group rules",
@@ -147,9 +147,9 @@
  "pitfalls": [
   "Passwords with special characters break DevStack services; use alphanumeric only.",
   "Running stack.sh as root instead of the stack user fails early.",
-  "Without nested virtualization the guests fall back to slow QEMU emulation.",
+  "Without nested virtualisation the guests fall back to slow QEMU emulation.",
   "A reboot stops DevStack services; run stack.sh again for a lab rebuild.",
-  "Missing security group rules for ICMP and 22 look like a networking fault.",
+  "Missing security group rules for ICMP and port 22 look like a networking fault.",
   "Provider networks need a NIC with no host IP; never reuse your SSH interface.",
   "DevStack is for labs only; production uses kolla-ansible or OpenStack-Ansible."
  ],

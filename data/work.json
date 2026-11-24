@@ -15,18 +15,18 @@
       ],
       "bullets": [
         "Designed a multi-AZ VPC with public and private subnets, IGW and NAT",
-        "Deployed Docker Compose with Nginx fronting React and Node containers on bridge networks",
+        "Deployed Docker Compose with NGINX fronting React and Node containers on bridge networks",
         "Secured a private EC2 with no public IP, reached through SSM Session Manager",
         "Configured ALB, ACM TLS and Route 53, with X-Request-ID log correlation"
       ],
       "repo": "https://github.com/iamhasanimam/mern-docker-implementation",
       "image": "https://raw.githubusercontent.com/iamhasanimam/mern-docker-implementation/main/Mern-Docker-Architecture.png",
-      "imageAlt": "AWS architecture: Route 53, ALB, private EC2 running Nginx, React and Node containers, MongoDB Atlas, CloudWatch",
+      "imageAlt": "AWS architecture: Route 53, ALB, private EC2 running NGINX, React and Node containers, MongoDB Atlas, CloudWatch",
       "stack": [
         "AWS VPC",
         "ALB",
         "Docker Compose",
-        "Nginx",
+        "NGINX",
         "MongoDB Atlas",
         "SSM"
       ],
@@ -47,9 +47,9 @@
         "mongodb"
       ],
       "bullets": [
-        "Configured CloudWatch logs for Nginx and backend containers",
+        "Configured CloudWatch logs for NGINX and backend containers",
         "Built alarms on disk, memory and ALB health and latency, notified through SNS",
-        "Secured secrets in SSM Parameter Store, loaded by a deployment script",
+        "Stored secrets in SSM Parameter Store, loaded by a deployment script",
         "Secured MongoDB Atlas by allow-listing only the NAT gateway IP"
       ],
       "repo": "https://github.com/iamhasanimam/mern-docker-implementation",
@@ -82,7 +82,7 @@
         "Deployed the React build to a private S3 bucket",
         "Secured bucket access with CloudFront origin access control",
         "Configured ACM TLS on the CloudFront distribution",
-        "Documented a PM2, Nginx and Let's Encrypt variant for a single host"
+        "Documented a PM2, NGINX and Let's Encrypt variant for a single host"
       ],
       "repo": "https://github.com/iamhasanimam/mern-docker-implementation",
       "image": null,
@@ -93,7 +93,7 @@
         "OAC",
         "ACM",
         "PM2",
-        "Nginx"
+        "NGINX"
       ],
       "year": "2025",
       "status": "shipped"
@@ -115,7 +115,7 @@
         "Built ESXi 8.0 on a Hetzner bare-metal server",
         "Deployed seven Windows Server 2022 VMs covering AD, RDS roles and a jumpbox",
         "Configured a dual-NIC RD Gateway on 443 with NAT",
-        "Secured the lab with a public vSwitch0 and a private vSwitch1 without uplink"
+        "Secured the lab with a public vSwitch0 and a private vSwitch1 that has no uplink"
       ],
       "repo": "https://github.com/iamhasanimam/Infrastructure-Management",
       "image": "https://raw.githubusercontent.com/iamhasanimam/Infrastructure-Management/main/Vmware%20Esxi%20Setup/screenshots/Project%20Architecture.png",
@@ -146,8 +146,8 @@
       ],
       "bullets": [
         "Migrated all five FSMO roles from DC01 to DC02 with PowerShell",
-        "Configured adprep forestprep and domainprep before promoting the new controller",
-        "Configured repadmin and dcdiag replication checks before each role move",
+        "Ran adprep forestprep and domainprep before promoting the new controller",
+        "Ran repadmin and dcdiag replication checks before each role move",
         "Migrated DNS and DHCP services to the new server"
       ],
       "repo": "https://github.com/iamhasanimam/Infrastructure-Management/tree/main/Vmware%20Esxi%20Setup/Migration",
@@ -355,7 +355,7 @@
       "title": "HAProxy and NGINX edge",
       "category": "Edge & Networking",
       "kind": "Reference lab",
-      "summary": "Reference lab: load balancer tiers with VRRP failover.",
+      "summary": "Reference lab: load-balancer tiers with VRRP failover.",
       "icons": [
         "haproxy",
         "nginx",
@@ -387,32 +387,32 @@
     {
       "title": "Kubernetes Networking",
       "repo": "https://github.com/iamhasanimam/Kubernetes-Networking",
-      "note": "Studied / forked for learning"
+      "note": "Studied and forked for learning"
     },
     {
       "title": "Jenkins Zero To Hero",
       "repo": "https://github.com/iamhasanimam/Jenkins-Zero-To-Hero",
-      "note": "Studied / forked for learning"
+      "note": "Studied and forked for learning"
     },
     {
       "title": "GitHub Actions Zero to Hero",
       "repo": "https://github.com/iamhasanimam/GitHub-Actions-Zero-to-Hero",
-      "note": "Studied / forked for learning"
+      "note": "Studied and forked for learning"
     },
     {
       "title": "OpenTelemetry Astronomy Shop",
       "repo": "https://github.com/iamhasanimam/ultimate-devops-project-demo",
-      "note": "Studied / forked for learning"
+      "note": "Studied and forked for learning"
     },
     {
       "title": "Online Boutique microservices demo",
       "repo": "https://github.com/iamhasanimam/microservices-demo",
-      "note": "Studied / forked for learning"
+      "note": "Studied and forked for learning"
     },
     {
       "title": "Terraform basics",
       "repo": "https://github.com/iamhasanimam/learn_terarform_basics",
-      "note": "Studied / forked for learning"
+      "note": "Studied and forked for learning"
     }
   ]
 }

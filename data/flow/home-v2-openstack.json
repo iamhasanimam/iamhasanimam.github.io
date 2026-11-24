@@ -1735,6 +1735,6 @@
   "Istio secures service traffic.",
   "Kafka decouples the services.",
   "Git drives every deployment.",
-  "Grafana shows metrics, logs, traces."
+  "Grafana shows metrics, logs and traces."
  ]
 }

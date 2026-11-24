@@ -530,3 +530,29 @@ details.more > summary { padding: 2px 0 6px var(--s4); list-style: none; cursor:
   .hero-cta .ext { display: inline-flex; margin-left: 5px; opacity: .85; }
 }
 @media (max-width: 640px) { .hero-cta { gap: 6px; } .hero-cta .btn { padding: 0 11px; font-size: 12.5px; } .hero-cta .ext { margin-left: 4px; } }
+
+/* career: what was done at every level */
+.levels { display: grid; gap: 10px; margin: var(--s2) 0 var(--s2); }
+.lv { display: grid; grid-template-columns: 136px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--muted) 10%, transparent); }
+.lv-t { font: 600 var(--t-xs) var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--primary); }
+.lv-l { margin: 0; padding-left: 16px; display: grid; gap: 4px; font-size: var(--t-sm); line-height: 1.5; }
+.lv-out { display: flex; align-items: baseline; gap: 12px; padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, #30d158 14%, transparent); }
+.lv-k { font: 600 var(--t-xs) var(--font); letter-spacing: .06em; text-transform: uppercase; color: #30d158; }
+.lv-out strong { font-size: var(--t-md, 15px); }
+@media (max-width: 640px) { .lv { grid-template-columns: 1fr; gap: 6px; } .lv-out { flex-direction: column; gap: 4px; } }
+
+/* career story: compact and professional (smaller type, tighter spacing) */
+.rcard { padding: 16px 20px; margin-bottom: 14px; }
+.rcard .node { top: 22px; width: 16px; height: 16px; border-width: 3px; left: -43px; }
+.ryear { font-size: var(--t-lg); font-weight: 600; letter-spacing: -.01em; margin-bottom: 4px; }
+.rcard h2 { font-size: var(--t-md, 15px); margin: 0; }
+.rcard .cat { font-size: var(--t-xs); }
+.rcard .headline { font-size: var(--t-sm); margin: 6px 0 8px; color: var(--muted); font-weight: 400; }
+.impact strong { font-size: var(--t-lg); letter-spacing: -.01em; }
+.levels { gap: 6px; margin: 8px 0; }
+.lv { padding: 8px 10px; border-radius: 10px; gap: 10px; grid-template-columns: 128px minmax(0, 1fr); }
+.lv-t { font-size: 10.5px; }
+.lv-l { font-size: 12.5px; line-height: 1.45; gap: 2px; }
+.lv-out { padding: 8px 12px; border-radius: 10px; gap: 10px; }
+.lv-out strong { font-size: var(--t-sm); }
+.rcard .chips { margin-top: 8px; }

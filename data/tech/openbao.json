@@ -41,14 +41,14 @@
   }
  ],
  "flow": [
-  "Workload or Agent presents role ID and secret ID.",
+  "The workload or Agent presents its role ID and secret ID.",
   "AppRole validates them and returns a scoped, expiring token.",
   "The request carries the token to a secrets path.",
   "Policy allows or denies the capability on that path.",
   "KV returns a version, or the database engine mints a leased user.",
   "The leader commits the write to a Raft quorum.",
   "The audit device records the request, with values hashed.",
-  "Agent renders the secret to a file for the app."
+  "The Agent renders the secret to a file for the app."
  ],
  "deploy": {
   "summary": "On-prem path: Raft node in Docker with TLS, then auth and secrets, then backup and injection.",
@@ -118,7 +118,7 @@
  ],
  "pitfalls": [
   "Policies on secret/myapp miss KV v2; use secret/data/myapp.",
-  "Losing unseal shares or the snapshot loses all data.",
+  "Losing the unseal shares or the snapshot means losing all data.",
   "A full audit disk blocks every request.",
   "Standby nodes need leader_ca_cert or retry_join fails on TLS.",
   "Use secret_id_num_uses=1; a reusable secret ID is a password.",
@@ -144,7 +144,7 @@
  ],
  "keyPoints": [
   "The barrier encrypts storage; Shamir shares or auto-unseal release the key.",
-  "Integrated Raft storage gives HA and needs quorum: three nodes.",
+  "Integrated Raft storage gives HA and needs a quorum: run three nodes.",
   "AppRole proves identity; deny-by-default policies grant per-path capabilities.",
   "KV v2 versions static secrets; dynamic engines mint leased credentials."
  ],

@@ -18,7 +18,7 @@
     {
       "stage": "DevOps engineering",
       "years": "2025 - present",
-      "focus": "Build the infrastructure and monitoring that production systems run on, on OpenShift."
+      "focus": "Built the infrastructure and monitoring that production systems run on, on OpenShift."
     }
   ],
   "roles": [
@@ -28,10 +28,11 @@
       "location": "Noida, India",
       "start": "Nov 2025",
       "end": "Present",
-      "summary": "I build the infrastructure and monitoring that production systems run on, on OpenShift, serving about 400 req/s at p95 under 50 ms.",
+      "summary": "Builds and runs the infrastructure and monitoring that production systems run on, on OpenShift, serving about 400 req/s at p95 under 50 ms.",
       "highlights": [
-        "Build and run the OpenShift infrastructure",
-        "Build the monitoring: Prometheus and Grafana"
+        "Production Kubernetes (OpenShift) platform",
+        "CI/CD across multiple environments",
+        "Monitoring and load testing"
       ],
       "stack": [
         "Kubernetes",
@@ -39,13 +40,43 @@
         "Prometheus",
         "Grafana"
       ],
-      "headline": "Build the infrastructure and monitoring production runs on",
+      "headline": "Built the infrastructure and monitoring production runs on",
       "impact": {
         "value": "400 req/s",
         "label": "p95 under 50 ms"
       },
       "industry": "Service based",
-      "sector": "IT services"
+      "sector": "IT services",
+      "levels": [
+        {
+          "level": "Platform",
+          "items": [
+            "Built and operated a production Kubernetes (OpenShift) platform",
+            "Ran stateful services with high availability on Kubernetes",
+            "Containerised and orchestrated microservices with Kustomize"
+          ]
+        },
+        {
+          "level": "Delivery",
+          "items": [
+            "CI/CD with Jenkins across multiple environments"
+          ]
+        },
+        {
+          "level": "Observability",
+          "items": [
+            "Monitoring with Prometheus, Grafana, Loki and Tempo",
+            "Service metrics: request rate, error rate and latency"
+          ]
+        },
+        {
+          "level": "Performance",
+          "items": [
+            "Load testing with k6 and capacity sizing"
+          ]
+        }
+      ],
+      "outcome": "Achieved 400 req/s at p95 under 50 ms"
     },
     {
       "company": "Wingify (VWO)",
@@ -56,7 +87,7 @@
       "summary": "Level 2 technical diagnostics and runbook authoring.",
       "highlights": [
         "Performed L2 diagnostics on customer issues",
-        "Wrote runbooks that cut average resolution time by 40%"
+        "Wrote runbooks that cut average resolution time by 12%"
       ],
       "stack": [
         "L2 diagnostics",
@@ -64,11 +95,33 @@
       ],
       "headline": "L2 diagnostics and resolution runbooks",
       "impact": {
-        "value": "40%",
+        "value": "12%",
         "label": "faster resolution via runbooks"
       },
       "industry": "Product based",
-      "sector": "Digital experience SaaS"
+      "sector": "Digital experience SaaS",
+      "levels": [
+        {
+          "level": "Diagnostics",
+          "items": [
+            "Diagnosed analytics and tracking failures beyond first-line scope: SmartCode delivery, cookie domain scoping, CSP violations and beacon timing, using Chrome DevTools"
+          ]
+        },
+        {
+          "level": "Integrations",
+          "items": [
+            "Debugged JavaScript SDK integration failures: async loading, CSP and SPA route-change events",
+            "Worked with CRO and marketing leads on GA4 and GTM tracking"
+          ]
+        },
+        {
+          "level": "Runbooks",
+          "items": [
+            "Wrote L2 diagnostic runbooks for the support team"
+          ]
+        }
+      ],
+      "outcome": "Cut average resolution time by 12%"
     },
     {
       "company": "IT By Design / Liongard",
@@ -79,7 +132,7 @@
       "summary": "Supported integrations for a platform used by managed service providers.",
       "highlights": [
         "Handled integrations across 100+ MSP environments",
-        "Reduced escalations by 25%",
+        "Reduced escalations by 14%",
         "Mentored a 4-member L2 team"
       ],
       "stack": [
@@ -89,11 +142,39 @@
       ],
       "headline": "Integration support across 100+ MSP environments",
       "impact": {
-        "value": "-25%",
+        "value": "-14%",
         "label": "escalations"
       },
       "industry": "Product based",
-      "sector": "MSP automation SaaS"
+      "sector": "MSP automation SaaS",
+      "levels": [
+        {
+          "level": "Integrations",
+          "items": [
+            "Resolved integration issues across 100+ MSP client environments for a SaaS infrastructure discovery and observability platform"
+          ]
+        },
+        {
+          "level": "Data",
+          "items": [
+            "Built JMESPath queries over nested JSON from auto-discovery agents to turn inventory data into platform alerts"
+          ]
+        },
+        {
+          "level": "APIs",
+          "items": [
+            "Validated REST API and JavaScript Fetch integrations: OAuth token flows, CORS headers and response schemas"
+          ]
+        },
+        {
+          "level": "Team",
+          "items": [
+            "Standardised partner workflows and filed engineering tickets",
+            "Mentored a 4-member L2 team"
+          ]
+        }
+      ],
+      "outcome": "Cut support escalations by 14%"
     },
     {
       "company": "IT By Design / System Solutions Inc",
@@ -104,8 +185,8 @@
       "summary": "Administered Microsoft-centred infrastructure and automated routine operations.",
       "highlights": [
         "Windows Server, Active Directory, Microsoft 365, Entra ID and Intune administration",
-        "PowerShell automation reduced onboarding time by 30%",
-        "Improved backup success rate by 35%"
+        "PowerShell automation reduced onboarding time by 11%",
+        "Improved backup success rate by 9%"
       ],
       "stack": [
         "Windows Server",
@@ -117,11 +198,34 @@
       ],
       "headline": "Microsoft infrastructure administration and PowerShell automation",
       "impact": {
-        "value": "30%",
+        "value": "8%",
         "label": "less patching downtime"
       },
       "industry": "Service based",
-      "sector": "Managed IT services"
+      "sector": "Managed IT services",
+      "levels": [
+        {
+          "level": "Infrastructure",
+          "items": [
+            "Ran Windows Server, Active Directory, DNS, DHCP, RDS farms, Microsoft 365 and Exchange Online, Entra ID, Conditional Access and Intune for MSP clients",
+            "Also supported Citrix XenApp, VMware ESXi for VDI, Mimecast and Threatlocker"
+          ]
+        },
+        {
+          "level": "Automation",
+          "items": [
+            "Automated the user lifecycle in PowerShell",
+            "Set up script-based patching and backup alert-response procedures in ConnectWise Automate"
+          ]
+        },
+        {
+          "level": "Documentation",
+          "items": [
+            "Documented SOPs, root cause analyses and guides in IT Glue"
+          ]
+        }
+      ],
+      "outcome": "Onboarding time down 11%, patching downtime down 8%, backup success up 9%"
     },
     {
       "company": "RealTimeDataServices",
@@ -140,7 +244,34 @@
       ],
       "headline": "Built a remote-desktop platform from bare metal",
       "industry": "Service based",
-      "sector": "Cloud hosting"
+      "sector": "Cloud hosting",
+      "levels": [
+        {
+          "level": "Platform",
+          "items": [
+            "Built a secure remote-desktop platform from bare metal on VMware ESXi: dual-NIC NAT gateway, AD, DNS, DHCP, brokered session hosts and an isolated file server",
+            "All external access over HTTPS on port 443 only"
+          ]
+        },
+        {
+          "level": "Provisioning",
+          "items": [
+            "Provisioned Windows Server VMs from golden-image templates, with vSwitch WAN and LAN segmentation and port-group design"
+          ]
+        },
+        {
+          "level": "Troubleshooting",
+          "items": [
+            "Resolved RDP and network faults at OSI-layer level using ping, telnet and traceroute",
+            "Resolved 90%+ of RDP and DNS connectivity issues at L1 without escalation"
+          ]
+        }
+      ],
+      "outcome": "Cut VM provisioning time by 6%",
+      "impact": {
+        "value": "-6%",
+        "label": "VM provisioning time"
+      }
     }
   ],
   "education": [

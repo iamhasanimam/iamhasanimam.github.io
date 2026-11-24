@@ -4,7 +4,7 @@
  "category": "Cloud",
  "icon": "amazonaws",
  "level": "working",
- "tagline": "Private VPC, TLS load balancers, SSM access and CloudFront: a web stack.",
+ "tagline": "A web stack with a private VPC, TLS load balancers, SSM access and CloudFront.",
  "whatItIs": "",
  "howItWorks": [
   {
@@ -33,7 +33,7 @@
   },
   {
    "title": "Security",
-   "body": "Least-privilege IAM, MFA on humans, no root user for daily work.\nPrivate subnets for servers; only load balancers and NAT sit in public subnets.\nSSM Session Manager replaces SSH: no key, no open port 22, every session auditable.\nEnforce IMDSv2, S3 Block Public Access and encryption at rest with KMS.\nCloudTrail records API calls; GuardDuty and Config flag risky behaviour."
+   "body": "Use least-privilege IAM, enforce MFA for human users and avoid the root user for daily work.\nPrivate subnets for servers; only load balancers and NAT sit in public subnets.\nSSM Session Manager replaces SSH: no key, no open port 22, every session auditable.\nEnforce IMDSv2, S3 Block Public Access and encryption at rest with KMS.\nCloudTrail records API calls; GuardDuty and Config flag risky behaviour."
   },
   {
    "title": "Observability",
@@ -41,7 +41,7 @@
   },
   {
    "title": "Failure modes and troubleshooting",
-   "body": "Unhealthy targets: app security group lacks the LB group, wrong health-check path or port.\n502 from ALB means the target closed the connection; 504 means it timed out.\nNo outbound from private subnets: check the route to NAT and the NAT's subnet route to IGW.\nSSM session will not start: instance role missing or no path to the SSM endpoints.\nUse Reachability Analyzer to trace a path between two resources."
+   "body": "Unhealthy targets: the app security group lacks the LB group, or the health-check path or port is wrong.\n502 from ALB means the target closed the connection; 504 means it timed out.\nNo outbound from private subnets: check the route to NAT and the NAT's subnet route to IGW.\nSSM session will not start: instance role missing or no path to the SSM endpoints.\nUse Reachability Analyzer to trace a path between two resources."
   },
   {
    "title": "Alternatives",
@@ -84,10 +84,10 @@
     "note": "Replace the placeholder with your own connection string. The default aws/ssm KMS key encrypts it."
    },
    {
-    "title": "4. Private EC2 with Docker Compose and Nginx",
+    "title": "4. Private EC2 with Docker Compose and NGINX",
     "lang": "bash",
     "code": "AMI=$(aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 --query Parameter.Value --output text)\ncat > userdata.sh <<'UD'\n#!/bin/bash\ndnf install -y docker\nsystemctl enable --now docker\nmkdir -p /usr/local/lib/docker/cli-plugins /opt/app\ncurl -SL https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose\nchmod +x /usr/local/lib/docker/cli-plugins/docker-compose\ncat > /opt/app/nginx.conf <<'NG'\nserver { listen 80; location / { proxy_pass http://app:5678; proxy_set_header Host $host; } }\nNG\ncat > /opt/app/compose.yaml <<'CY'\nservices:\n  nginx:\n    image: nginx:1.27-alpine\n    ports: [\"80:80\"]\n    volumes: [\"./nginx.conf:/etc/nginx/conf.d/default.conf:ro\"]\n    networks: [front, back]\n    restart: always\n  app:\n    image: hashicorp/http-echo:1.0\n    command: [\"-text=hello from app\"]\n    networks: [back]\n    restart: always\nnetworks:\n  front: {driver: bridge}\n  back: {driver: bridge}\nCY\ncd /opt/app && docker compose up -d\nUD\nI1=$(aws ec2 run-instances --image-id $AMI --instance-type t3.micro --subnet-id $PRIV_A --security-group-ids $APP_SG \\\n  --iam-instance-profile Name=demo-ssm-profile --metadata-options HttpTokens=required,HttpPutResponseHopLimit=2 --user-data file://userdata.sh \\\n  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=demo-app-a}]' --query 'Instances[0].InstanceId' --output text)\naws ec2 wait instance-running --instance-ids $I1",
-    "note": "Nginx joins both bridge networks; the app joins only back. A real app reads DB_URL with aws ssm get-parameter --with-decryption."
+    "note": "NGINX joins both bridge networks; the app joins only back. A real app reads DB_URL with aws ssm get-parameter --with-decryption."
    },
    {
     "title": "5. ACM certificate, HTTPS ALB and Route 53 alias",
@@ -99,7 +99,7 @@
     "title": "6. Reach the instance with SSM",
     "lang": "bash",
     "code": "aws ssm describe-instance-information --query 'InstanceInformationList[].InstanceId'\naws ssm start-session --target $I1",
-    "note": "The instance appears within minutes. Inside the shell run docker ps to see both containers."
+    "note": "The instance appears within minutes. Inside the shell, run docker ps to see both containers."
    },
    {
     "title": "7. Private S3 behind CloudFront with OAC",

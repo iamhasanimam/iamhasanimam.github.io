@@ -13,7 +13,7 @@
     "SSM",
     "MongoDB Atlas",
     "Docker Compose",
-    "Nginx",
+    "NGINX",
     "React",
     "S3",
     "CloudFront",
@@ -44,7 +44,7 @@
    "highlights": [
     "Seven-server design: domain controller, gateway, broker, session hosts, file server, jumpbox",
     "Dual-NIC gateway is the only controlled entry point",
-    "Isolated file server segment away from user-facing hosts",
+    "File server on an isolated segment, away from user-facing hosts",
     "Published with SOPs and network diagrams"
    ],
    "status": "shipped",

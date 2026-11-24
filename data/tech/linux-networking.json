@@ -25,7 +25,7 @@
   },
   {
    "title": "VRRP, SSH and DNS",
-   "body": "VRRP gives the higher priority node the VIP; a track_script drives failover.\nsshd takes keys only, no root, named users.\ndnsmasq serves A and PTR records and forwards the rest."
+   "body": "VRRP gives the higher-priority node the VIP; a track_script drives failover.\nsshd takes keys only, no root, named users.\ndnsmasq serves A and PTR records and forwards the rest."
   },
   {
    "title": "What sits in front",
@@ -41,7 +41,7 @@
   }
  ],
  "flow": [
-  "Process in namespace a1 sends a packet to 10.0.2.11, another subnet.",
+  "A process in namespace a1 sends a packet to 10.0.2.11 on another subnet.",
   "a1 uses its default route to 10.0.1.1 and ARPs for the gateway.",
   "The frame crosses the veth pair into bridge br-a and is switched by MAC.",
   "The router sees a non-local destination; ip_forward=1 sends it to the route lookup.",
@@ -86,7 +86,7 @@
     "title": "5. VRRP floating IP with keepalived (two hosts)",
     "lang": "bash",
     "code": "# /etc/keepalived/keepalived.conf on the PRIMARY node\nglobal_defs {\n    enable_script_security\n    script_user keepalived_script\n}\nvrrp_script chk_service {\n    script \"/usr/bin/systemctl is-active --quiet nginx\"\n    interval 2\n    fall 2\n    rise 2\n}\nvrrp_instance VI_1 {\n    state MASTER\n    interface eth0              # replace with your NIC name\n    virtual_router_id 51\n    priority 150                # BACKUP node: state BACKUP, priority 100\n    advert_int 1\n    authentication {\n        auth_type PASS\n        auth_pass <CHANGE_ME>     # max 8 characters; use a unique value\n    }\n    virtual_ipaddress {\n        192.0.2.100/24          # replace with a free address in your subnet\n    }\n    track_script {\n        chk_service\n    }\n}\n# then on both nodes:\n#   sudo useradd -r -s /sbin/nologin keepalived_script\n#   sudo systemctl enable --now keepalived",
-    "note": "The BACKUP uses state BACKUP and a lower priority. Cloud networks usually drop VRRP; use the provider floating IP there."
+    "note": "The BACKUP uses state BACKUP and a lower priority. Cloud networks usually drop VRRP; use the provider's floating IP there."
    },
    {
     "title": "6. Clean up the lab",
@@ -98,7 +98,7 @@
     "title": "7. SSH setup and hardening",
     "lang": "bash",
     "code": "# On your workstation: create a key and install it\nssh-keygen -t ed25519 -C \"ops@site\"\nssh-copy-id -i ~/.ssh/id_ed25519.pub ops@10.0.0.10\nssh ops@10.0.0.10 true        # prove key login BEFORE hardening\n\n# On the server: drop-in config, test, then reload\nsudo tee /etc/ssh/sshd_config.d/10-hardening.conf >/dev/null <<'EOF'\nPermitRootLogin no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nPubkeyAuthentication yes\nAllowUsers ops\nMaxAuthTries 3\nLoginGraceTime 30\nX11Forwarding no\nEOF\nsudo sshd -t && sudo systemctl reload ssh\nsudo sshd -T | grep -Ei 'permitrootlogin|passwordauthentication|allowusers'\n\n# Brute-force bans\nsudo apt-get install -y fail2ban\nprintf '[sshd]\\nenabled = true\\nmaxretry = 5\\nbantime = 1h\\n' | sudo tee /etc/fail2ban/jail.d/sshd.local\nsudo systemctl enable --now fail2ban\nsudo fail2ban-client status sshd",
-    "note": "Keep a second session open until key login is proven. Service name is sshd on RHEL; replace ops and the IP."
+    "note": "Keep a second session open until key login is proven. The service name is sshd on RHEL; replace ops and the IP."
    },
    {
     "title": "8. DNS bring-up with dnsmasq",
@@ -119,7 +119,7 @@
   "No return or default route in the namespace: packets leave, replies never arrive.",
   "Docker or firewalld FORWARD DROP silently breaks routed lab traffic.",
   "sysctl -w is not persistent; write /etc/sysctl.d/ files on real routers.",
-  "Overlapping CIDRs across lab, VPN and cloud give odd routes; check ip route get.",
+  "Overlapping CIDRs across lab, VPN and cloud produce odd routes; check ip route get.",
   "VRRP blocked on protocol 112 makes both nodes claim the VIP.",
   "Locking yourself out: disable password login only after key login works.",
   "dnsmasq fails to start while systemd-resolved still holds port 53."

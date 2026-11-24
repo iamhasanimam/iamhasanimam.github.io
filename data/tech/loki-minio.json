@@ -4,7 +4,7 @@
  "category": "Observability",
  "icon": "grafana",
  "level": "hands-on",
- "tagline": "Logs indexed by labels, chunks in S3 storage, traces beside them in Tempo.",
+ "tagline": "Logs indexed by label, chunks in S3-compatible storage and traces alongside them in Tempo.",
  "whatItIs": "",
  "howItWorks": [
   {
@@ -33,7 +33,7 @@
   },
   {
    "title": "What sits behind",
-   "body": "MinIO supplies the S3 endpoint: give Loki a bucket, path-style addressing and keys from a secret.\nGrafana adds Loki on port 3100; derivedFields link a trace ID to Tempo.\nThe ruler evaluates LogQL alert rules and sends them to Alertmanager.\nRun Loki monolithic on one node or as distributed microservices for scale."
+   "body": "MinIO supplies the S3 endpoint: give Loki a bucket, path-style addressing and keys from a secret.\nGrafana adds Loki as a datasource on port 3100; derivedFields link a trace ID to Tempo.\nThe ruler evaluates LogQL alert rules and sends them to Alertmanager.\nRun Loki monolithic on one node or as distributed microservices for scale."
   },
   {
    "title": "Alternatives",
@@ -43,7 +43,7 @@
  "flow": [
   "The application emits structured logs and spans over OTLP.",
   "Alloy receives OTLP and batches it.",
-  "Logs go to Loki, traces go to Tempo.",
+  "Logs go to Loki and traces go to Tempo.",
   "The distributor hashes each stream onto the ingester ring.",
   "Ingesters fill chunks in memory and write the WAL.",
   "Flushed chunks and index files land in MinIO.",

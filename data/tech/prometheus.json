@@ -9,15 +9,15 @@
  "howItWorks": [
   {
    "title": "Pull scraping",
-   "body": "Every scrape_interval, an HTTP GET fetches /metrics from each target.\nTargets come from static lists, DNS, file or Kubernetes service discovery.\nA failed scrape sets up to 0: free health checking.\nrelabel_configs picks targets; metric_relabel_configs drops series."
+   "body": "Every scrape_interval, an HTTP GET fetches /metrics from each target.\nTargets come from static lists, DNS, file or Kubernetes service discovery.\nA failed scrape sets up to 0, giving free health checking.\nrelabel_configs picks targets; metric_relabel_configs drops series."
   },
   {
    "title": "node_exporter and Actuator",
-   "body": "node_exporter reads /proc and /sys: CPU, memory, disk, network per host.\nSpring Boot Actuator serves JVM and HTTP metrics at /actuator/prometheus.\nMicrometer publishes http_server_requests_seconds histograms per URI and status.\nSaturation comes from nodes; latency and errors come from the app."
+   "body": "node_exporter reads /proc and /sys: CPU, memory, disk and network per host.\nSpring Boot Actuator serves JVM and HTTP metrics at /actuator/prometheus.\nMicrometer publishes http_server_requests_seconds histograms per URI and status.\nSaturation comes from nodes; latency and errors come from the app."
   },
   {
    "title": "ServiceMonitor and OTel push",
-   "body": "A ServiceMonitor selects Services by label and sets port, path, interval.\nThe Operator turns it into scrape config; teams ship it with their app.\nWhere pull is impossible, the OTel Collector pushes via remote_write.\nThe receiver needs --web.enable-remote-write-receiver."
+   "body": "A ServiceMonitor selects Services by label and sets the port, path and interval.\nThe Operator turns it into scrape config; teams ship it with their app.\nWhere pull is impossible, the OTel Collector pushes via remote_write.\nThe receiver needs --web.enable-remote-write-receiver."
   },
   {
    "title": "Histograms and p95",
@@ -85,13 +85,13 @@
     "title": "Recording and alert rules",
     "lang": "yaml",
     "code": "groups:\n  - name: http\n    rules:\n      - record: job:http_requests:rate5m\n        expr: sum by (job) (rate(http_server_requests_seconds_count[5m]))\n      - record: job:http_request_duration_seconds:p95\n        expr: histogram_quantile(0.95, sum by (job, le) (rate(http_server_requests_seconds_bucket[5m])))\n      - alert: HighP95Latency\n        expr: job:http_request_duration_seconds:p95 > 0.5\n        for: 10m\n        labels: {severity: warning}\n        annotations:\n          summary: \"p95 latency above 500ms for {{ $labels.job }}\"\n  - name: availability\n    rules:\n      - alert: TargetDown\n        expr: up == 0\n        for: 2m\n        labels: {severity: critical}\n        annotations:\n          summary: \"{{ $labels.job }}/{{ $labels.instance }} is down\"",
-    "note": "p95 is precomputed per job. The 10 minute hold avoids flapping."
+    "note": "p95 is precomputed per job. The 10-minute hold avoids flapping."
    },
    {
     "title": "Alertmanager routing",
     "lang": "yaml",
     "code": "route:\n  receiver: default\n  group_by: [alertname, job]\n  group_wait: 30s\n  group_interval: 5m\n  repeat_interval: 4h\n  routes:\n    - matchers: [severity=\"critical\"]\n      receiver: oncall\nreceivers:\n  - name: default\n  - name: oncall\n    webhook_configs:\n      - url: http://host.docker.internal:5001/alerts\ninhibit_rules:\n  - source_matchers: [severity=\"critical\"]\n    target_matchers: [severity=\"warning\"]\n    equal: [job]",
-    "note": "Critical pages on-call and inhibits the matching warning. Webhook URL is a placeholder."
+    "note": "A critical alert pages on-call and inhibits the matching warning. The webhook URL is a placeholder."
    },
    {
     "title": "Validate, start, reload",
@@ -103,7 +103,7 @@
     "title": "ServiceMonitor on Kubernetes",
     "lang": "yaml",
     "code": "apiVersion: monitoring.coreos.com/v1\nkind: ServiceMonitor\nmetadata:\n  name: spring-app\n  labels:\n    release: prometheus\nspec:\n  selector:\n    matchLabels:\n      app: spring-app\n  endpoints:\n    - port: http\n      path: /actuator/prometheus\n      interval: 15s",
-    "note": "The release label must match the Operator's selector. Port names the Service port."
+    "note": "The release label must match the Operator's selector. The port field names the Service port."
    }
   ]
  },
@@ -117,11 +117,11 @@
  "pitfalls": [
   "Averaging quantiles across pods is wrong; sum buckets by le first.",
   "High-cardinality labels (user id, URL with IDs) explode memory.",
-  "rate() window under 4x the scrape interval returns gaps.",
+  "A rate() window under 4x the scrape interval returns gaps.",
   "Pushgateway keeps stale series forever; delete them or avoid it.",
-  "No for: duration on alerts causes flapping pages.",
-  "ServiceMonitor ignored when its labels miss the Operator's selector.",
-  "Local TSDB is not durable storage: add Thanos or remote_write."
+  "Alerts without a for: duration cause flapping pages.",
+  "A ServiceMonitor is ignored when its labels do not match the Operator's selector.",
+  "The local TSDB is not durable storage: add Thanos or remote_write."
  ],
  "furtherReading": [
   {
@@ -142,14 +142,14 @@
   }
  ],
  "keyPoints": [
-  "Pull model: scrape /metrics every interval; up==0 means dead.",
+  "Pull model: scrape /metrics every interval; up==0 means the target is down.",
   "Histograms plus histogram_quantile give p95 across all pods.",
   "Cardinality, not sample rate, drives memory and cost.",
   "Prometheus fires, Alertmanager groups, silences and routes."
  ],
  "quickDeploy": [
   "Run node_exporter under systemd.",
-  "Compose Prometheus and Alertmanager, pinned.",
+  "Run Prometheus and Alertmanager with Compose, pinned.",
   "Validate config with promtool.",
   "Query histogram_quantile in the UI."
  ],

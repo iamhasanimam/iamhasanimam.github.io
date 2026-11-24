@@ -321,7 +321,7 @@
   "Scenarios shape the load.",
   "Thresholds decide pass or fail.",
   "Remote write feeds Prometheus.",
-  "Failed p95 blocks the release."
+  "A failed p95 blocks the release."
  ],
  "run": {
   "cmd": "k6 run -o experimental-prometheus-rw script.js",

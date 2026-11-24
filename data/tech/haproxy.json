@@ -21,7 +21,7 @@
   },
   {
    "title": "Balancing and health checks",
-   "body": "roundrobin spreads evenly; leastconn suits long-lived sessions; uri hashes the request path.\ncheck probes a TCP connect; option httpchk GET /healthz tests the application.\ninter, fall and rise set probe speed and flap tolerance.\nbackup servers take traffic only when all primaries are down.\nStick tables track request rates; use them for rate limiting."
+   "body": "roundrobin spreads evenly; leastconn suits long-lived sessions; uri hashes the request path.\ncheck probes with a TCP connect; option httpchk GET /healthz tests the application.\ninter, fall and rise set probe speed and flap tolerance.\nbackup servers take traffic only when all primaries are down.\nStick tables track request rates; use them for rate limiting."
   },
   {
    "title": "High availability and scaling",
@@ -45,7 +45,7 @@
   }
  ],
  "flow": [
-  "Client connects to the VIP held by the MASTER node.",
+  "The client connects to the VIP held by the MASTER node.",
   "A HAProxy worker thread accepts the connection on a frontend.",
   "tcp-request inspect-delay waits for the TLS ClientHello and reads the SNI.",
   "ACLs run in order; use_backend or default_backend picks the pool.",
@@ -123,9 +123,9 @@
  "pitfalls": [
   "Missing inspect-delay: SNI ACLs see an empty buffer and everything hits default_backend.",
   "A health check on the wrong port marks healthy servers down.",
-  "Absent timeouts leak idle connections; set connect, client and server.",
+  "Missing timeouts leak idle connections; set connect, client and server.",
   "Idle database or WebSocket sessions die at timeout server; raise timeout tunnel.",
-  "Different virtual_router_id or two MASTERs causes split brain, with the VIP on both.",
+  "Different virtual_router_id or two MASTERs cause split brain, with the VIP on both.",
   "Clouds and filtered VLANs drop VRRP and gratuitous ARP; failover silently never happens.",
   "Unresolvable DNS names fail the reload; use resolvers with init-addr none."
  ],

@@ -122,7 +122,7 @@
    "col": 2,
    "row": 0,
    "says": "Replicas wait and take over.",
-   "detail": "Asynchronous copy on a different host. The best offset wins the election."
+   "detail": "An asynchronous copy on a different host. The best offset wins the election."
   },
   {
    "id": "bus",
@@ -308,7 +308,7 @@
   },
   {
    "title": "Fail over",
-   "text": "Majority votes; replica takes slots.",
+   "text": "A majority votes; the replica takes the slots.",
    "boxes": [
     "bus",
     "replica",

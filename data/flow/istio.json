@@ -58,7 +58,7 @@
    "col": 2,
    "row": 0,
    "says": "The gateway admits traffic.",
-   "detail": "An Envoy at the edge. Gateway opens ports and hosts; VirtualService binds to it."
+   "detail": "An Envoy proxy at the edge. Gateway opens ports and hosts; VirtualService binds to it."
   },
   {
    "id": "ewgw",
@@ -356,7 +356,7 @@
   },
   {
    "title": "Inject",
-   "text": "istiod gives each sidecar certs.",
+   "text": "istiod gives each sidecar a certificate.",
    "boxes": [
     "istiod",
     "stable"

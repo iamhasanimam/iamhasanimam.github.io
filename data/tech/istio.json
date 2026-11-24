@@ -13,7 +13,7 @@
   },
   {
    "title": "Components and architecture",
-   "body": "istiod is one binary: xDS config server, certificate authority and sidecar injection webhook.\nEnvoy sidecars intercept pod traffic with iptables redirect and enforce routes and policy.\nIngress and egress gateways are standalone Envoys at the mesh edge.\nAmbient mode splits the mesh: a node-level ztunnel for L4 and optional waypoint proxies for L7.\nSidecars cost memory per pod; ambient removes that but is a different operating model."
+   "body": "istiod is one binary: xDS config server, certificate authority and sidecar injection webhook.\nEnvoy sidecars intercept pod traffic with iptables redirect and enforce routes and policy.\nIngress and egress gateways are standalone Envoys at the mesh edge.\nAmbient mode splits the mesh: a node-level ztunnel for L4 and optional waypoint proxies for L7.\nSidecars cost memory in every pod; ambient avoids that cost but is a different operating model."
   },
   {
    "title": "Request flow",
@@ -41,7 +41,7 @@
   },
   {
    "title": "Failure modes and troubleshooting",
-   "body": "istioctl analyze finds config errors before they bite.\nistioctl proxy-status shows which proxies are STALE or not SYNCED with istiod.\n503 with NR means no route; UH means no healthy upstream; UF is upstream connection failure.\nA missing DestinationRule subset is the classic cause of 503s after a VirtualService change.\nStrict mTLS resets plaintext callers; check that clients are injected before enforcing."
+   "body": "istioctl analyze finds config errors before they cause failures.\nistioctl proxy-status shows which proxies are STALE or not SYNCED with istiod.\n503 with NR means no route; UH means no healthy upstream; UF is upstream connection failure.\nA missing DestinationRule subset is the classic cause of 503s after a VirtualService change.\nStrict mTLS resets plaintext callers; check that clients are injected before enforcing."
   },
   {
    "title": "Alternatives",
@@ -125,10 +125,10 @@
   "kubectl -n shop get pods shows 2/2 ready for injected workloads."
  ],
  "pitfalls": [
-  "Missing subset in the DestinationRule returns 503 with NR or UH response flags.",
-  "STRICT before every client is meshed resets plaintext callers.",
+  "A missing subset in the DestinationRule returns 503 with NR or UH response flags.",
+  "Enabling STRICT before every client is meshed resets plaintext callers.",
   "Annotation needs the namespace injection label or revision; restart existing pods.",
-  "Gateway selector must match the gateway pod labels or no listener appears.",
+  "The Gateway selector must match the gateway pod labels, or no listener appears.",
   "Clusters with different root CAs cannot establish cross-cluster mTLS.",
   "A Gateway host that does not match the VirtualService hosts returns 404.",
   "Default retries plus your own retries multiply load; set attempts explicitly."
