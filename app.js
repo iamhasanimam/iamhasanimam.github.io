@@ -1,5 +1,5 @@
 /* Portfolio SPA: hash routing, static JSON data, no build. All data text is inserted with textContent (no innerHTML on data). */
-import { parseRoute, nextRoute } from './route.js?v=20261124s';
+import { parseRoute, nextRoute } from './route.js?v=20261124t';
 (() => {
   'use strict';
 
@@ -8,7 +8,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124s';
   const LINKEDIN_URL = 'https://www.linkedin.com/in/iamhasanimam';
   const TYPE_CODE_MS = 22; // code typing speed in the hero editor, git log and code blocks (ms per character)
   const PAUSE_MS = 1800;   // pause after a snippet is typed, before the next tab
-  const ASSET_V = '20261124s'; // cache-busting for dynamic imports; keep in sync with index.html
+  const ASSET_V = '20261124t'; // cache-busting for dynamic imports; keep in sync with index.html
 
   // Brand colours (tuned for the dark banner). Slugs missing from simple-icons get a monogram.
   const COLORS = {
@@ -430,11 +430,11 @@ import { parseRoute, nextRoute } from './route.js?v=20261124s';
 
   const hash7 = (str) => { let x = 2166136261; for (const ch of String(str)) { x ^= ch.charCodeAt(0); x = Math.imul(x, 16777619); } return ((x >>> 0).toString(16) + '0000000').slice(0, 7); };
   function gitLog(c, compact) {
-    const roles = orderedRoles(c, true); // oldest to newest, HEAD at the bottom
+    const roles = orderedRoles(c, false); // newest first, HEAD at the top
     const box = h('ol', { class: 'gitlog' + (compact ? ' compact' : ''), 'aria-label': 'Career as a git log' });
     roles.forEach((r, i) => {
       const p = roleParts(r);
-      const head = i === roles.length - 1;
+      const head = i === 0;
       const msg = h('div', { class: 'cmsg' }, p.headline);
       const imp = p.imp ? (/^[-\u2212]/.test(p.imp.value) ? { cls: 'del', t: p.imp.value + ' ' + p.imp.label } : { cls: 'add', t: '+' + p.imp.value.replace(/^\+/, '') + ' ' + p.imp.label }) : null;
       box.append(h('li', { class: 'commit rv' + (head ? ' head' : '') },
@@ -500,7 +500,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124s';
     }
     root.append(h('div', { class: 'toolbar' }, seg(careerView, (v) => { careerView = v; paint(); }, [['quest', 'Quest'], ['story', 'Story'], ['git', 'git log']])), host);
     function paintStory() {
-      const roles = orderedRoles(c, true);
+      const roles = orderedRoles(c, false); // newest first
       const first = roles[0], last = roles[roles.length - 1];
       const label = (r, end) => (end ? (/present|now/i.test(r.end || '') ? 'Now' : yearOf(r.end)) : yearOf(r.start));
       const fill = h('div', { class: 'path-fill' });
@@ -517,7 +517,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124s';
             p.bullets.length ? bulletList(p.bullets, 3) : null,
             r.stack && r.stack.length ? h('div', { class: 'chips' }, r.stack.slice(0, 8).map((x) => h('span', { class: 'chip' }, x))) : null);
         }));
-      const rail = h('aside', { class: 'rail', 'aria-hidden': 'true' }, h('span', { class: 'ry' }, label(first)), h('div', { class: 'rbar' }, rFill), h('span', { class: 'ry' }, label(last, true)));
+      const rail = h('aside', { class: 'rail', 'aria-hidden': 'true' }, h('span', { class: 'ry' }, label(first, true)), h('div', { class: 'rbar' }, rFill), h('span', { class: 'ry' }, label(last)));
       host.replaceChildren(h('div', { class: 'story-wrap' }, story, rail));
       const upd = () => {
         const r = story.getBoundingClientRect();
