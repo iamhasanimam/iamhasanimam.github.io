@@ -497,6 +497,8 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   const ctl = h('div', 'flow3d__ctl'); ctl.setAttribute('role', 'group'); ctl.setAttribute('aria-label', 'Zoom');
   const mk = (t, a, f) => { const b = h('button', 'flow3d__cbtn', t); b.type = 'button'; b.setAttribute('aria-label', a); b.title = a; b.addEventListener('click', f); ctl.appendChild(b); return b; };
   mk('+', 'Zoom in', zoomIn); mk('−', 'Zoom out', zoomOut); mk('Reset', 'Reset view', () => { stopWalk(); setTab(null); reset(); }).classList.add('flow3d__cbtn--wide');
+  /* drag mode: rotate (default) or move. Move lets you drag the whole scene up, down and sideways; Shift/Ctrl + drag and right-drag also move, two fingers move and zoom */
+  let moveMode = false; const mvBtn = mk('Move', 'Drag to move the scene instead of rotating it', () => { moveMode = !moveMode; controls.mouseButtons.LEFT = moveMode ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE; controls.touches.ONE = moveMode ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE; mvBtn.textContent = moveMode ? 'Rotate' : 'Move'; mvBtn.setAttribute('aria-pressed', String(moveMode)); }); mvBtn.classList.add('flow3d__cbtn--wide'); mvBtn.setAttribute('aria-pressed', 'false');
   const setView = (i) => { viewIdx = i; defaultDir = dirFor(VIEWS[i]); vbtn.textContent = VIEWS[i].label; bBird.setAttribute('aria-pressed', String(i === BIRD)); exTarget = i === BIRD ? 1 : 0; computeHome(); userMoved = false; tweenTo(home.pos, home.target, 600); dirty = true; };
   const vbtn = mk(VIEWS[0].label, 'Cycle view: Front, Isometric, Bird\'s eye', () => { setView((viewIdx + 1) % VIEWS.length); computeHome(); userMoved = false; tweenTo(home.pos, home.target); }); vbtn.classList.add('flow3d__cbtn--wide');
   const bBird = mk('\u25A6', "Bird's eye view", () => setView(viewIdx === BIRD ? 0 : BIRD)); bBird.setAttribute('aria-pressed', 'false'); bBird.classList.add('flow3d__bird'); ctl.insertBefore(bBird, vbtn);
@@ -634,10 +636,10 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   let full = false, ph = null, prevOverflow = '', prevFocus = null;
   function expand() {
     if (full) return; full = true; prevFocus = document.activeElement; ph = document.createElement('div'); ph.style.height = container.offsetHeight + 'px'; ph.style.width = '100%'; container.before(ph);
-    prevOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden'; container.classList.add('is-full'); bExpand.textContent = 'Close full screen \u2715'; bExpand.setAttribute('aria-label', 'Close full screen'); root.focus({ preventScroll: true });
+    prevOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden'; container.classList.add('is-full'); userMoved = false; tween = null; requestAnimationFrame(() => { try { resize(); reset(); } catch (e) { /* ignore */ } }); bExpand.textContent = 'Close full screen \u2715'; bExpand.setAttribute('aria-label', 'Close full screen'); root.focus({ preventScroll: true });
   }
   function collapse() {
-    if (!full) return; full = false; container.classList.remove('is-full'); document.body.style.overflow = prevOverflow; if (ph) { ph.remove(); ph = null; } bExpand.textContent = 'Open full screen \u2197'; bExpand.setAttribute('aria-label', 'Expand to full screen');
+    if (!full) return; full = false; container.classList.remove('is-full'); userMoved = false; tween = null; requestAnimationFrame(() => { try { resize(); reset(); } catch (e) { /* ignore */ } }); document.body.style.overflow = prevOverflow; if (ph) { ph.remove(); ph = null; } bExpand.textContent = 'Open full screen \u2197'; bExpand.setAttribute('aria-label', 'Expand to full screen');
     try { (prevFocus && prevFocus.focus ? prevFocus : bExpand).focus({ preventScroll: true }); } catch { /* ignore */ }
   }
   function setHeight(v) { container.style.setProperty('--flow-h', typeof v === 'number' ? v + 'px' : String(v)); }
