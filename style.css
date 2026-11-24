@@ -424,3 +424,12 @@ details.more > summary { padding: 2px 0 6px var(--s4); list-style: none; cursor:
 }
 .malts { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; margin-top: 2px; }
 .malt { padding: 1px 6px; border: var(--bd); border-radius: 99px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+
+/* hero: welcome pill, intro line, click-me wave behind the technology grid */
+.avail { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 var(--s3); padding: 5px 12px; border-radius: 999px; background: color-mix(in srgb, var(--ok, #30d158) 14%, transparent); color: var(--text); font-size: var(--t-xs); font-weight: 500; }
+.avail .dot { width: 8px; height: 8px; border-radius: 50%; background: #30d158; box-shadow: 0 0 0 0 rgba(48,209,88,.6); animation: ping 2s infinite; }
+@keyframes ping { 70% { box-shadow: 0 0 0 8px rgba(48,209,88,0); } 100% { box-shadow: 0 0 0 0 rgba(48,209,88,0); } }
+.hero .who { margin: 0 0 var(--s3); font-size: var(--t-md, 15px); color: var(--muted); max-width: 46ch; line-height: 1.5; }
+.hero-graph { position: relative; isolation: isolate; }
+@media (prefers-reduced-motion: reduce) { .avail .dot { animation: none; } }
+

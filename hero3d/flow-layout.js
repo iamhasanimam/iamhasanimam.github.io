@@ -97,7 +97,7 @@ export function computeLayout(spec = {}, opts = {}) {
     const H = vertical ? S : LAYER_H, minY = midY - H / 2, contentBottom = minY + (S - Hc) / 2;
     for (const b of mates) { const g = grid.get(b.id), x = (g.col - cMid) * PITCH.x * xs + shiftX, y = vertical ? contentBottom + (rMax - g.row) * PITCH.z + BOX.h / 2 : minY + SLAB_T + BOX.h / 2, z = vertical ? 0 : (g.row - rMid) * PITCH.z; const rec = { id: b.id, layer: k, pos: { x, y, z }, size: { ...BOX } }; boxes.push(rec); byId.set(b.id, rec); ids.push(b.id); }
     const vol = { min: { x: shiftX - S / 2, y: minY, z: vertical ? -(BOX.d / 2 + L.z) : -S / 2 }, max: { x: shiftX + S / 2, y: minY + H, z: vertical ? BOX.d / 2 + L.z : S / 2 } };
-    volumes.push({ id: `layer:${k}`, kind: 'layer', outside: true, vertical, side, label: lay.label ? (/outside/i.test(lay.label) ? lay.label : (vertical ? lay.label : `${lay.label} (outside the stack)`)) : OUTSIDE_LABEL, parent: null, boxes: ids, min: vol.min, max: vol.max });
+    volumes.push({ id: `layer:${k}`, kind: 'layer', outside: true, vertical, side, label: lay.label || OUTSIDE_LABEL, parent: null, boxes: ids, min: vol.min, max: vol.max });
   }
 
   for (const g of spec.groups || []) {

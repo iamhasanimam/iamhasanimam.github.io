@@ -1,5 +1,5 @@
 /* Portfolio SPA: hash routing, static JSON data, no build. All data text is inserted with textContent (no innerHTML on data). */
-import { parseRoute, nextRoute } from './route.js?v=20261125n';
+import { parseRoute, nextRoute } from './route.js?v=20261126a';
 (() => {
   'use strict';
 
@@ -8,11 +8,11 @@ import { parseRoute, nextRoute } from './route.js?v=20261125n';
   const LINKEDIN_URL = 'https://www.linkedin.com/in/iamhasanimam';
   const TYPE_CODE_MS = 22; // code typing speed in the hero editor, git log and code blocks (ms per character)
   const PAUSE_MS = 1800;   // pause after a snippet is typed, before the next tab
-  const ASSET_V = '20261125n'; // cache-busting for dynamic imports; keep in sync with index.html
+  const ASSET_V = '20261126a'; // cache-busting for dynamic imports; keep in sync with index.html
 
   // Brand colours (tuned for the dark banner). Slugs missing from simple-icons get a monogram.
   const COLORS = {
-    kong: '#d4ff2a', nginx: '#17b05a', kubernetes: '#4a86ff', docker: '#2aa4f4', amazonaws: '#ff9900', vmware: '#7ccf4b',
+    kong: '#e9f230', nginx: '#17b05a', kubernetes: '#4a86ff', docker: '#2aa4f4', amazonaws: '#ff9900', vmware: '#7ccf4b',
     linux: '#ffd24a', redis: '#e8453b', istio: '#27c2ff', keycloak: '#b7c4d6', grafana: '#ff7a1a', prometheus: '#ff6a3d',
     ansible: '#f01a1a', jenkins: '#e5604f', vault: '#ffd814', apachekafka: '#9aa0a6', postgresql: '#5b9be0', python: '#ffd43b',
     elasticsearch: '#19c6b8', nodedotjs: '#5fb04e', minio: '#e04a68', k6: '#8f7bff', haproxy: '#7ec8ff'
@@ -353,8 +353,8 @@ import { parseRoute, nextRoute } from './route.js?v=20261125n';
   function hero() {
     const right = h('div', { class: 'hero-r' });
     const box = h('section', { class: 'hero', 'aria-label': 'Introduction' },
-      h('div', null, h('h1', null, 'Hasan Imam'), h('p', { class: 'sub' }, 'DevOps Engineer'), h('p', { class: 'build' }, 'I build systems', h('span', { class: 'build-dim' }, ' that stay up.')),
-        h('div', { class: 'hero-cta' }, h('a', { class: 'btn primary', href: LINKEDIN_URL, target: '_blank', rel: 'noopener noreferrer' }, 'LinkedIn'), h('a', { class: 'btn', href: GITHUB, target: '_blank', rel: 'noopener noreferrer' }, 'GitHub')),
+      h('div', null, h('h1', null, 'Hasan Imam'), h('p', { class: 'sub' }, 'DevOps Engineer'), h('p', { class: 'build' }, 'I build systems', h('span', { class: 'build-dim' }, ' that stay up.')), h('p', { class: 'who' }, 'I build the infrastructure and monitoring that production runs on. Click any technology on the right to see how it connects.'),
+        h('div', { class: 'hero-cta' }, h('button', { class: 'btn primary', type: 'button', onclick: () => { const t = document.getElementById('fl-h'); if (t) t.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }); } }, 'Explore stack'), h('a', { class: 'btn', href: LINKEDIN_URL, target: '_blank', rel: 'noopener noreferrer' }, 'LinkedIn'), h('a', { class: 'btn', href: GITHUB, target: '_blank', rel: 'noopener noreferrer' }, 'GitHub')),
         termCard()), right);
     box.append(h('div', { class: 'scan', 'aria-hidden': 'true' }));
 
@@ -917,7 +917,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261125n';
     const [posts, idx, workData, career, home] = await Promise.all([loadBlogs(), loadIndex(), loadWork(), loadCareer(), flowSection('home', true)]);
     const projects = workData.projects.slice().sort((a, b) => workRank(a) - workRank(b));
     root.append(h('div', { class: 'kpis' },
-      [['6+', 'years'], ['400 req/s', 'at p95 < 50 ms'], ['20+', 'technologies'], ['AWS', 'Certified Cloud Practitioner']]
+      [['6+', 'years'], ['400 req/s', 'at p95 < 50 ms'], ['20+', 'technologies'], ['AWS', 'Certified']]
         .map(([v, k]) => h('div', { class: 'kpi' }, h('div', { class: 'v' }, v), h('div', { class: 'k' }, k)))));
     if (home) root.append(home);
     if (career) root.append(careerCompact(career));

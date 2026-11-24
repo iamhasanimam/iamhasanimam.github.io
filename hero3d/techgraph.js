@@ -224,14 +224,14 @@ export function mountTechGraph(container, opts = {}) {
     renderer.setSize(W, H, false);
     camera.left = -W / 2; camera.right = W / 2; camera.top = H / 2; camera.bottom = -H / 2; camera.updateProjectionMatrix();
     pitch = Math.min(W / (COLS + 0.5), H / (ROWS + 0.5));
-    tileS = pitch * 0.64;
+    tileS = pitch * 0.72;
     tileRects.length = 0;
     tiles.forEach((t) => {
       t.x = tcx(t); t.y = tcy(t);
       t.body.scale.set(tileS, tileS, 5);
       t.outline.scale.set(tileS, tileS, 1); t.outline.position.z = 5.1;
       t.ringL.scale.set(tileS * 1.07, tileS * 1.07, 1); t.ringL.position.z = 5.2;
-      t.iconMesh.scale.set(tileS * 0.52, tileS * 0.52, 1); t.iconMesh.position.z = 5.4;
+      t.iconMesh.scale.set(tileS * 0.58, tileS * 0.58, 1); t.iconMesh.position.z = 5.4;
       t.glow.scale.set(tileS * 2.05, tileS * 2.05, 1); t.glow.position.set(t.x, t.y, 0.3);
       t.shadow.scale.set(tileS * 2.0, tileS * 2.0, 1);
       t.group.position.set(t.x, t.y, 0);
@@ -569,7 +569,8 @@ export function mountTechGraph(container, opts = {}) {
     const k = snap ? 1 : 1 - Math.exp(-dt / (reduced ? 0.03 : 0.075));
     const sec = now / 1000;
     tiles.forEach((t) => {
-      let tl = 0, tc = idleColor ? 1 : 0, to = 1, td = 0, tr = 0; // icons fully opaque at rest
+      const wv = (!active && !reduced) ? 0.5 + 0.5 * Math.sin(now / 650 - (t.c * 0.85 + t.r * 0.55)) : 0; // a soft wave of light travels across the grid to invite a click
+      let tl = wv * 4, tc = idleColor ? 1 : 0, to = 1, td = 0, tr = 0; // icons fully opaque at rest
       if (active) {
         if (t.slug === active) { tl = 14; tc = 1; to = 1; tr = 1; }
         else if (t.armed) { tl = 5; tc = 1; to = idleColor ? 1 : 0.85; }
@@ -584,7 +585,7 @@ export function mountTechGraph(container, opts = {}) {
       t.outMat.color.copy(C.edge); t.outMat.opacity = 0; // no resting border; only the hover ring shows
       t.ringMat.color.copy(t.brandC); t.ringMat.opacity = s.ring * 0.95;
       t.iconMat.color.copy(C.text).lerp(t.brandC, s.c); t.iconMat.opacity = s.o;
-      t.glowMat.color.copy(t.brandC); t.glowMat.opacity = s.ring * (theme === 'dark' ? 0.34 : 0.28);
+      t.glowMat.color.copy(t.brandC); t.glowMat.opacity = s.ring * (theme === 'dark' ? 0.34 : 0.28) + wv * (theme === 'dark' ? 0.2 : 0.14);
       t.shadowMat.opacity = (s.lift / 14) * (theme === 'dark' ? 0.5 : 0.22);
       t.shadow.position.set(t.x, t.y + bob - s.lift * 0.45, 0.2);
     });

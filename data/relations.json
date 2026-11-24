@@ -1,7 +1,7 @@
 {
   "_doc": "dir = bubble flow relative to the owning node: out = owner -> to, in = to -> owner, both = two-way. verb reads 'owner <verb> to'. Only own links are drawn when a node is hovered.",
   "nodes": {
-    "kong": { "name": "Kong", "brand": "#d4ff2a", "icon": "kong", "route": "kong", "links": [
+    "kong": { "name": "Kong", "brand": "#e9f230", "icon": "kong", "route": "kong", "links": [
       { "to": "kubernetes", "verb": "routes to", "dir": "out" },
       { "to": "keycloak", "verb": "verifies via", "dir": "out" },
       { "to": "nginx", "verb": "built on", "dir": "in" },

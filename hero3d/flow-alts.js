@@ -3,7 +3,7 @@
 //   handle needs getBoxes() and swapTech(); focus() is optional. Host events used: flow3d:hover, flow3d:pick.
 // opts: { host: element that dispatches flow3d:* (default: container), icon(slug,label) -> Node (optional), title }
 const ICON_CDN = 'https://cdn.jsdelivr.net/npm/simple-icons@11.14.0/icons/';
-const ZONES = [['edge', 'Edge'], ['api', 'API / Ops'], ['cluster', 'Cluster'], ['data', 'Data'], ['observ', 'Observability'], ['infra', 'Infrastructure']];
+const ZONES = [['edge', 'Edge'], ['api', 'API'], ['cluster', 'Cluster'], ['data', 'Data'], ['operations', 'Operations'], ['infra', 'Infrastructure']];
 const zoneKey = (z) => { const s = String(z || '').toLowerCase(); const f = ZONES.find(([k]) => s.includes(k)); return f ? f[0] : null; };
 const isActor = (s) => String(s || '').startsWith('actor-');
 
