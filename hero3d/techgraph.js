@@ -569,7 +569,7 @@ export function mountTechGraph(container, opts = {}) {
     const k = snap ? 1 : 1 - Math.exp(-dt / (reduced ? 0.03 : 0.075));
     const sec = now / 1000;
     tiles.forEach((t) => {
-      let tl = 0, tc = idleColor ? 1 : 0, to = idleColor ? 1 : 0.55, td = 0, tr = 0;
+      let tl = 0, tc = idleColor ? 1 : 0, to = 1, td = 0, tr = 0; // icons fully opaque at rest
       if (active) {
         if (t.slug === active) { tl = 14; tc = 1; to = 1; tr = 1; }
         else if (t.armed) { tl = 5; tc = 1; to = idleColor ? 1 : 0.85; }
@@ -581,7 +581,7 @@ export function mountTechGraph(container, opts = {}) {
       t.group.position.set(t.x, t.y + bob, s.lift);
       t.faceMat.color.copy(C.tile).lerp(C.bg, s.d * 0.45);
       t.sideMat.color.copy(t.faceMat.color).multiplyScalar(theme === 'dark' ? 0.62 : 0.86);
-      t.outMat.color.copy(C.edge); t.outMat.opacity = pal.edgeA * (1 - s.d * 0.6) * (1 - s.ring * 0.7);
+      t.outMat.color.copy(C.edge); t.outMat.opacity = 0; // no resting border; only the hover ring shows
       t.ringMat.color.copy(t.brandC); t.ringMat.opacity = s.ring * 0.95;
       t.iconMat.color.copy(C.text).lerp(t.brandC, s.c); t.iconMat.opacity = s.o;
       t.glowMat.color.copy(t.brandC); t.glowMat.opacity = s.ring * (theme === 'dark' ? 0.34 : 0.28);

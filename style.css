@@ -407,3 +407,5 @@ details.more > summary { padding: 2px 0 6px var(--s4); list-style: none; cursor:
 .flow-host:has(.mstack) { height: auto; min-height: 0; overflow: visible; border: 0; background: none; }
 .mico .mono { background: transparent; color: var(--bc); }
 @media (max-width: 640px) { .flow-sec.home .flow-host { height: auto; } }
+
+.mico { border: 0; }
