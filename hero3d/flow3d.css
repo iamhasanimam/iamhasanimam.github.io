@@ -133,3 +133,10 @@
 .flow3d .flow3d__pane--r{left:auto;right:12px;transform:translateX(12px)}
 .flow3d .flow3d__pane--r.is-open{transform:none}
 .flow3d .flow3d__lbl{font:600 12px/16px Inter,system-ui,sans-serif}
+
+/* phones: scene buttons in one scrollable row, shorter scene so the whole stack fits without empty space */
+@media (max-width:640px){
+  .flow3d .flow3d__tabs{left:12px;right:12px;top:36px;max-width:none;flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;scrollbar-width:none}
+  .flow3d .flow3d__tabs::-webkit-scrollbar{display:none}
+  .flow-sec.home .flow3d{height:clamp(440px,64vh,540px)}
+}

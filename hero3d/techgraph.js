@@ -101,7 +101,7 @@ export function mountTechGraph(container, opts = {}) {
     const t = new THREE.CanvasTexture(c); t.anisotropy = aniso; return t;
   }
   /* logos whose official artwork is multi-colour (Elasticsearch) or a wordmark in a fixed grey (VMware) are drawn from local copies of the official SVG with their own colours, untinted */
-  const COLOR_ICONS = new Set(['elasticsearch', 'vmware']);
+  const COLOR_ICONS = new Set(['elasticsearch', 'vmware', 'keycloak']);
   function loadColorIcon(slug) {
     return fetch(new URL('../assets/icons/' + slug + '.svg', import.meta.url)).then((r) => { if (!r.ok) throw 0; return r.text(); }).then((svg) => new Promise((res, rej) => {
       const vb = (svg.match(/viewBox="([^"]+)"/) || [])[1], [, , vw, vh] = (vb || '0 0 100 100').split(/\s+/).map(Number);
