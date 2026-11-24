@@ -79,7 +79,7 @@
 
 /* home page: big scene so tiles stay readable */
 .flow-sec.home .flow3d{height:clamp(720px,84vh,960px)}
-@media (max-width:640px){.flow-sec.home .flow3d{height:clamp(520px,80vh,700px)}}
+@media (max-width:640px){.flow-sec.home .flow3d{height:clamp(600px,88vh,780px)}}
 
 .flow3d .flow3d__cbtn--primary{background:var(--f-primary);border-color:var(--f-primary);color:#fff}
 .flow3d[data-theme="dark"] .flow3d__cbtn--primary,.flow3d[data-theme="dark"] .flow3d__cbtn--primary:hover{color:#202124}

@@ -486,7 +486,7 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   function computeHome() {
     const bird = VIEWS[viewIdx].id === 'bird', pad = bird ? 0.05 : PAD_FIT, all = cornersTarget(), fAll = fitPoints(all, defaultDir, pad), kpx = 2 * Math.tan((FOV * Math.PI) / 360) / Math.max(1, chg);
     // default fit: every zone if the cubes stay >= 64px, otherwise the request path (end users > edge > stack) so cubes stay readable; the rest is reachable by chips and panning
-    const fitPts = !bird && BOX.w / (kpx * fAll.dist) < MIN_CUBE_PX ? volumes.filter((v) => !(v.outside && v.side === 'right')).flatMap((v) => v.corners0).concat(rightMargin()) : all;
+    const fitPts = !bird && BOX.w / (kpx * fAll.dist) < (cw < 640 ? 18 : MIN_CUBE_PX) ? volumes.filter((v) => !(v.outside && v.side === 'right')).flatMap((v) => v.corners0).concat(rightMargin()) : all;
     home = fitPoints(fitPts, defaultDir, pad); home.allDist = fAll.dist; controls.maxDistance = fAll.dist * 1.8; scene.fog.near = home.dist * 4; scene.fog.far = home.dist * 8; }
   function resize() {
     const w = Math.max(60, container.clientWidth), hgt = Math.max(60, container.clientHeight);

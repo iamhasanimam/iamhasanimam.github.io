@@ -1,5 +1,5 @@
 /* Portfolio SPA: hash routing, static JSON data, no build. All data text is inserted with textContent (no innerHTML on data). */
-import { parseRoute, nextRoute } from './route.js?v=20261124t';
+import { parseRoute, nextRoute } from './route.js?v=20261124x';
 (() => {
   'use strict';
 
@@ -8,7 +8,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124t';
   const LINKEDIN_URL = 'https://www.linkedin.com/in/iamhasanimam';
   const TYPE_CODE_MS = 22; // code typing speed in the hero editor, git log and code blocks (ms per character)
   const PAUSE_MS = 1800;   // pause after a snippet is typed, before the next tab
-  const ASSET_V = '20261124t'; // cache-busting for dynamic imports; keep in sync with index.html
+  const ASSET_V = '20261124x'; // cache-busting for dynamic imports; keep in sync with index.html
 
   // Brand colours (tuned for the dark banner). Slugs missing from simple-icons get a monogram.
   const COLORS = {
@@ -461,7 +461,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124t';
   let careerView = (() => { const v = new URLSearchParams(location.search).get('view'); return v === 'git' || v === 'story' ? v : 'quest'; })();
 
   function careerCompact(c) {
-    const body = h('ol', { class: 'trail' }, orderedRoles(c, true).map((r) => {
+    const body = h('ol', { class: 'trail' }, orderedRoles(c, false).map((r) => {
       const p = roleParts(r);
       return h('li', { class: 'tn rv' + (p.current ? ' now' : '') }, h('span', { class: 'dot', 'aria-hidden': 'true' }), h('div', { class: 'yr' }, p.years),
         h('h3', null, r.title), h('p', null, words(p.headline, 14)));
@@ -803,6 +803,28 @@ import { parseRoute, nextRoute } from './route.js?v=20261124t';
     paint();
     return h('div', { class: 'flow-ctl' }, h('span', { class: 'flow-ctl-l' }, label), grp);
   }
+  // phone layout of the home stack: a 3D scene this wide is not legible at 390px, so show the same layers as a clean vertical stack of cards with the real logos
+  const NARROW = () => { try { return window.matchMedia('(max-width: 640px)').matches; } catch (e) { return false; } };
+  function mobileStack(sp) {
+    const order = [4, 3, 2, 5, 6, 1, 0], have = new Set((sp.layers || []).map((l) => l.layer));
+    const keys = order.every((k) => have.has(k)) ? order : (sp.layers || []).map((l) => l.layer).sort((x, y) => y - x);
+    const wrap = h('div', { class: 'mstack' });
+    keys.forEach((k, i) => {
+      const L = (sp.layers || []).find((l) => l.layer === k); if (!L) return;
+      const items = sp.boxes.filter((b) => b.layer === k).sort((x, y) => (x.row - y.row) || (x.col - y.col));
+      const tiles = items.map((b) => {
+        const inner = String(b.icon || '').startsWith('actor-') ? h('span', { class: 'mono' }, (b.label || '?').slice(0, 1)) : glyph(b.icon, b.label);
+        const tag = b.href && String(b.href).startsWith('#/') ? 'a' : 'div';
+        const el = h(tag, { class: 'mtile', title: b.says || b.label }, h('span', { class: 'mico' }, inner), h('span', { class: 'mlbl' }, b.label + (b.replicas > 1 ? ' ×' + b.replicas : '')));
+        if (tag === 'a') el.setAttribute('href', b.href);
+        el.style.setProperty('--bc', (curTheme() === 'light' && COLORS_LIGHT[b.icon]) || COLORS[b.icon] || '#8ab4f8');
+        return el;
+      });
+      wrap.append(h('section', { class: 'mlayer' }, h('h3', null, L.label), h('div', { class: 'mrow' }, tiles)));
+      if (i < keys.length - 1) wrap.append(h('div', { class: 'mflow', 'aria-hidden': 'true' }, '↓'));
+    });
+    return wrap;
+  }
   async function flowSection(slug, home, name) {
     const hs = home ? homeState() : null; hs && (hs.arch = 'v2'); // v1 removed: home is always the v2 stack; only the Infrastructure toggle remains
     const slugOf = () => (!home ? slug : hs.arch === 'v1' ? 'home' : `home-v2-${hs.infra}`);
@@ -819,6 +841,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124t';
       try { if (handle && handle.unmount) handle.unmount(); } catch (e) { /* ignore */ } handle = null; host.replaceChildren(); if (chipBar) chipBar.replaceChildren();
       const sp = await getJSON(`data/flow/${slugOf()}.json`);
       if (my !== gen || !okSpec(sp)) return;
+      if (home && NARROW()) { host.replaceChildren(mobileStack(sp)); return; }
       const m = await import(`./hero3d/flow3d.js?v=${ASSET_V}`);
       if (my !== gen) return;
       handle = await m.mountFlow(host, sp, { theme: curTheme(), flyIn: false }); setChips(handle);
@@ -853,6 +876,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261124t';
     lazy3D(wrap, async () => {
       const m = await import(`./hero3d/flow3d.js?v=${ASSET_V}`);
       const sp = home ? (await getJSON(`data/flow/${slugOf()}.json`)) || spec : spec;
+      if (home && NARROW()) { host.replaceChildren(mobileStack(sp)); return; }
       handle = await m.mountFlow(host, sp, { theme: curTheme() }); setChips(handle);
     }, () => { try { if (handle && handle.unmount) handle.unmount(); } catch (e) { /* ignore */ } handle = null; host.replaceChildren(); }, () => { wrap.remove(); });
     return wrap;

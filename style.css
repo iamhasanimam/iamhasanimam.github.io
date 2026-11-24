@@ -394,3 +394,16 @@ details.more > summary { padding: 2px 0 6px var(--s4); list-style: none; cursor:
 /* stopgap until the new flow3d lands: hide the simulator, hints, legend, start button, % tags and intro strip (user: less is more) */
 .flow3d__sim, .flow3d__simtog, .flow3d__hints, .flow3d__hint, .flow3d__legend, .flow3d__start, .flow3d__pct, .flow3d__intro, .flow3d__help, .flow3d__tin, .flow3d__live { display: none !important; }
 
+
+.mstack { display: flex; flex-direction: column; gap: 4px; padding: 4px 0 8px; }
+.mlayer { border: var(--bd); border-radius: var(--r-md); padding: var(--s3); background: var(--surface, transparent); }
+.mlayer h3 { margin: 0 0 var(--s2); font-size: var(--t-xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.mrow { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: var(--s2); }
+.mtile { display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: var(--text, inherit); text-align: center; --bc: var(--primary); }
+.mico { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--bc) 45%, transparent); background: color-mix(in srgb, var(--bc) 12%, transparent); }
+.mico .glyph, .mico .mono { width: 26px; height: 26px; font-size: 18px; font-weight: 600; display: grid; place-items: center; color: var(--bc); }
+.mlbl { font-size: 11px; line-height: 1.25; word-break: break-word; }
+.mflow { text-align: center; color: var(--muted); font-size: 14px; line-height: 1; }
+.flow-host:has(.mstack) { height: auto; min-height: 0; overflow: visible; border: 0; background: none; }
+.mico .mono { background: transparent; color: var(--bc); }
+@media (max-width: 640px) { .flow-sec.home .flow-host { height: auto; } }
