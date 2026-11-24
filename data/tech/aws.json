@@ -49,13 +49,12 @@
   }
  ],
  "flow": [
-  "Browser resolves the domain in Route 53.",
-  "Static paths hit CloudFront, which fetches from private S3 through OAC.",
-  "App paths reach the ALB in a public subnet over HTTPS.",
-  "ALB terminates TLS with ACM and forwards HTTP to a healthy target.",
-  "Nginx in Docker proxies to the app container on a private bridge.",
-  "The app reads Parameter Store and reaches external services through NAT.",
-  "CloudWatch evaluates metrics and SNS notifies on alarm."
+  "Users resolve the domain in Route 53, or call API Gateway directly.",
+  "CloudFront caches content and forwards misses to the ALB origin.",
+  "The ALB (layer 7) or NLB (layer 4) forwards to healthy pods on EKS.",
+  "Pods leave through the NAT Gateway and Internet Gateway, outbound only.",
+  "VPC endpoints and PrivateLink reach S3 and other services without the internet.",
+  "Transit Gateway or VPC peering joins other networks; EBS, EFS and S3 hold data; CloudWatch watches it."
  ],
  "deploy": {
   "summary": "Build the stack with AWS CLI v2 in one shell. NAT and ALB bill hourly; run the cleanup.",

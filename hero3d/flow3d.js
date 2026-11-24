@@ -446,7 +446,7 @@ export async function mountFlow(container, spec = {}, opts = {}) {
     const fitPts = !bird && cw >= 640 && BOX.w / (kpx * fAll.dist) < MIN_CUBE_PX ? volumes.filter((v) => !(v.outside && v.side === 'right')).flatMap((v) => v.corners0).concat(rightMargin()) : all;
     home = fitPoints(fitPts, defaultDir, pad); home.allDist = fAll.dist; controls.maxDistance = fAll.dist * 1.8; }
   function resize() {
-    const w = Math.max(60, container.clientWidth), hgt = Math.max(60, container.clientHeight);
+    const w = Math.max(60, canvas.clientWidth || container.clientWidth), hgt = Math.max(60, canvas.clientHeight || container.clientHeight); // the canvas can be shorter than the container (phones keep a controls strip below it)
     cw = w; chg = hgt; if (composer) composer.setSize(w, hgt); renderer.setSize(w, hgt, false); camera.aspect = w / hgt; camera.updateProjectionMatrix(); res.set(w, hgt); wires.forEach((q) => { q.mat.resolution.set(w, hgt); q.hlMat.resolution.set(w, hgt); });
     const had = !!home; computeHome();
     if (!had || (!userMoved && !tween && !entered)) { camera.position.copy(home.pos); controls.target.copy(home.target); controls.update(); }
@@ -783,7 +783,7 @@ export async function mountFlow(container, spec = {}, opts = {}) {
     } else { renderer.render(scene, camera); }
     dirty = moving || animate;
   }
-  const ro = new ResizeObserver(resize); ro.observe(container);
+  const ro = new ResizeObserver(resize); ro.observe(container); ro.observe(canvas);
   let io = null; try { io = new IntersectionObserver((en) => { visible = en[en.length - 1].isIntersecting; if (visible) dirty = true; }); io.observe(container); } catch { io = null; }
   resize();
   if (!reduced && opts.flyIn !== false) { const off = home.pos.clone().sub(home.target).applyAxisAngle(Y_AXIS, 0.28).multiplyScalar(1.8).add(home.target); camera.position.copy(off); controls.update(); tweenTo(home.pos, home.target, FLY_MS); }

@@ -7,6 +7,10 @@
    "label": "Infrastructure"
   },
   {
+   "layer": 0.5,
+   "label": "Infrastructure network"
+  },
+  {
    "layer": 1,
    "label": "Data zone"
   },
@@ -51,9 +55,9 @@
    "label": "Request",
    "focus": [
     "users",
-    "cloudflare",
-    "haproxy",
-    "nginx",
+    "dns",
+    "cdn",
+    "alb",
     "kong",
     "istio",
     "web",
@@ -112,51 +116,15 @@
  ],
  "boxes": [
   {
-   "id": "vpc",
-   "label": "VPC",
-   "tech": "AWS VPC",
-   "icon": "amazonaws",
-   "tone": "blue",
-   "layer": 0,
-   "role": "Networking",
-   "says": "The VPC isolates the network.",
-   "detail": "Public and private subnets with route tables and security groups.",
-   "alts": [
-    {
-     "label": "AWS VPC",
-     "icon": "amazonaws"
-    },
-    {
-     "label": "OpenStack Neutron",
-     "icon": "openstack"
-    },
-    {
-     "label": "VMware vSwitch",
-     "icon": "vmware"
-    },
-    {
-     "label": "Google VPC",
-     "icon": "googlecloud"
-    },
-    {
-     "label": "Azure VNet",
-     "icon": "microsoftazure"
-    }
-   ],
-   "href": "#/tech/aws",
-   "col": 0,
-   "row": 0
-  },
-  {
    "id": "eks",
    "label": "EKS",
-   "tech": "Amazon EKS",
+   "tech": "EKS",
    "icon": "amazoneks",
    "tone": "blue",
    "layer": 0,
    "role": "Managed Kubernetes",
-   "says": "EKS runs the Kubernetes cluster.",
-   "detail": "Managed control plane; worker nodes are managed EC2 node groups or Fargate. Alternatives: ECS, GKE, AKS.",
+   "says": "EKS runs the Kubernetes control plane.",
+   "detail": "AWS operates the control plane; worker nodes or Fargate run pods. ECS and Lambda are the other compute options.",
    "alts": [
     {
      "label": "EKS",
@@ -179,6 +147,42 @@
      "icon": "redhatopenshift"
     }
    ],
+   "href": "#/tech/kubernetes-okd",
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "s3",
+   "label": "S3",
+   "tech": "S3",
+   "icon": "amazons3",
+   "tone": "blue",
+   "layer": 0,
+   "role": "Object storage",
+   "says": "S3 stores objects in buckets.",
+   "detail": "Classes: Standard, Infrequent Access, Glacier for cold archive. Objects are addressed by key over HTTPS, not mounted as disks.",
+   "alts": [
+    {
+     "label": "Amazon S3",
+     "icon": "amazons3"
+    },
+    {
+     "label": "MinIO",
+     "icon": "minio"
+    },
+    {
+     "label": "Ceph",
+     "icon": "ceph"
+    },
+    {
+     "label": "Cloud Storage",
+     "icon": "googlecloud"
+    },
+    {
+     "label": "Azure Blob",
+     "icon": "microsoftazure"
+    }
+   ],
    "href": "#/tech/aws",
    "col": 1,
    "row": 0
@@ -186,13 +190,13 @@
   {
    "id": "ebs",
    "label": "EBS",
-   "tech": "Amazon EBS",
+   "tech": "EBS",
    "icon": "amazonaws",
    "tone": "blue",
    "layer": 0,
    "role": "Block storage",
-   "says": "EBS backs the disks.",
-   "detail": "Encrypted volumes with scheduled snapshots.",
+   "says": "EBS is a block disk for one node.",
+   "detail": "A volume attaches to one instance in its Availability Zone, like a hard drive. Snapshots back it up to S3.",
    "alts": [
     {
      "label": "AWS EBS",
@@ -220,34 +224,34 @@
    "row": 0
   },
   {
-   "id": "s3",
-   "label": "S3",
-   "tech": "Amazon S3",
-   "icon": "amazons3",
+   "id": "efs",
+   "label": "EFS",
+   "tech": "EFS",
+   "icon": "amazonaws",
    "tone": "blue",
    "layer": 0,
-   "role": "Cloud storage",
-   "says": "S3 stores objects and backups.",
-   "detail": "Versioned buckets for artifacts, logs and backups.",
+   "role": "File storage",
+   "says": "EFS is a shared file system.",
+   "detail": "NFS mounted by many pods or instances across Availability Zones at once, and it grows as files are added.",
    "alts": [
     {
-     "label": "Amazon S3",
-     "icon": "amazons3"
+     "label": "AWS EFS",
+     "icon": "amazonaws"
     },
     {
-     "label": "MinIO",
-     "icon": "minio"
+     "label": "NFS server",
+     "icon": null
     },
     {
-     "label": "Ceph",
+     "label": "CephFS",
      "icon": "ceph"
     },
     {
-     "label": "Cloud Storage",
+     "label": "Filestore",
      "icon": "googlecloud"
     },
     {
-     "label": "Azure Blob",
+     "label": "Azure Files",
      "icon": "microsoftazure"
     }
    ],
@@ -258,17 +262,17 @@
   {
    "id": "iam",
    "label": "IAM",
-   "tech": "AWS IAM",
-   "icon": "amazonaws",
+   "tech": "IAM",
+   "icon": "amazoniam",
    "tone": "blue",
    "layer": 0,
-   "role": "Cloud identity",
-   "says": "IAM grants least privilege.",
-   "detail": "Roles and policies control who reaches each resource.",
+   "role": "Identity and access",
+   "says": "IAM roles and policies grant access.",
+   "detail": "Policies say who may do what on which resource. IRSA gives each pod its own role instead of long-lived keys.",
    "alts": [
     {
      "label": "AWS IAM",
-     "icon": "amazonaws"
+     "icon": "amazoniam"
     },
     {
      "label": "OpenStack Keystone",
@@ -290,13 +294,13 @@
   {
    "id": "cloudwatch",
    "label": "CloudWatch",
-   "tech": "Amazon CloudWatch",
+   "tech": "CloudWatch",
    "icon": "amazoncloudwatch",
    "tone": "blue",
    "layer": 0,
-   "role": "Cloud monitoring",
-   "says": "CloudWatch watches the account.",
-   "detail": "Metrics, logs and alarms for the infrastructure.",
+   "role": "Monitoring",
+   "says": "CloudWatch collects metrics, logs and alarms.",
+   "detail": "Alarms on metrics such as 5XX count or latency notify operators or trigger scaling.",
    "alts": [
     {
      "label": "CloudWatch",
@@ -324,76 +328,232 @@
    "row": 1
   },
   {
-   "id": "haproxy",
-   "label": "HAProxy",
-   "tech": "HAProxy",
-   "icon": "haproxy",
+   "id": "vpc",
+   "label": "VPC",
+   "tech": "VPC",
+   "icon": "amazonaws",
    "tone": "blue",
-   "layer": 4,
-   "role": "Load balancer",
-   "says": "HAProxy accepts public traffic.",
-   "detail": "A virtual IP with failover spreads TCP and HTTP traffic across healthy proxies.",
+   "layer": 0.5,
+   "role": "Private network",
+   "says": "A VPC is your private network.",
+   "detail": "A CIDR range split into public and private subnets per Availability Zone, joined by route tables.",
    "alts": [
     {
-     "label": "HAProxy",
-     "icon": "haproxy"
+     "label": "AWS VPC",
+     "icon": "amazonaws"
     },
     {
-     "label": "NGINX",
-     "icon": "nginx"
+     "label": "OpenStack Neutron",
+     "icon": "openstack"
     },
     {
-     "label": "Envoy",
-     "icon": "envoyproxy"
+     "label": "VMware vSwitch",
+     "icon": "vmware"
     },
     {
-     "label": "Traefik",
-     "icon": "traefikproxy"
+     "label": "Google VPC",
+     "icon": "googlecloud"
     },
     {
-     "label": "Caddy",
-     "icon": "caddy"
+     "label": "Azure VNet",
+     "icon": "microsoftazure"
     }
    ],
-   "href": "#/tech/haproxy",
+   "href": "#/tech/aws",
    "col": 0,
    "row": 0
   },
   {
-   "id": "nginx",
-   "label": "NGINX",
-   "tech": "NGINX",
-   "icon": "nginx",
+   "id": "igw",
+   "label": "Internet Gateway",
+   "tech": "Internet Gateway",
+   "icon": "amazonaws",
    "tone": "blue",
-   "layer": 4,
-   "role": "Reverse proxy",
-   "says": "NGINX terminates TLS.",
-   "detail": "Handles HTTPS, compression and caching, then forwards requests to the API gateway.",
+   "layer": 0.5,
+   "role": "Internet door",
+   "says": "The Internet Gateway connects the VPC to the internet.",
+   "detail": "Public subnets route 0.0.0.0/0 to it. Only resources with public addresses are reachable through it.",
    "alts": [
     {
-     "label": "NGINX",
-     "icon": "nginx"
+     "label": "Internet Gateway",
+     "icon": "amazonaws"
     },
     {
-     "label": "Envoy",
-     "icon": "envoyproxy"
+     "label": "Edge router",
+     "icon": null
     },
     {
-     "label": "Traefik",
-     "icon": "traefikproxy"
+     "label": "Cloud Router",
+     "icon": "googlecloud"
     },
     {
-     "label": "Caddy",
-     "icon": "caddy"
-    },
-    {
-     "label": "HAProxy",
-     "icon": "haproxy"
+     "label": "Azure Firewall",
+     "icon": "microsoftazure"
     }
    ],
-   "href": "#/tech/nginx",
+   "href": "#/tech/aws",
    "col": 1,
    "row": 0
+  },
+  {
+   "id": "nat",
+   "label": "NAT Gateway",
+   "tech": "NAT Gateway",
+   "icon": "amazonaws",
+   "tone": "blue",
+   "layer": 0.5,
+   "role": "Outbound access",
+   "says": "NAT lets private instances reach out.",
+   "detail": "Private subnets route to it for updates and APIs. It allows outbound connections only, never inbound.",
+   "alts": [
+    {
+     "label": "NAT Gateway",
+     "icon": "amazonaws"
+    },
+    {
+     "label": "NAT instance",
+     "icon": null
+    },
+    {
+     "label": "Cloud NAT",
+     "icon": "googlecloud"
+    },
+    {
+     "label": "Azure NAT Gateway",
+     "icon": "microsoftazure"
+    }
+   ],
+   "href": "#/tech/aws",
+   "col": 2,
+   "row": 0
+  },
+  {
+   "id": "tgw",
+   "label": "Transit Gateway",
+   "tech": "Transit Gateway",
+   "icon": "amazonaws",
+   "tone": "blue",
+   "layer": 0.5,
+   "role": "Network hub",
+   "says": "Transit Gateway is a hub for many networks.",
+   "detail": "Attach VPCs and on-premises links once; route tables decide who reaches whom. Avoids a mesh of peerings.",
+   "alts": [
+    {
+     "label": "Transit Gateway",
+     "icon": "amazonaws"
+    },
+    {
+     "label": "Network Connectivity Center",
+     "icon": "googlecloud"
+    },
+    {
+     "label": "Virtual WAN",
+     "icon": "microsoftazure"
+    },
+    {
+     "label": "Core router",
+     "icon": null
+    }
+   ],
+   "href": "#/tech/aws",
+   "col": 3,
+   "row": 0
+  },
+  {
+   "id": "peering",
+   "label": "VPC Peering",
+   "tech": "VPC Peering",
+   "icon": "amazonaws",
+   "tone": "blue",
+   "layer": 0.5,
+   "role": "Direct VPC link",
+   "says": "Peering joins two VPCs directly.",
+   "detail": "A one-to-one private route between two VPCs. Address ranges must not overlap and it is not transitive.",
+   "alts": [
+    {
+     "label": "VPC Peering",
+     "icon": "amazonaws"
+    },
+    {
+     "label": "VPC Network Peering",
+     "icon": "googlecloud"
+    },
+    {
+     "label": "VNet Peering",
+     "icon": "microsoftazure"
+    },
+    {
+     "label": "Site-to-site VPN",
+     "icon": null
+    }
+   ],
+   "href": "#/tech/aws",
+   "col": 0,
+   "row": 1
+  },
+  {
+   "id": "privatelink",
+   "label": "PrivateLink",
+   "tech": "PrivateLink",
+   "icon": "amazonaws",
+   "tone": "blue",
+   "layer": 0.5,
+   "role": "Private service sharing",
+   "says": "PrivateLink exposes a service privately.",
+   "detail": "A provider publishes an endpoint service behind an NLB; consumers connect through an interface endpoint with no peering.",
+   "alts": [
+    {
+     "label": "PrivateLink",
+     "icon": "amazonaws"
+    },
+    {
+     "label": "Private Service Connect",
+     "icon": "googlecloud"
+    },
+    {
+     "label": "Azure Private Link",
+     "icon": "microsoftazure"
+    },
+    {
+     "label": "Site-to-site VPN",
+     "icon": null
+    }
+   ],
+   "href": "#/tech/aws",
+   "col": 1,
+   "row": 1
+  },
+  {
+   "id": "vpce",
+   "label": "VPC Endpoints",
+   "tech": "VPC Endpoints",
+   "icon": "amazonaws",
+   "tone": "blue",
+   "layer": 0.5,
+   "role": "Private AWS access",
+   "says": "Endpoints reach AWS services without the internet.",
+   "detail": "A gateway endpoint serves S3 and DynamoDB; interface endpoints put a private address in your subnet for other services.",
+   "alts": [
+    {
+     "label": "VPC Endpoints",
+     "icon": "amazonaws"
+    },
+    {
+     "label": "Private Service Connect",
+     "icon": "googlecloud"
+    },
+    {
+     "label": "Private Endpoint",
+     "icon": "microsoftazure"
+    },
+    {
+     "label": "Forward proxy",
+     "icon": null
+    }
+   ],
+   "href": "#/tech/aws",
+   "col": 2,
+   "row": 1
   },
   {
    "id": "kong",
@@ -1139,68 +1299,6 @@
    "row": 1
   },
   {
-   "id": "cloudflare",
-   "label": "Cloudflare",
-   "tech": "Cloudflare",
-   "icon": "cloudflare",
-   "tone": "blue",
-   "layer": 4,
-   "role": "CDN and WAF",
-   "says": "Cloudflare filters public traffic.",
-   "detail": "A CDN and web application firewall in front of the load balancer. Alternatives: CloudFront, Akamai, Fastly.",
-   "alts": [
-    {
-     "label": "Cloudflare",
-     "icon": "cloudflare"
-    },
-    {
-     "label": "CloudFront",
-     "icon": null
-    },
-    {
-     "label": "Akamai",
-     "icon": "akamai"
-    },
-    {
-     "label": "Fastly",
-     "icon": "fastly"
-    }
-   ],
-   "col": 0,
-   "row": 0
-  },
-  {
-   "id": "traefik",
-   "label": "Traefik",
-   "tech": "Traefik",
-   "icon": "traefikproxy",
-   "tone": "blue",
-   "layer": 4,
-   "role": "Ingress proxy",
-   "says": "Traefik routes by host and path.",
-   "detail": "A dynamic reverse proxy and ingress controller. Alternatives: NGINX, Envoy, Caddy.",
-   "alts": [
-    {
-     "label": "Traefik",
-     "icon": "traefikproxy"
-    },
-    {
-     "label": "NGINX",
-     "icon": "nginx"
-    },
-    {
-     "label": "Envoy",
-     "icon": "envoyproxy"
-    },
-    {
-     "label": "Caddy",
-     "icon": "caddy"
-    }
-   ],
-   "col": 0,
-   "row": 0
-  },
-  {
    "id": "openapi",
    "label": "OpenAPI",
    "tech": "OpenAPI",
@@ -1281,70 +1379,190 @@
    "col": 0,
    "row": 0,
    "href": "#/tech/k6"
+  },
+  {
+   "id": "dns",
+   "label": "Route 53",
+   "tech": "Route 53",
+   "icon": "amazonroute53",
+   "tone": "blue",
+   "layer": 4,
+   "role": "DNS",
+   "says": "Route 53 resolves the domain name.",
+   "detail": "Managed DNS with health checks. Alias records point names at CloudFront, load balancers and S3.",
+   "alts": [
+    {
+     "label": "Route 53",
+     "icon": "amazonroute53"
+    },
+    {
+     "label": "Cloudflare DNS",
+     "icon": "cloudflare"
+    },
+    {
+     "label": "Cloud DNS",
+     "icon": "googlecloud"
+    },
+    {
+     "label": "Azure DNS",
+     "icon": "microsoftazure"
+    },
+    {
+     "label": "BIND",
+     "icon": null
+    }
+   ],
+   "href": "#/tech/aws",
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "cdn",
+   "label": "CloudFront",
+   "tech": "CloudFront",
+   "icon": "amazonaws",
+   "tone": "blue",
+   "layer": 4,
+   "role": "CDN",
+   "says": "CloudFront caches content near users.",
+   "detail": "A content delivery network of edge locations. It caches responses and forwards misses to an origin such as an ALB or S3.",
+   "alts": [
+    {
+     "label": "CloudFront",
+     "icon": "amazonaws"
+    },
+    {
+     "label": "Cloudflare",
+     "icon": "cloudflare"
+    },
+    {
+     "label": "Akamai",
+     "icon": "akamai"
+    },
+    {
+     "label": "Fastly",
+     "icon": "fastly"
+    }
+   ],
+   "href": "#/tech/aws",
+   "col": 1,
+   "row": 0
+  },
+  {
+   "id": "apigw",
+   "label": "API Gateway",
+   "tech": "API Gateway",
+   "icon": "amazonapigateway",
+   "tone": "blue",
+   "layer": 4,
+   "role": "Managed APIs",
+   "says": "API Gateway is a managed API front door.",
+   "detail": "Handles authentication, throttling and routing for REST and HTTP APIs. A VPC link reaches private backends.",
+   "alts": [
+    {
+     "label": "AWS API Gateway",
+     "icon": "amazonapigateway"
+    },
+    {
+     "label": "Kong",
+     "icon": "kong"
+    },
+    {
+     "label": "Envoy Gateway",
+     "icon": "envoyproxy"
+    },
+    {
+     "label": "Apigee",
+     "icon": "googlecloud"
+    },
+    {
+     "label": "Azure APIM",
+     "icon": "microsoftazure"
+    }
+   ],
+   "href": "#/tech/aws",
+   "col": 2,
+   "row": 0
+  },
+  {
+   "id": "alb",
+   "label": "ALB",
+   "tech": "ALB",
+   "icon": "awselasticloadbalancing",
+   "tone": "blue",
+   "layer": 4,
+   "role": "Layer 7 balancer",
+   "says": "ALB routes HTTP by host and path.",
+   "detail": "Layer 7: terminates TLS with ACM and spreads requests across healthy targets by path or host rules.",
+   "alts": [
+    {
+     "label": "AWS ALB",
+     "icon": "awselasticloadbalancing"
+    },
+    {
+     "label": "HAProxy",
+     "icon": "haproxy"
+    },
+    {
+     "label": "NGINX",
+     "icon": "nginx"
+    },
+    {
+     "label": "Traefik",
+     "icon": "traefikproxy"
+    },
+    {
+     "label": "Envoy",
+     "icon": "envoyproxy"
+    }
+   ],
+   "href": "#/tech/aws",
+   "col": 0,
+   "row": 1
+  },
+  {
+   "id": "nlb",
+   "label": "NLB",
+   "tech": "NLB",
+   "icon": "awselasticloadbalancing",
+   "tone": "blue",
+   "layer": 4,
+   "role": "Layer 4 balancer",
+   "says": "NLB forwards TCP and UDP fast.",
+   "detail": "Layer 4: very high throughput, low latency and static addresses. Also the front of a PrivateLink service.",
+   "alts": [
+    {
+     "label": "AWS NLB",
+     "icon": "awselasticloadbalancing"
+    },
+    {
+     "label": "HAProxy",
+     "icon": "haproxy"
+    },
+    {
+     "label": "NGINX",
+     "icon": "nginx"
+    },
+    {
+     "label": "Cloud TCP LB",
+     "icon": "googlecloud"
+    },
+    {
+     "label": "Azure LB",
+     "icon": "microsoftazure"
+    }
+   ],
+   "href": "#/tech/aws",
+   "col": 1,
+   "row": 1
   }
  ],
  "wires": [
-  {
-   "from": "vpc",
-   "to": "eks",
-   "label": "subnets",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "eks",
-   "to": "ebs",
-   "label": "volumes",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "eks",
-   "to": "s3",
-   "label": "objects",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "iam",
-   "to": "eks",
-   "label": "roles (IRSA)",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "eks",
-   "to": "cloudwatch",
-   "label": "metrics",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
   {
    "from": "kubernetes",
    "to": "eks",
    "label": "runs on",
    "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "haproxy",
-   "to": "nginx",
-   "label": "TCP",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "nginx",
-   "to": "kong",
-   "label": "HTTP",
-   "style": "solid",
    "flow": true,
    "weight": "normal"
   },
@@ -1533,38 +1751,6 @@
    "weight": "normal"
   },
   {
-   "from": "users",
-   "to": "cloudflare",
-   "label": "HTTPS",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "cloudflare",
-   "to": "haproxy",
-   "label": "filtered",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "haproxy",
-   "to": "traefik",
-   "label": "balances",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "traefik",
-   "to": "kong",
-   "label": "routes",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
    "from": "openapi",
    "to": "kong",
    "label": "describes",
@@ -1587,43 +1773,235 @@
    "style": "dashed",
    "flow": true,
    "weight": "normal"
+  },
+  {
+   "from": "users",
+   "to": "dns",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "DNS"
+  },
+  {
+   "from": "dns",
+   "to": "cdn",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "alias"
+  },
+  {
+   "from": "cdn",
+   "to": "alb",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "origin"
+  },
+  {
+   "from": "alb",
+   "to": "kong",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "HTTP"
+  },
+  {
+   "from": "users",
+   "to": "apigw",
+   "style": "dashed",
+   "flow": true,
+   "weight": "thin",
+   "label": "HTTPS"
+  },
+  {
+   "from": "apigw",
+   "to": "nlb",
+   "style": "dashed",
+   "flow": true,
+   "weight": "thin",
+   "label": "VPC link"
+  },
+  {
+   "from": "nlb",
+   "to": "kong",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "TCP"
+  },
+  {
+   "from": "vpc",
+   "to": "igw",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "route"
+  },
+  {
+   "from": "vpc",
+   "to": "nat",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "route"
+  },
+  {
+   "from": "eks",
+   "to": "nat",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "outbound"
+  },
+  {
+   "from": "nat",
+   "to": "igw",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "egress"
+  },
+  {
+   "from": "igw",
+   "to": "alb",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "public"
+  },
+  {
+   "from": "vpc",
+   "to": "vpce",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "subnets"
+  },
+  {
+   "from": "eks",
+   "to": "vpce",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "private"
+  },
+  {
+   "from": "vpce",
+   "to": "s3",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "gateway endpoint"
+  },
+  {
+   "from": "vpc",
+   "to": "privatelink",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "endpoint"
+  },
+  {
+   "from": "nlb",
+   "to": "privatelink",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "endpoint service"
+  },
+  {
+   "from": "tgw",
+   "to": "vpc",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "attachment"
+  },
+  {
+   "from": "peering",
+   "to": "vpc",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "peer"
+  },
+  {
+   "from": "eks",
+   "to": "ebs",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "block"
+  },
+  {
+   "from": "eks",
+   "to": "efs",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "file"
+  },
+  {
+   "from": "eks",
+   "to": "s3",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "object"
+  },
+  {
+   "from": "iam",
+   "to": "eks",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "roles (IRSA)"
+  },
+  {
+   "from": "eks",
+   "to": "cloudwatch",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "metrics"
   }
  ],
  "steps": [
   {
    "title": "Enter",
-   "text": "Users reach HAProxy over HTTPS.",
+   "text": "Route 53 resolves the name and CloudFront fronts it.",
    "boxes": [
     "users",
-    "cloudflare",
-    "haproxy"
+    "dns",
+    "cdn"
    ],
    "wires": [
     [
      "users",
-     "cloudflare"
+     "dns"
     ],
     [
-     "cloudflare",
-     "haproxy"
+     "dns",
+     "cdn"
     ]
    ]
   },
   {
    "title": "Route",
-   "text": "NGINX terminates TLS and Kong applies API policy.",
+   "text": "CloudFront reaches the ALB, which forwards to Kong.",
    "boxes": [
-    "haproxy",
-    "nginx",
+    "cdn",
+    "alb",
     "kong"
    ],
    "wires": [
     [
-     "haproxy",
-     "nginx"
+     "cdn",
+     "alb"
     ],
     [
-     "nginx",
+     "alb",
      "kong"
     ]
    ]

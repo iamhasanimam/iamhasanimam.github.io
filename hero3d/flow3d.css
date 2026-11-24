@@ -150,3 +150,23 @@
 
 /* phones: the scene buttons sit below the Open full screen button instead of under it */
 @media (max-width:640px){ .flow3d .flow3d__tabs{top:52px} .flow3d .flow3d__crumb{top:52px} }
+
+/* phones: the zoom, reset, move and view buttons live in their own scrollable strip under the scene instead of floating over it */
+@media (max-width:640px){
+  .flow3d .flow3d__canvas{inset:0 0 52px 0;height:calc(100% - 52px)}
+  .flow3d .flow3d__ctl{left:0;right:0;bottom:0;z-index:4;padding:9px 12px;gap:8px;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;background:var(--f-surface,#1c1c1e);border-top:1px solid var(--f-hair,rgba(128,134,139,.3));scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .flow3d .flow3d__ctl::-webkit-scrollbar{display:none}
+  .flow3d .flow3d__ctl .flow3d__cbtn{flex:none;height:32px;min-width:32px}
+  .flow3d .flow3d__ctl .flow3d__cbtn--wide{padding:0 14px}
+  .flow3d .flow3d__cap{bottom:62px}
+}
+
+/* phones: the walk-through bar and the info caption become strips above the controls and the scene shrinks to leave room, so nothing covers the diagram */
+@media (max-width:640px){
+  .flow3d .flow3d__wbar{left:0;right:0;bottom:52px;transform:none;max-width:none;border-radius:0;border-left:0;border-right:0;padding:7px 12px;gap:8px;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;white-space:nowrap;scrollbar-width:none}
+  .flow3d .flow3d__wbar::-webkit-scrollbar{display:none}
+  .flow3d .flow3d__wbar .flow3d__tab{flex:none;height:30px;padding:0 12px}
+  .flow3d:has(.flow3d__wbar:not([hidden])) .flow3d__canvas{inset:0 0 100px 0;height:calc(100% - 100px)}
+  .flow3d .flow3d__cap{left:0;right:0;bottom:52px;max-width:none;border-radius:0;white-space:normal;text-align:left;padding:8px 12px}
+  .flow3d:has(.flow3d__cap:not([hidden])) .flow3d__canvas{inset:0 0 112px 0;height:calc(100% - 112px)}
+}

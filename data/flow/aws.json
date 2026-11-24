@@ -1,419 +1,640 @@
 {
  "title": "AWS",
- "subtitle": "Private VPC behind TLS load balancers, reached by SSM, watched by CloudWatch.",
+ "subtitle": "A VPC with edge, load balancers, private access, storage kinds and connected networks.",
  "layers": [
   {
-   "layer": 2,
-   "label": "Edge"
+   "layer": 0,
+   "label": "Storage"
   },
   {
    "layer": 1,
-   "label": "Infrastructure"
+   "label": "Compute and security"
   },
   {
-   "layer": 0,
-   "label": "Operators"
-  }
- ],
- "groups": [
+   "layer": 2,
+   "label": "VPC network"
+  },
   {
-   "id": "pub",
-   "label": "Public subnet",
-   "boxes": [
-    "igw",
-    "nat"
-   ]
+   "layer": 3,
+   "label": "Edge and load balancing"
+  },
+  {
+   "layer": 4,
+   "label": "Users",
+   "kind": "outside",
+   "side": "left",
+   "arrange": "vertical"
+  },
+  {
+   "layer": 5,
+   "label": "Connected networks",
+   "kind": "outside",
+   "side": "right",
+   "arrange": "vertical"
   }
  ],
+ "groups": [],
  "tabs": [
   {
-   "id": "edge",
-   "label": "Edge",
+   "id": "traffic",
+   "label": "Traffic",
    "focus": [
+    "users",
     "dns",
     "cdn",
-    "s3",
-    "alb"
+    "apigw",
+    "alb",
+    "nlb",
+    "eks"
    ]
   },
   {
-   "id": "net",
-   "label": "Private network",
+   "id": "network",
+   "label": "Network",
    "focus": [
+    "vpc",
     "igw",
     "nat",
-    "ec2",
-    "ext"
+    "vpce",
+    "privatelink",
+    "tgw",
+    "peering",
+    "other"
    ]
   },
   {
-   "id": "ops",
-   "label": "Operations",
+   "id": "storage",
+   "label": "Storage",
    "focus": [
-    "ssm",
-    "ps",
-    "cw",
-    "sns"
+    "eks",
+    "s3",
+    "ebs",
+    "efs",
+    "iam",
+    "cloudwatch"
    ]
   }
  ],
  "boxes": [
   {
-   "id": "dns",
-   "label": "Route 53",
-   "tech": "Amazon Route 53",
-   "icon": "amazonroute53",
-   "layer": 2,
-   "col": 0,
-   "row": 0,
-   "says": "Route 53 resolves the domain.",
-   "detail": "Alias records point the domain at CloudFront and the ALB. Alternatives: Cloudflare, Azure DNS, BIND."
-  },
-  {
-   "id": "cdn",
-   "label": "CloudFront",
-   "tech": "Amazon CloudFront",
-   "icon": "amazoncloudfront",
-   "layer": 2,
-   "col": 1,
-   "row": 0,
-   "says": "CloudFront caches at the edge.",
-   "detail": "Serves the React build over HTTPS from S3 via OAC. Alternatives: Cloudflare, Fastly, Akamai."
-  },
-  {
    "id": "s3",
-   "label": "S3 Bucket",
-   "tech": "Amazon S3",
+   "label": "S3",
+   "tech": "S3",
    "icon": "amazons3",
-   "layer": 2,
-   "col": 2,
-   "row": 0,
-   "says": "S3 stays private behind OAC.",
-   "detail": "Block Public Access is on; one distribution may read. Alternatives: MinIO, Ceph, Azure Blob."
+   "layer": 0,
+   "says": "S3 stores objects in buckets.",
+   "detail": "Classes: Standard, Infrequent Access, Glacier for cold archive. Objects are addressed by key over HTTPS, not mounted as disks.",
+   "col": 0,
+   "row": 0
   },
   {
-   "id": "alb",
-   "label": "Load Balancer",
-   "tech": "Elastic Load Balancing",
+   "id": "ebs",
+   "label": "EBS",
+   "tech": "EBS",
+   "icon": "amazonaws",
+   "layer": 0,
+   "says": "EBS is a block disk for one node.",
+   "detail": "A volume attaches to one instance in its Availability Zone, like a hard drive. Snapshots back it up to S3.",
+   "col": 1,
+   "row": 0
+  },
+  {
+   "id": "efs",
+   "label": "EFS",
+   "tech": "EFS",
+   "icon": "amazonaws",
+   "layer": 0,
+   "says": "EFS is a shared file system.",
+   "detail": "NFS mounted by many pods or instances across Availability Zones at once, and it grows as files are added.",
+   "col": 2,
+   "row": 0
+  },
+  {
+   "id": "eks",
+   "label": "EKS",
+   "tech": "EKS",
+   "icon": "amazoneks",
+   "layer": 1,
+   "says": "EKS runs the Kubernetes control plane.",
+   "detail": "AWS operates the control plane; worker nodes or Fargate run pods. ECS and Lambda are the other compute options.",
+   "href": "#/tech/kubernetes-okd",
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "iam",
+   "label": "IAM",
+   "tech": "IAM",
+   "icon": "amazoniam",
+   "layer": 1,
+   "says": "IAM roles and policies grant access.",
+   "detail": "Policies say who may do what on which resource. IRSA gives each pod its own role instead of long-lived keys.",
+   "col": 1,
+   "row": 0
+  },
+  {
+   "id": "cloudwatch",
+   "label": "CloudWatch",
+   "tech": "CloudWatch",
+   "icon": "amazoncloudwatch",
+   "layer": 1,
+   "says": "CloudWatch collects metrics, logs and alarms.",
+   "detail": "Alarms on metrics such as 5XX count or latency notify operators or trigger scaling.",
+   "col": 2,
+   "row": 0
+  },
+  {
+   "id": "vpc",
+   "label": "VPC",
+   "tech": "VPC",
    "icon": "amazonaws",
    "layer": 2,
-   "col": 3,
-   "row": 0,
-   "says": "The load balancer terminates TLS.",
-   "detail": "ALB routes at L7 with ACM; NLB balances L4. Alternatives: NGINX, HAProxy, Envoy, Traefik."
+   "says": "A VPC is your private network.",
+   "detail": "A CIDR range split into public and private subnets per Availability Zone, joined by route tables.",
+   "col": 0,
+   "row": 0
   },
   {
    "id": "igw",
-   "label": "IGW",
+   "label": "Internet Gateway",
    "tech": "Internet Gateway",
-   "icon": null,
-   "layer": 1,
-   "col": 0,
-   "row": 0,
-   "says": "The IGW opens the public subnet.",
-   "detail": "Public subnets route 0.0.0.0/0 here; only ALB and NAT live there. Alternatives: on-premises router."
+   "icon": "amazonaws",
+   "layer": 2,
+   "says": "The Internet Gateway connects the VPC to the internet.",
+   "detail": "Public subnets route 0.0.0.0/0 to it. Only resources with public addresses are reachable through it.",
+   "col": 1,
+   "row": 0
   },
   {
    "id": "nat",
    "label": "NAT Gateway",
    "tech": "NAT Gateway",
-   "icon": null,
-   "layer": 1,
-   "col": 1,
-   "row": 0,
-   "says": "NAT gives one fixed egress IP.",
-   "detail": "Private hosts reach out through it. Alternatives: NAT instance, forward proxy, VPC endpoints."
-  },
-  {
-   "id": "ec2",
-   "label": "Private EC2",
-   "tech": "Amazon EC2 + Docker",
-   "icon": "amazonec2",
-   "layer": 1,
+   "icon": "amazonaws",
+   "layer": 2,
+   "says": "NAT lets private instances reach out.",
+   "detail": "Private subnets route to it for updates and APIs. It allows outbound connections only, never inbound.",
    "col": 2,
-   "row": 0,
-   "says": "EC2 runs Nginx and the app.",
-   "detail": "Runs Docker or a Kubernetes worker; admits only the load balancer group. Alternatives: Azure VMs, KVM, ESXi.",
-   "inner": [
-    {
-     "id": "docker",
-     "label": "Docker"
-    },
-    {
-     "id": "nginx",
-     "label": "Nginx"
-    },
-    {
-     "id": "app",
-     "label": "App"
-    },
-    {
-     "id": "ssma",
-     "label": "SSM agent"
-    }
-   ]
+   "row": 0
   },
   {
-   "id": "ext",
-   "label": "External API",
-   "tech": "External service",
-   "icon": null,
-   "layer": 1,
+   "id": "vpce",
+   "label": "VPC Endpoints",
+   "tech": "VPC Endpoints",
+   "icon": "amazonaws",
+   "layer": 2,
+   "says": "Endpoints reach AWS services without the internet.",
+   "detail": "A gateway endpoint serves S3 and DynamoDB; interface endpoints put a private address in your subnet for other services.",
    "col": 3,
-   "row": 0,
-   "says": "Egress reaches the internet via NAT.",
-   "detail": "Services that allow-list IPs see the NAT gateway Elastic IP."
+   "row": 0
   },
   {
-   "id": "ssm",
-   "label": "SSM Session",
-   "tech": "Systems Manager",
-   "icon": null,
-   "layer": 0,
+   "id": "privatelink",
+   "label": "PrivateLink",
+   "tech": "PrivateLink",
+   "icon": "amazonaws",
+   "layer": 2,
+   "says": "PrivateLink exposes a service privately.",
+   "detail": "A provider publishes an endpoint service behind an NLB; consumers connect through an interface endpoint with no peering.",
+   "col": 4,
+   "row": 0
+  },
+  {
+   "id": "dns",
+   "label": "Route 53",
+   "tech": "Route 53",
+   "icon": "amazonroute53",
+   "layer": 3,
+   "says": "Route 53 resolves the domain name.",
+   "detail": "Managed DNS with health checks. Alias records point names at CloudFront, load balancers and S3.",
    "col": 0,
-   "row": 0,
-   "says": "SSM replaces SSH.",
-   "detail": "IAM-authenticated, logged shell through the agent. Alternatives: SSH bastion, Teleport."
+   "row": 0
   },
   {
-   "id": "ps",
-   "label": "Parameter Store",
-   "tech": "SSM Parameter Store",
-   "icon": null,
-   "layer": 0,
+   "id": "cdn",
+   "label": "CloudFront",
+   "tech": "CloudFront",
+   "icon": "amazonaws",
+   "layer": 3,
+   "says": "CloudFront caches content near users.",
+   "detail": "A content delivery network of edge locations. It caches responses and forwards misses to an origin such as an ALB or S3.",
    "col": 1,
-   "row": 0,
-   "says": "Parameter Store holds secrets.",
-   "detail": "SecureString values fetched by the instance role. Alternatives: Secrets Manager, Vault, SOPS."
+   "row": 0
   },
   {
-   "id": "cw",
-   "label": "CloudWatch",
-   "tech": "Amazon CloudWatch",
-   "icon": "amazoncloudwatch",
-   "layer": 0,
+   "id": "apigw",
+   "label": "API Gateway",
+   "tech": "API Gateway",
+   "icon": "amazonapigateway",
+   "layer": 3,
+   "says": "API Gateway is a managed API front door.",
+   "detail": "Handles authentication, throttling and routing for REST and HTTP APIs. A VPC link reaches private backends.",
    "col": 2,
-   "row": 0,
-   "says": "CloudWatch evaluates alarms.",
-   "detail": "Watches UnHealthyHostCount, 5XX and latency. Alternatives: Prometheus, Datadog."
+   "row": 0
   },
   {
-   "id": "sns",
-   "label": "SNS",
-   "tech": "Amazon SNS",
-   "icon": null,
-   "layer": 0,
+   "id": "alb",
+   "label": "ALB",
+   "tech": "ALB",
+   "icon": "awselasticloadbalancing",
+   "layer": 3,
+   "says": "ALB routes HTTP by host and path.",
+   "detail": "Layer 7: terminates TLS with ACM and spreads requests across healthy targets by path or host rules.",
    "col": 3,
-   "row": 0,
-   "says": "SNS notifies the operator.",
-   "detail": "Alarm state changes publish to a topic that emails on-call. Alternatives: Alertmanager, PagerDuty."
+   "row": 0
+  },
+  {
+   "id": "nlb",
+   "label": "NLB",
+   "tech": "NLB",
+   "icon": "awselasticloadbalancing",
+   "layer": 3,
+   "says": "NLB forwards TCP and UDP fast.",
+   "detail": "Layer 4: very high throughput, low latency and static addresses. Also the front of a PrivateLink service.",
+   "col": 4,
+   "row": 0
+  },
+  {
+   "id": "users",
+   "label": "Users",
+   "tech": "End users",
+   "icon": "actor-user",
+   "layer": 4,
+   "says": "People reach the service over the internet.",
+   "detail": "Browsers and clients resolve a name and connect over HTTPS.",
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "tgw",
+   "label": "Transit Gateway",
+   "tech": "Transit Gateway",
+   "icon": "amazonaws",
+   "layer": 5,
+   "says": "Transit Gateway is a hub for many networks.",
+   "detail": "Attach VPCs and on-premises links once; route tables decide who reaches whom. Avoids a mesh of peerings.",
+   "col": 0,
+   "row": 0
+  },
+  {
+   "id": "peering",
+   "label": "VPC Peering",
+   "tech": "VPC Peering",
+   "icon": "amazonaws",
+   "layer": 5,
+   "says": "Peering joins two VPCs directly.",
+   "detail": "A one-to-one private route between two VPCs. Address ranges must not overlap and it is not transitive.",
+   "col": 0,
+   "row": 1
+  },
+  {
+   "id": "other",
+   "label": "Other VPC",
+   "tech": "Connected network",
+   "icon": "amazonaws",
+   "layer": 5,
+   "says": "Another VPC or on-premises network.",
+   "detail": "A second VPC, account or data centre joined through peering, Transit Gateway or a VPN.",
+   "col": 0,
+   "row": 2
   }
  ],
  "wires": [
+  {
+   "from": "users",
+   "to": "dns",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "DNS"
+  },
   {
    "from": "dns",
    "to": "cdn",
    "style": "solid",
    "flow": true,
-   "weight": "normal",
-   "label": "alias"
-  },
-  {
-   "from": "dns",
-   "to": "alb",
-   "style": "solid",
-   "flow": true,
-   "weight": "bold",
+   "weight": "thin",
    "label": "alias"
   },
   {
    "from": "cdn",
-   "to": "s3",
+   "to": "alb",
    "style": "solid",
    "flow": true,
-   "weight": "normal",
-   "label": "OAC"
+   "weight": "thin",
+   "label": "origin"
+  },
+  {
+   "from": "users",
+   "to": "apigw",
+   "style": "dashed",
+   "flow": true,
+   "weight": "thin",
+   "label": "HTTPS"
+  },
+  {
+   "from": "apigw",
+   "to": "nlb",
+   "style": "dashed",
+   "flow": true,
+   "weight": "thin",
+   "label": "VPC link"
   },
   {
    "from": "alb",
-   "to": "ec2",
+   "to": "eks",
    "style": "solid",
    "flow": true,
-   "weight": "bold",
+   "weight": "thin",
    "label": "HTTP"
+  },
+  {
+   "from": "nlb",
+   "to": "eks",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "TCP"
   },
   {
    "from": "igw",
    "to": "alb",
-   "style": "dashed",
-   "flow": false,
-   "weight": "normal"
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "public"
   },
   {
-   "from": "ec2",
+   "from": "vpc",
+   "to": "igw",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "route"
+  },
+  {
+   "from": "vpc",
    "to": "nat",
    "style": "solid",
    "flow": true,
-   "weight": "normal",
-   "label": "egress"
+   "weight": "thin",
+   "label": "route"
+  },
+  {
+   "from": "eks",
+   "to": "nat",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "outbound"
   },
   {
    "from": "nat",
    "to": "igw",
    "style": "solid",
    "flow": true,
-   "weight": "normal",
-   "label": "outbound"
+   "weight": "thin",
+   "label": "egress"
   },
   {
-   "from": "nat",
-   "to": "ext",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal",
-   "label": "fixed IP"
-  },
-  {
-   "from": "ssm",
-   "to": "ec2",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal",
-   "label": "session"
-  },
-  {
-   "from": "ps",
-   "to": "ec2",
-   "style": "dashed",
-   "flow": true,
-   "weight": "normal",
-   "label": "secret"
-  },
-  {
-   "from": "ec2",
-   "to": "cw",
+   "from": "vpc",
+   "to": "vpce",
    "style": "solid",
    "flow": true,
-   "weight": "normal",
+   "weight": "thin",
+   "label": "subnets"
+  },
+  {
+   "from": "eks",
+   "to": "vpce",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "private"
+  },
+  {
+   "from": "vpce",
+   "to": "s3",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "gateway endpoint"
+  },
+  {
+   "from": "vpc",
+   "to": "privatelink",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "endpoint"
+  },
+  {
+   "from": "nlb",
+   "to": "privatelink",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "endpoint service"
+  },
+  {
+   "from": "tgw",
+   "to": "vpc",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "attachment"
+  },
+  {
+   "from": "peering",
+   "to": "vpc",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "peer"
+  },
+  {
+   "from": "other",
+   "to": "tgw",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "attachment"
+  },
+  {
+   "from": "other",
+   "to": "peering",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "peer"
+  },
+  {
+   "from": "eks",
+   "to": "ebs",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "block"
+  },
+  {
+   "from": "eks",
+   "to": "efs",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "file"
+  },
+  {
+   "from": "eks",
+   "to": "s3",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "object"
+  },
+  {
+   "from": "iam",
+   "to": "eks",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
+   "label": "roles"
+  },
+  {
+   "from": "eks",
+   "to": "cloudwatch",
+   "style": "solid",
+   "flow": true,
+   "weight": "thin",
    "label": "metrics"
-  },
-  {
-   "from": "cw",
-   "to": "sns",
-   "style": "solid",
-   "flow": true,
-   "weight": "bold",
-   "label": "alarm"
   }
  ],
  "steps": [
   {
    "title": "Resolve",
-   "text": "Route 53 points the domain at CloudFront and the ALB.",
+   "text": "Route 53 answers the name and sends users to CloudFront.",
    "boxes": [
+    "users",
     "dns",
-    "cdn",
-    "alb"
+    "cdn"
    ],
    "wires": [
     [
-     "dns",
-     "cdn"
+     "users",
+     "dns"
     ],
     [
      "dns",
-     "alb"
+     "cdn"
     ]
    ]
   },
   {
-   "title": "Serve static",
-   "text": "CloudFront reads private S3 through OAC.",
+   "title": "Balance",
+   "text": "CloudFront reaches the ALB; the ALB and NLB forward to EKS.",
    "boxes": [
     "cdn",
-    "s3"
+    "alb",
+    "nlb",
+    "eks"
    ],
    "wires": [
     [
      "cdn",
-     "s3"
-    ]
-   ]
-  },
-  {
-   "title": "Terminate TLS",
-   "text": "The ALB decrypts with ACM and forwards to EC2.",
-   "boxes": [
-    "alb",
-    "ec2"
-   ],
-   "wires": [
+     "alb"
+    ],
     [
      "alb",
-     "ec2"
+     "eks"
+    ],
+    [
+     "nlb",
+     "eks"
     ]
    ]
   },
   {
    "title": "Egress",
-   "text": "EC2 leaves through NAT with one fixed IP.",
+   "text": "Pods leave through NAT, then the Internet Gateway.",
    "boxes": [
-    "ec2",
+    "eks",
     "nat",
-    "igw",
-    "ext"
+    "igw"
    ],
    "wires": [
     [
-     "ec2",
+     "eks",
      "nat"
     ],
     [
      "nat",
      "igw"
-    ],
-    [
-     "nat",
-     "ext"
     ]
    ]
   },
   {
-   "title": "Operate",
-   "text": "SSM gives access; CloudWatch alarms reach SNS.",
+   "title": "Private",
+   "text": "Endpoints and PrivateLink skip the internet.",
    "boxes": [
-    "ssm",
-    "ps",
-    "cw",
-    "sns"
+    "eks",
+    "vpce",
+    "s3",
+    "privatelink"
    ],
    "wires": [
     [
-     "ssm",
-     "ec2"
+     "eks",
+     "vpce"
     ],
     [
-     "ps",
-     "ec2"
+     "vpce",
+     "s3"
     ],
     [
-     "cw",
-     "sns"
+     "nlb",
+     "privatelink"
+    ]
+   ]
+  },
+  {
+   "title": "Connect",
+   "text": "Transit Gateway and peering join other networks.",
+   "boxes": [
+    "tgw",
+    "peering",
+    "other",
+    "vpc"
+   ],
+   "wires": [
+    [
+     "tgw",
+     "vpc"
+    ],
+    [
+     "peering",
+     "vpc"
+    ],
+    [
+     "other",
+     "tgw"
+    ],
+    [
+     "other",
+     "peering"
     ]
    ]
   }
  ],
  "declarations": [
   "Private subnets hide servers.",
-  "NAT presents one egress IP.",
-  "Session Manager replaces SSH.",
-  "Alarms page before users notice."
+  "Endpoints keep traffic off the internet.",
+  "ALB for HTTP, NLB for TCP.",
+  "Pick block, file or object storage."
  ],
  "run": {
-  "cmd": "aws ssm start-session --target i-0abc123",
+  "cmd": "aws ec2 describe-vpc-endpoints --query \"VpcEndpoints[].ServiceName\"",
   "lines": [
-   "Starting session with SessionId: ops-0f3a9c",
-   "sh-5.2$ docker ps --format '{{.Names}}'"
+   "com.amazonaws.eu-west-1.s3",
+   "com.amazonaws.eu-west-1.ecr.api"
   ]
  }
 }
