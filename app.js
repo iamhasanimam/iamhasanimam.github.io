@@ -1,5 +1,5 @@
 /* Portfolio SPA: hash routing, static JSON data, no build. All data text is inserted with textContent (no innerHTML on data). */
-import { parseRoute, nextRoute } from './route.js?v=20261129q';
+import { parseRoute, nextRoute } from './route.js?v=20261129r';
 (() => {
   'use strict';
 
@@ -8,7 +8,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261129q';
   const LINKEDIN_URL = 'https://www.linkedin.com/in/iamhasanimam';
   const TYPE_CODE_MS = 22; // code typing speed in the hero editor, git log and code blocks (ms per character)
   const PAUSE_MS = 1800;   // pause after a snippet is typed, before the next tab
-  const ASSET_V = '20261129q'; // cache-busting for dynamic imports; keep in sync with index.html
+  const ASSET_V = '20261129r'; // cache-busting for dynamic imports; keep in sync with index.html
 
   // Brand colours (tuned for the dark banner). Slugs missing from simple-icons get a monogram.
   const COLORS = {
@@ -798,7 +798,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261129q';
   // home architecture toggles: Architecture v1 | v2, and (v2 only) Infrastructure OpenStack | VMware ESXi | AWS
   const INFRA = [['openstack', 'OpenStack'], ['esxi', 'VMware ESXi'], ['aws', 'AWS'], ['gcp', 'GCP'], ['azure', 'Azure']];
   function homeState() {
-    const st = { arch: 'v2', infra: 'openstack' };
+    const st = { arch: 'v2', infra: 'aws' };
     try { const o = JSON.parse(sessionStorage.getItem('home-arch') || '{}'); if (o.arch === 'v1' || o.arch === 'v2') st.arch = o.arch; if (INFRA.some(([k]) => k === o.infra)) st.infra = o.infra; } catch (e) { /* ignore */ }
     try {
       const q = new URLSearchParams(location.search), hq = location.hash.includes('?') ? new URLSearchParams(location.hash.split('?')[1]) : new URLSearchParams();
