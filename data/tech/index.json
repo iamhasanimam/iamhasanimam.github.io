@@ -1,178 +1,178 @@
 [
-  {
-    "slug": "kong",
-    "name": "Kong",
-    "category": "API Gateway",
-    "icon": "kong",
-    "level": "hands-on",
-    "blurb": "API gateway: routes, plugins and declarative config."
-  },
-  {
-    "slug": "nginx",
-    "name": "NGINX",
-    "category": "Edge",
-    "icon": "nginx",
-    "level": "hands-on",
-    "blurb": "Reverse proxy, web server and TLS terminator."
-  },
-  {
-    "slug": "haproxy",
-    "name": "HAProxy",
-    "category": "Edge",
-    "icon": "haproxy",
-    "level": "hands-on",
-    "blurb": "L4/L7 load balancing with health checks and VRRP failover."
-  },
-  {
-    "slug": "kubernetes-okd",
-    "name": "Kubernetes",
-    "category": "Platform",
-    "icon": "kubernetes",
-    "level": "hands-on",
-    "blurb": "Container orchestration: Services, routing, rollouts and day-2 operations."
-  },
-  {
-    "slug": "istio",
-    "name": "Istio",
-    "category": "Service mesh",
-    "icon": "istio",
-    "level": "working",
-    "blurb": "Mesh traffic management, mTLS, VirtualService and DestinationRule."
-  },
-  {
-    "slug": "keycloak",
-    "name": "Keycloak",
-    "category": "Identity",
-    "icon": "keycloak",
-    "level": "hands-on",
-    "blurb": "Identity provider: realms, OIDC, tokens and JVM tuning."
-  },
-  {
-    "slug": "openbao",
-    "name": "Vault",
-    "category": "Secrets",
-    "icon": "vault",
-    "level": "hands-on",
-    "blurb": "Open-source secrets management: auth methods, policies, injection."
-  },
-  {
-    "slug": "docker",
-    "name": "Docker",
-    "category": "Containers",
-    "icon": "docker",
-    "level": "hands-on",
-    "blurb": "Images, bridge networks, embedded DNS and Compose."
-  },
-  {
-    "slug": "prometheus",
-    "name": "Prometheus",
-    "category": "Observability",
-    "icon": "prometheus",
-    "level": "hands-on",
-    "blurb": "Metrics, histograms, p95 and actionable alert rules."
-  },
-  {
-    "slug": "grafana",
-    "name": "Grafana",
-    "category": "Observability",
-    "icon": "grafana",
-    "level": "hands-on",
-    "blurb": "Dashboards and the four golden signals."
-  },
-  {
-    "slug": "loki-minio",
-    "name": "Loki + MinIO",
-    "category": "Observability",
-    "icon": "minio",
-    "level": "hands-on",
-    "blurb": "Log aggregation on object storage, tracing a failing request."
-  },
-  {
-    "slug": "kafka",
-    "name": "Kafka",
-    "category": "Data",
-    "icon": "apachekafka",
-    "level": "working",
-    "blurb": "Partitions, consumer groups, lag and advertised listeners."
-  },
-  {
-    "slug": "redis",
-    "name": "Redis",
-    "category": "Data",
-    "icon": "redis",
-    "level": "working",
-    "blurb": "Redis Cluster, slot maps, failover and eviction."
-  },
-  {
-    "slug": "postgresql",
-    "name": "PostgreSQL",
-    "category": "Data",
-    "icon": "postgresql",
-    "level": "working",
-    "blurb": "Relational store: replication, backups and connection management."
-  },
-  {
-    "slug": "jenkins",
-    "name": "Jenkins",
-    "category": "CI/CD",
-    "icon": "jenkins",
-    "level": "hands-on",
-    "blurb": "Pipelines as code with quality and security gates."
-  },
-  {
-    "slug": "k6",
-    "name": "k6",
-    "category": "Performance",
-    "icon": "k6",
-    "level": "working",
-    "blurb": "Load testing with thresholds to prove p95 targets."
-  },
-  {
-    "slug": "ansible",
-    "name": "Ansible",
-    "category": "Automation",
-    "icon": "ansible",
-    "level": "working",
-    "blurb": "Agentless, idempotent configuration management."
-  },
-  {
-    "slug": "linux-networking",
-    "name": "Linux Networking",
-    "category": "Foundations",
-    "icon": "linux",
-    "level": "hands-on",
-    "blurb": "veth, bridges, routing, iptables and VRRP."
-  },
-  {
-    "slug": "aws",
-    "name": "AWS",
-    "category": "Cloud",
-    "icon": "amazonaws",
-    "level": "working",
-    "blurb": "Multi-AZ VPC, ALB, private EC2 with SSM, S3 + CloudFront, CloudWatch."
-  },
-  {
-    "slug": "openstack",
-    "name": "OpenStack",
-    "category": "Infrastructure",
-    "icon": "openstack",
-    "level": "working",
-    "blurb": "Private IaaS: Nova, Neutron, Cinder, Keystone."
-  },
-  {
-    "slug": "vmware-esxi",
-    "name": "VMware ESXi",
-    "category": "Virtualization",
-    "icon": "vmware",
-    "level": "hands-on",
-    "blurb": "Bare-metal virtualisation, vSwitches and VDI."
-  },
-  {
-    "slug": "python",
-    "name": "Python",
-    "category": "Automation",
-    "icon": "python",
-    "level": "hands-on",
-    "blurb": "Ops scripting: health checks, log stats, cloud reports."
-  }
+ {
+  "slug": "kong",
+  "name": "Kong",
+  "category": "API Gateway",
+  "icon": "kong",
+  "level": "hands-on",
+  "blurb": "API gateway: routes, plugins and declarative config."
+ },
+ {
+  "slug": "nginx",
+  "name": "NGINX",
+  "category": "Edge",
+  "icon": "nginx",
+  "level": "hands-on",
+  "blurb": "Reverse proxy, web server and TLS terminator."
+ },
+ {
+  "slug": "haproxy",
+  "name": "HAProxy",
+  "category": "Edge",
+  "icon": "haproxy",
+  "level": "hands-on",
+  "blurb": "L4/L7 load balancing with health checks and VRRP failover."
+ },
+ {
+  "slug": "kubernetes-okd",
+  "name": "Kubernetes",
+  "category": "Platform",
+  "icon": "kubernetes",
+  "level": "hands-on",
+  "blurb": "Container orchestration: Services, routing, rollouts and day-2 operations."
+ },
+ {
+  "slug": "istio",
+  "name": "Istio",
+  "category": "Service mesh",
+  "icon": "istio",
+  "level": "working",
+  "blurb": "Four clusters, one mesh: mTLS, a shared root CA and a cluster gateway."
+ },
+ {
+  "slug": "keycloak",
+  "name": "Keycloak",
+  "category": "Identity",
+  "icon": "keycloak",
+  "level": "hands-on",
+  "blurb": "Identity provider: realms, OIDC, tokens and JVM tuning."
+ },
+ {
+  "slug": "openbao",
+  "name": "Vault",
+  "category": "Secrets",
+  "icon": "vault",
+  "level": "hands-on",
+  "blurb": "Open-source secrets management: auth methods, policies, injection."
+ },
+ {
+  "slug": "docker",
+  "name": "Docker",
+  "category": "Containers",
+  "icon": "docker",
+  "level": "hands-on",
+  "blurb": "Images, bridge networks, embedded DNS and Compose."
+ },
+ {
+  "slug": "prometheus",
+  "name": "Prometheus",
+  "category": "Observability",
+  "icon": "prometheus",
+  "level": "hands-on",
+  "blurb": "Metrics, histograms, p95 and actionable alert rules."
+ },
+ {
+  "slug": "grafana",
+  "name": "Grafana",
+  "category": "Observability",
+  "icon": "grafana",
+  "level": "hands-on",
+  "blurb": "Dashboards and the four golden signals."
+ },
+ {
+  "slug": "loki-minio",
+  "name": "Loki + MinIO",
+  "category": "Observability",
+  "icon": "minio",
+  "level": "hands-on",
+  "blurb": "Log aggregation on object storage, tracing a failing request."
+ },
+ {
+  "slug": "kafka",
+  "name": "Kafka",
+  "category": "Data",
+  "icon": "apachekafka",
+  "level": "working",
+  "blurb": "Partitions, consumer groups, lag and advertised listeners."
+ },
+ {
+  "slug": "redis",
+  "name": "Redis",
+  "category": "Data",
+  "icon": "redis",
+  "level": "working",
+  "blurb": "Redis Cluster, slot maps, failover and eviction."
+ },
+ {
+  "slug": "postgresql",
+  "name": "PostgreSQL",
+  "category": "Data",
+  "icon": "postgresql",
+  "level": "working",
+  "blurb": "Relational store: replication, backups and connection management."
+ },
+ {
+  "slug": "jenkins",
+  "name": "Jenkins",
+  "category": "CI/CD",
+  "icon": "jenkins",
+  "level": "hands-on",
+  "blurb": "Pipelines as code with quality and security gates."
+ },
+ {
+  "slug": "k6",
+  "name": "k6",
+  "category": "Performance",
+  "icon": "k6",
+  "level": "working",
+  "blurb": "Load testing with thresholds to prove p95 targets."
+ },
+ {
+  "slug": "ansible",
+  "name": "Ansible",
+  "category": "Automation",
+  "icon": "ansible",
+  "level": "working",
+  "blurb": "Agentless, idempotent configuration management."
+ },
+ {
+  "slug": "linux-networking",
+  "name": "Linux Networking",
+  "category": "Foundations",
+  "icon": "linux",
+  "level": "hands-on",
+  "blurb": "veth, bridges, routing, iptables and VRRP."
+ },
+ {
+  "slug": "aws",
+  "name": "AWS",
+  "category": "Cloud",
+  "icon": "amazonaws",
+  "level": "working",
+  "blurb": "Multi-AZ VPC, ALB, private EC2 with SSM, S3 + CloudFront, CloudWatch."
+ },
+ {
+  "slug": "openstack",
+  "name": "OpenStack",
+  "category": "Infrastructure",
+  "icon": "openstack",
+  "level": "working",
+  "blurb": "Private IaaS: Nova, Neutron, Cinder, Keystone."
+ },
+ {
+  "slug": "vmware-esxi",
+  "name": "VMware ESXi",
+  "category": "Virtualization",
+  "icon": "vmware",
+  "level": "hands-on",
+  "blurb": "Bare-metal virtualisation, vSwitches and VDI."
+ },
+ {
+  "slug": "python",
+  "name": "Python",
+  "category": "Automation",
+  "icon": "python",
+  "level": "hands-on",
+  "blurb": "Ops scripting: health checks, log stats, cloud reports."
+ }
 ]

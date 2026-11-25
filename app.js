@@ -1,5 +1,5 @@
 /* Portfolio SPA: hash routing, static JSON data, no build. All data text is inserted with textContent (no innerHTML on data). */
-import { parseRoute, nextRoute } from './route.js?v=20261129r';
+import { parseRoute, nextRoute } from './route.js?v=20261129s';
 (() => {
   'use strict';
 
@@ -8,7 +8,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261129r';
   const LINKEDIN_URL = 'https://www.linkedin.com/in/iamhasanimam';
   const TYPE_CODE_MS = 22; // code typing speed in the hero editor, git log and code blocks (ms per character)
   const PAUSE_MS = 1800;   // pause after a snippet is typed, before the next tab
-  const ASSET_V = '20261129r'; // cache-busting for dynamic imports; keep in sync with index.html
+  const ASSET_V = '20261129s'; // cache-busting for dynamic imports; keep in sync with index.html
 
   // Brand colours (tuned for the dark banner). Slugs missing from simple-icons get a monogram.
   const COLORS = {
@@ -271,7 +271,11 @@ import { parseRoute, nextRoute } from './route.js?v=20261129r';
     const mk = (arr) => h('ul', { class: 'bl' }, arr.map((x) => h('li', null, inlineNodes(x, lead !== false))));
     max = max || 7;
     if (items.length <= max) return mk(items);
-    return h('div', null, mk(items.slice(0, max)), h('details', { class: 'more' }, h('summary', null, 'More'), mk(items.slice(max))));
+    const ul = mk(items), extra = [...ul.children].slice(max), n = extra.length;
+    extra.forEach((li) => { li.hidden = true; });
+    const btn = h('button', { type: 'button', class: 'morebtn', 'aria-expanded': 'false' }, `+ ${n} more`);
+    btn.addEventListener('click', () => { const open = btn.getAttribute('aria-expanded') !== 'true'; extra.forEach((li) => { li.hidden = !open; }); btn.setAttribute('aria-expanded', String(open)); btn.textContent = open ? '− Show less' : `+ ${n} more`; });
+    return h('div', null, ul, btn);
   }
   const textBullets = (text, max, words) => bulletList(bulletize(text, words || 22), max);
 

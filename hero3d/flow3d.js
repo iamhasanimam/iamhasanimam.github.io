@@ -95,7 +95,7 @@ export async function mountFlow(container, spec = {}, opts = {}) {
   const boxesSpec = (spec.boxes || []).filter((b) => b && b.id);
   const ids = new Set(boxesSpec.map((b) => b.id));
   /* light NEON per zone (matched on the zone label), darkened a little for lines on the light theme */
-  const ZONE_NEON = [[/edge/i, '#7dffc4'], [/operations/i, '#c59bff'], [/api/i, '#5eeaff'], [/cluster|kubernetes/i, '#8fa8ff'], [/data/i, '#ff8fd8'], [/observ/i, '#c59bff'], [/infra/i, '#8ad8ff'], [/user|operator|actor|outside/i, '#c7d6ff']];
+  const ZONE_NEON = [[/cluster a/i, '#7dffc4'], [/cluster b/i, '#5eeaff'], [/cluster c/i, '#8fa8ff'], [/cluster d/i, '#ff8fd8'], [/edge/i, '#7dffc4'], [/operations/i, '#c59bff'], [/api/i, '#5eeaff'], [/cluster|kubernetes/i, '#8fa8ff'], [/data/i, '#ff8fd8'], [/observ/i, '#c59bff'], [/infra/i, '#8ad8ff'], [/user|operator|actor|outside/i, '#c7d6ff']];
   const FALLBACK_NEON = ['#7dffc4', '#5eeaff', '#8fa8ff', '#ff8fd8', '#c59bff', '#8ad8ff'];
   const layerLabels = new Map((spec.layers || []).map((l) => [l.layer, String(l.label || '')]));
   const neonCache = new Map(), lineCache = new Map();

@@ -576,3 +576,6 @@ details.more > summary { padding: 2px 0 6px var(--s4); list-style: none; cursor:
 .flow-ctl-l { font: 600 var(--t-sm) var(--font); letter-spacing: 0; color: var(--muted); }
 .flow-ctl .seg button { font: 600 var(--t-sm) var(--font); letter-spacing: 0; }
 .flow-bar .flow-ctl .flow-ctl-l, .flow-bar .flow-ctl .seg button { font-family: Inter, -apple-system, system-ui, sans-serif !important; font-size: 13px !important; font-weight: 600 !important; letter-spacing: 0 !important; line-height: 1 !important; }
+.morebtn { display: inline-block; margin: 2px 0 6px var(--s4, 16px); padding: 0; border: 0; background: none; color: var(--primary); font: 600 var(--t-sm, 13px) var(--font, inherit); cursor: pointer; }
+.morebtn:hover { text-decoration: underline; }
+.bl li[hidden] { display: none; }

@@ -1,399 +1,726 @@
 {
  "title": "Istio",
- "subtitle": "Gateway, routes, identity and policy over Kubernetes Services.",
+ "subtitle": "Four clusters, one mesh: shared trust, a gateway pod and a NodePort per cluster.",
  "layers": [
   {
    "layer": 0,
-   "label": "Edge"
+   "label": "Cluster D"
   },
   {
    "layer": 1,
-   "label": "Operators"
+   "label": "Cluster C"
   },
   {
    "layer": 2,
-   "label": "Platform"
-  }
- ],
- "groups": [
+   "label": "Cluster B"
+  },
   {
-   "id": "g-edge",
-   "label": "Mesh edge",
-   "boxes": [
-    "igw",
-    "ewgw"
-   ]
+   "layer": 3,
+   "label": "Cluster A"
+  },
+  {
+   "layer": 4,
+   "label": "Shared trust",
+   "kind": "outside",
+   "side": "left",
+   "arrange": "vertical"
+  },
+  {
+   "layer": 5,
+   "label": "Optional front",
+   "kind": "outside",
+   "side": "right",
+   "arrange": "vertical"
   }
  ],
+ "groups": [],
  "boxes": [
   {
-   "id": "client",
-   "label": "Client",
-   "tech": "Browser",
+   "id": "ca",
+   "label": "Shared Root CA",
+   "tech": "Shared Root CA",
    "icon": null,
-   "layer": 0,
+   "layer": 4,
    "col": 0,
    "row": 0,
-   "says": "Clients send HTTP and gRPC.",
-   "detail": "Requests enter through the mesh edge, so routing and policy rules apply first."
+   "says": "One root of trust for all four.",
+   "detail": "Each istiod gets an intermediate CA signed by this root, so a certificate from any cluster verifies in every cluster."
   },
   {
    "id": "lb",
-   "label": "Load Balancer",
-   "tech": "NGINX / HAProxy / cloud LB",
+   "label": "LB or VIP",
+   "tech": "LB or VIP",
    "icon": "nginx",
-   "layer": 0,
-   "col": 1,
+   "layer": 5,
+   "col": 0,
    "row": 0,
-   "says": "A load balancer fronts the gateway.",
-   "detail": "Targets the gateway NodePort or a LoadBalancer address and health-checks it.",
-   "href": "#/tech/nginx"
+   "says": "Optional: one stable address per cluster.",
+   "detail": "Add it when node IPs change, nodes fail, or a firewall wants one address. MetalLB, HAProxy with VRRP, or a cloud load balancer.",
+   "href": "#/tech/haproxy"
   },
   {
-   "id": "igw",
-   "label": "Ingress Gateway",
-   "tech": "Istio Gateway",
-   "icon": "istio",
-   "layer": 0,
-   "col": 2,
-   "row": 0,
-   "says": "The gateway admits traffic.",
-   "detail": "An Envoy proxy at the edge. Gateway opens ports and hosts; VirtualService binds to it."
-  },
-  {
-   "id": "ewgw",
-   "label": "Cluster Gateway",
-   "tech": "Istio cluster gateway",
-   "icon": "istio",
-   "layer": 0,
-   "col": 3,
-   "row": 0,
-   "says": "The cluster gateway links clusters.",
-   "detail": "Port 15443 with SNI passthrough carries mTLS traffic between networks."
-  },
-  {
-   "id": "istiod",
-   "label": "istiod",
+   "id": "istiod_a",
+   "label": "istiod A",
    "tech": "Istio istiod",
    "icon": "istio",
-   "layer": 1,
-   "col": 0,
-   "row": 0,
-   "says": "istiod programs every proxy.",
-   "detail": "Pushes xDS config to Envoys and issues SPIFFE certificates. Alternatives: Linkerd, Cilium, Consul."
-  },
-  {
-   "id": "vs",
-   "label": "VirtualService",
-   "tech": "Istio VirtualService",
-   "icon": null,
-   "layer": 1,
+   "layer": 3,
    "col": 1,
    "row": 0,
-   "says": "Routes match host and path.",
-   "detail": "Weights, timeouts and retries; binds to the gateway or mesh traffic."
+   "says": "Control plane: one istiod per cluster.",
+   "detail": "Issues certificates to local sidecars, pushes routes, and reads the other clusters' Services through a remote secret to find their endpoints."
   },
   {
-   "id": "dr",
-   "label": "DestinationRule",
-   "tech": "Istio DestinationRule",
-   "icon": null,
-   "layer": 1,
-   "col": 2,
-   "row": 0,
-   "says": "Subsets and traffic policy.",
-   "detail": "Defines stable and canary by label; adds outlier detection and pool limits."
-  },
-  {
-   "id": "authz",
-   "label": "AuthorizationPolicy",
-   "tech": "Istio AuthorizationPolicy",
-   "icon": null,
-   "layer": 1,
-   "col": 3,
-   "row": 0,
-   "says": "Policy allows by identity.",
-   "detail": "ALLOW or DENY by principal, method and path. PeerAuthentication sets STRICT mTLS."
-  },
-  {
-   "id": "k8s",
-   "label": "K8s Service",
-   "tech": "Kubernetes Service",
-   "icon": "kubernetes",
-   "layer": 2,
-   "col": 0,
-   "row": 0,
-   "says": "Services still name the workloads.",
-   "detail": "Mesh routing layers on top of Kubernetes Services and endpoints.",
-   "href": "#/tech/kubernetes-okd"
-  },
-  {
-   "id": "stable",
-   "label": "Stable Pods",
+   "id": "app_a",
+   "label": "Pods A",
    "tech": "Pod + Envoy sidecar",
-   "icon": "istio",
-   "layer": 2,
-   "col": 1,
-   "row": 0,
-   "says": "Sidecars enforce routes and mTLS.",
-   "detail": "Envoy intercepts pod traffic via iptables and presents the workload certificate.",
+   "icon": "kubernetes",
+   "layer": 3,
+   "col": 0,
+   "row": 1,
+   "says": "Data plane: sidecars speak mTLS to every peer.",
+   "detail": "Envoy runs beside each app on the worker nodes, holds a short-lived certificate and encrypts each call, in this cluster or another.",
    "inner": [
     {
-     "id": "envoy",
+     "id": "envoy_a",
      "label": "Envoy"
     },
     {
-     "id": "app",
+     "id": "svc_a",
      "label": "App"
     },
     {
-     "id": "cert",
-     "label": "Certificate"
+     "id": "cert_a",
+     "label": "Cert"
     }
    ]
   },
   {
-   "id": "canary",
-   "label": "Canary Pods",
-   "tech": "Pod + Envoy sidecar",
+   "id": "gw_a",
+   "label": "Gateway pod A",
+   "tech": "Istio cluster gateway",
+   "icon": "istio",
+   "layer": 3,
+   "col": 1,
+   "row": 1,
+   "says": "Data plane: a cross-cluster gateway for peers.",
+   "detail": "An Envoy pod on port 18443 with SNI passthrough: mTLS stays end to end. Its network label tells peers to route here."
+  },
+  {
+   "id": "np_a",
+   "label": "NodePort A",
+   "tech": "Kubernetes Service, NodePort",
+   "icon": "kubernetes",
+   "layer": 3,
+   "col": 2,
+   "row": 1,
+   "says": "Data plane: NodePort opens the gateway on every node.",
+   "detail": "Peers dial any node IP on the NodePort and the gateway pod receives it. On a private network no load balancer is needed.",
+   "href": "#/tech/kubernetes-okd"
+  },
+  {
+   "id": "istiod_b",
+   "label": "istiod B",
+   "tech": "Istio istiod",
    "icon": "istio",
    "layer": 2,
-   "col": 2,
+   "col": 1,
    "row": 0,
-   "says": "Canary takes a small weight.",
-   "detail": "Subset v2 receives a fraction of traffic until promoted."
+   "says": "Control plane: one istiod per cluster.",
+   "detail": "Issues certificates to local sidecars, pushes routes, and reads the other clusters' Services through a remote secret to find their endpoints."
+  },
+  {
+   "id": "app_b",
+   "label": "Pods B",
+   "tech": "Pod + Envoy sidecar",
+   "icon": "kubernetes",
+   "layer": 2,
+   "col": 0,
+   "row": 1,
+   "says": "Data plane: sidecars speak mTLS to every peer.",
+   "detail": "Envoy runs beside each app on the worker nodes, holds a short-lived certificate and encrypts each call, in this cluster or another.",
+   "inner": [
+    {
+     "id": "envoy_b",
+     "label": "Envoy"
+    },
+    {
+     "id": "svc_b",
+     "label": "App"
+    },
+    {
+     "id": "cert_b",
+     "label": "Cert"
+    }
+   ]
+  },
+  {
+   "id": "gw_b",
+   "label": "Gateway pod B",
+   "tech": "Istio cluster gateway",
+   "icon": "istio",
+   "layer": 2,
+   "col": 1,
+   "row": 1,
+   "says": "Data plane: a cross-cluster gateway for peers.",
+   "detail": "An Envoy pod on port 18443 with SNI passthrough: mTLS stays end to end. Its network label tells peers to route here."
+  },
+  {
+   "id": "np_b",
+   "label": "NodePort B",
+   "tech": "Kubernetes Service, NodePort",
+   "icon": "kubernetes",
+   "layer": 2,
+   "col": 2,
+   "row": 1,
+   "says": "Data plane: NodePort opens the gateway on every node.",
+   "detail": "Peers dial any node IP on the NodePort and the gateway pod receives it. On a private network no load balancer is needed.",
+   "href": "#/tech/kubernetes-okd"
+  },
+  {
+   "id": "istiod_c",
+   "label": "istiod C",
+   "tech": "Istio istiod",
+   "icon": "istio",
+   "layer": 1,
+   "col": 1,
+   "row": 0,
+   "says": "Control plane: one istiod per cluster.",
+   "detail": "Issues certificates to local sidecars, pushes routes, and reads the other clusters' Services through a remote secret to find their endpoints."
+  },
+  {
+   "id": "app_c",
+   "label": "Pods C",
+   "tech": "Pod + Envoy sidecar",
+   "icon": "kubernetes",
+   "layer": 1,
+   "col": 0,
+   "row": 1,
+   "says": "Data plane: sidecars speak mTLS to every peer.",
+   "detail": "Envoy runs beside each app on the worker nodes, holds a short-lived certificate and encrypts each call, in this cluster or another.",
+   "inner": [
+    {
+     "id": "envoy_c",
+     "label": "Envoy"
+    },
+    {
+     "id": "svc_c",
+     "label": "App"
+    },
+    {
+     "id": "cert_c",
+     "label": "Cert"
+    }
+   ]
+  },
+  {
+   "id": "gw_c",
+   "label": "Gateway pod C",
+   "tech": "Istio cluster gateway",
+   "icon": "istio",
+   "layer": 1,
+   "col": 1,
+   "row": 1,
+   "says": "Data plane: a cross-cluster gateway for peers.",
+   "detail": "An Envoy pod on port 18443 with SNI passthrough: mTLS stays end to end. Its network label tells peers to route here."
+  },
+  {
+   "id": "np_c",
+   "label": "NodePort C",
+   "tech": "Kubernetes Service, NodePort",
+   "icon": "kubernetes",
+   "layer": 1,
+   "col": 2,
+   "row": 1,
+   "says": "Data plane: NodePort opens the gateway on every node.",
+   "detail": "Peers dial any node IP on the NodePort and the gateway pod receives it. On a private network no load balancer is needed.",
+   "href": "#/tech/kubernetes-okd"
+  },
+  {
+   "id": "istiod_d",
+   "label": "istiod D",
+   "tech": "Istio istiod",
+   "icon": "istio",
+   "layer": 0,
+   "col": 1,
+   "row": 0,
+   "says": "Control plane: one istiod per cluster.",
+   "detail": "Issues certificates to local sidecars, pushes routes, and reads the other clusters' Services through a remote secret to find their endpoints."
+  },
+  {
+   "id": "app_d",
+   "label": "Pods D",
+   "tech": "Pod + Envoy sidecar",
+   "icon": "kubernetes",
+   "layer": 0,
+   "col": 0,
+   "row": 1,
+   "says": "Data plane: sidecars speak mTLS to every peer.",
+   "detail": "Envoy runs beside each app on the worker nodes, holds a short-lived certificate and encrypts each call, in this cluster or another.",
+   "inner": [
+    {
+     "id": "envoy_d",
+     "label": "Envoy"
+    },
+    {
+     "id": "svc_d",
+     "label": "App"
+    },
+    {
+     "id": "cert_d",
+     "label": "Cert"
+    }
+   ]
+  },
+  {
+   "id": "gw_d",
+   "label": "Gateway pod D",
+   "tech": "Istio cluster gateway",
+   "icon": "istio",
+   "layer": 0,
+   "col": 1,
+   "row": 1,
+   "says": "Data plane: a cross-cluster gateway for peers.",
+   "detail": "An Envoy pod on port 18443 with SNI passthrough: mTLS stays end to end. Its network label tells peers to route here."
+  },
+  {
+   "id": "np_d",
+   "label": "NodePort D",
+   "tech": "Kubernetes Service, NodePort",
+   "icon": "kubernetes",
+   "layer": 0,
+   "col": 2,
+   "row": 1,
+   "says": "Data plane: NodePort opens the gateway on every node.",
+   "detail": "Peers dial any node IP on the NodePort and the gateway pod receives it. On a private network no load balancer is needed.",
+   "href": "#/tech/kubernetes-okd"
   }
  ],
  "wires": [
   {
-   "from": "client",
-   "to": "lb",
-   "label": "HTTPS",
+   "from": "ca",
+   "to": "istiod_a",
+   "label": "root cert",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "ca",
+   "to": "istiod_b",
+   "label": "root cert",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "ca",
+   "to": "istiod_c",
+   "label": "root cert",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "ca",
+   "to": "istiod_d",
+   "label": "root cert",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "istiod_a",
+   "to": "app_a",
+   "label": "certs and routes",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "app_a",
+   "to": "gw_a",
+   "label": "remote calls",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "np_a",
+   "to": "gw_a",
+   "label": "forward",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "istiod_b",
+   "to": "app_b",
+   "label": "certs and routes",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "app_b",
+   "to": "gw_b",
+   "label": "remote calls",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "np_b",
+   "to": "gw_b",
+   "label": "forward",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "istiod_c",
+   "to": "app_c",
+   "label": "certs and routes",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "app_c",
+   "to": "gw_c",
+   "label": "remote calls",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "np_c",
+   "to": "gw_c",
+   "label": "forward",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "istiod_d",
+   "to": "app_d",
+   "label": "certs and routes",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "app_d",
+   "to": "gw_d",
+   "label": "remote calls",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "np_d",
+   "to": "gw_d",
+   "label": "forward",
+   "style": "solid",
+   "flow": true,
+   "weight": "normal"
+  },
+  {
+   "from": "istiod_a",
+   "to": "istiod_b",
+   "label": "discovers",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "gw_a",
+   "to": "np_b",
+   "label": "mTLS via NodePort",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "istiod_b",
+   "to": "istiod_c",
+   "label": "discovers",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "gw_b",
+   "to": "np_c",
+   "label": "mTLS via NodePort",
+   "style": "solid",
+   "flow": true,
+   "weight": "bold"
+  },
+  {
+   "from": "istiod_c",
+   "to": "istiod_d",
+   "label": "discovers",
+   "style": "dashed",
+   "flow": false,
+   "weight": "normal"
+  },
+  {
+   "from": "gw_c",
+   "to": "np_d",
+   "label": "mTLS via NodePort",
    "style": "solid",
    "flow": true,
    "weight": "bold"
   },
   {
    "from": "lb",
-   "to": "igw",
-   "label": "NodePort",
-   "style": "solid",
-   "flow": true,
-   "weight": "bold"
-  },
-  {
-   "from": "igw",
-   "to": "vs",
-   "label": "route",
-   "style": "solid",
-   "flow": true,
-   "weight": "bold"
-  },
-  {
-   "from": "vs",
-   "to": "dr",
-   "label": "subset",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "dr",
-   "to": "stable",
-   "label": "90%",
-   "style": "solid",
-   "flow": true,
-   "weight": "bold"
-  },
-  {
-   "from": "dr",
-   "to": "canary",
-   "label": "10%",
-   "style": "solid",
-   "flow": true,
-   "weight": "normal"
-  },
-  {
-   "from": "istiod",
-   "to": "vs",
-   "label": "xDS",
+   "to": "np_a",
+   "label": "optional",
    "style": "dashed",
    "flow": false,
    "weight": "normal"
   },
   {
-   "from": "istiod",
-   "to": "stable",
-   "label": "certs",
+   "from": "lb",
+   "to": "np_b",
+   "label": "optional",
    "style": "dashed",
    "flow": false,
    "weight": "normal"
   },
   {
-   "from": "authz",
-   "to": "stable",
-   "label": "allow / deny",
+   "from": "lb",
+   "to": "np_c",
+   "label": "optional",
    "style": "dashed",
    "flow": false,
    "weight": "normal"
   },
   {
-   "from": "k8s",
-   "to": "stable",
-   "label": "endpoints",
-   "style": "solid",
-   "flow": false,
-   "weight": "normal"
-  },
-  {
-   "from": "stable",
-   "to": "ewgw",
-   "label": "remote",
+   "from": "lb",
+   "to": "np_d",
+   "label": "optional",
    "style": "dashed",
-   "flow": false,
-   "weight": "normal"
-  },
-  {
-   "from": "istiod",
-   "to": "authz",
-   "style": "solid",
    "flow": false,
    "weight": "normal"
   }
  ],
  "tabs": [
   {
-   "id": "traffic",
-   "label": "Traffic",
+   "id": "trust",
+   "label": "mTLS",
    "focus": [
-    "client",
-    "lb",
-    "igw",
-    "vs",
-    "dr",
-    "stable",
-    "canary"
-   ]
-  },
-  {
-   "id": "security",
-   "label": "Security",
-   "focus": [
-    "istiod",
-    "authz",
-    "stable"
+    "ca",
+    "istiod_a",
+    "istiod_b",
+    "istiod_c",
+    "istiod_d",
+    "app_a",
+    "app_b",
+    "app_c",
+    "app_d"
    ]
   },
   {
    "id": "connect",
-   "label": "Connect",
+   "label": "Connectivity",
    "focus": [
-    "lb",
-    "igw",
-    "k8s",
-    "ewgw",
-    "stable"
+    "gw_a",
+    "gw_b",
+    "gw_c",
+    "gw_d",
+    "np_a",
+    "np_b",
+    "np_c",
+    "np_d",
+    "istiod_a",
+    "istiod_b",
+    "istiod_c",
+    "istiod_d"
+   ]
+  },
+  {
+   "id": "expose",
+   "label": "NodePort or LB",
+   "focus": [
+    "np_a",
+    "np_b",
+    "np_c",
+    "np_d",
+    "gw_a",
+    "gw_b",
+    "gw_c",
+    "gw_d",
+    "lb"
    ]
   }
  ],
  "steps": [
   {
-   "title": "Edge",
-   "text": "The load balancer reaches the gateway.",
+   "title": "Trust",
+   "text": "One root CA signs each cluster's istiod.",
    "boxes": [
-    "client",
-    "lb",
-    "igw"
+    "ca",
+    "istiod_a",
+    "istiod_b",
+    "istiod_c",
+    "istiod_d"
    ],
    "wires": [
     [
-     "client",
-     "lb"
+     "ca",
+     "istiod_a"
+    ],
+    [
+     "ca",
+     "istiod_b"
+    ],
+    [
+     "ca",
+     "istiod_c"
+    ],
+    [
+     "ca",
+     "istiod_d"
+    ]
+   ]
+  },
+  {
+   "title": "Identity",
+   "text": "Every istiod gives its sidecars certificates.",
+   "boxes": [
+    "istiod_a",
+    "istiod_b",
+    "istiod_c",
+    "istiod_d",
+    "app_a",
+    "app_b",
+    "app_c",
+    "app_d"
+   ],
+   "wires": [
+    [
+     "istiod_a",
+     "app_a"
+    ],
+    [
+     "istiod_b",
+     "app_b"
+    ],
+    [
+     "istiod_c",
+     "app_c"
+    ],
+    [
+     "istiod_d",
+     "app_d"
+    ]
+   ]
+  },
+  {
+   "title": "Discover",
+   "text": "Each istiod learns the other clusters' Services.",
+   "boxes": [
+    "istiod_a",
+    "istiod_b",
+    "istiod_c",
+    "istiod_d"
+   ],
+   "wires": [
+    [
+     "istiod_a",
+     "istiod_b"
+    ],
+    [
+     "istiod_b",
+     "istiod_c"
+    ],
+    [
+     "istiod_c",
+     "istiod_d"
+    ]
+   ]
+  },
+  {
+   "title": "Network",
+   "text": "Each cluster carries its own network label.",
+   "boxes": [
+    "istiod_a",
+    "istiod_b",
+    "istiod_c",
+    "istiod_d",
+    "gw_a",
+    "gw_b",
+    "gw_c",
+    "gw_d"
+   ],
+   "wires": []
+  },
+  {
+   "title": "Call",
+   "text": "A call to another cluster leaves by the gateway.",
+   "boxes": [
+    "app_a",
+    "gw_a",
+    "np_b",
+    "gw_b"
+   ],
+   "wires": [
+    [
+     "app_a",
+     "gw_a"
+    ],
+    [
+     "gw_a",
+     "np_b"
+    ],
+    [
+     "np_b",
+     "gw_b"
+    ]
+   ]
+  },
+  {
+   "title": "Expose",
+   "text": "NodePort is enough; a load balancer only adds a stable address.",
+   "boxes": [
+    "lb",
+    "np_a",
+    "np_b",
+    "np_c",
+    "np_d"
+   ],
+   "wires": [
+    [
+     "lb",
+     "np_a"
     ],
     [
      "lb",
-     "igw"
-    ]
-   ]
-  },
-  {
-   "title": "Route",
-   "text": "VirtualService picks the destination.",
-   "boxes": [
-    "igw",
-    "vs"
-   ],
-   "wires": [
-    [
-     "igw",
-     "vs"
-    ]
-   ]
-  },
-  {
-   "title": "Split",
-   "text": "Weights send 90 and 10 percent.",
-   "boxes": [
-    "vs",
-    "dr",
-    "stable",
-    "canary"
-   ],
-   "wires": [
-    [
-     "vs",
-     "dr"
+     "np_b"
     ],
     [
-     "dr",
-     "stable"
+     "lb",
+     "np_c"
     ],
     [
-     "dr",
-     "canary"
-    ]
-   ]
-  },
-  {
-   "title": "Inject",
-   "text": "istiod gives each sidecar a certificate.",
-   "boxes": [
-    "istiod",
-    "stable"
-   ],
-   "wires": [
-    [
-     "istiod",
-     "stable"
-    ]
-   ]
-  },
-  {
-   "title": "Enforce",
-   "text": "AuthorizationPolicy allows or drops.",
-   "boxes": [
-    "authz",
-    "stable"
-   ],
-   "wires": [
-    [
-     "authz",
-     "stable"
+     "lb",
+     "np_d"
     ]
    ]
   }
  ],
  "run": {
-  "cmd": "istioctl x describe pod frontend -n shop",
+  "cmd": "kubectl -n istio-system get svc cluster-gateway",
   "lines": [
-   "Route to subset stable weight 90, canary weight 10",
-   "Effective PeerAuthentication: STRICT"
+   "TYPE: NodePort",
+   "PORT(S): 18443:31843/TCP"
   ]
  },
  "declarations": [
-  "istiod programs the proxies.",
-  "Weights shift traffic safely.",
-  "mTLS proves identity.",
-  "Gateways bound the mesh."
+  "One root CA signs every cluster.",
+  "Each cluster runs its own istiod.",
+  "The gateway passes mTLS through.",
+  "NodePort plus gateway is enough privately."
  ]
 }

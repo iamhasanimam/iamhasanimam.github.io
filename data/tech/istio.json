@@ -4,133 +4,167 @@
  "category": "Service Mesh",
  "icon": "istio",
  "level": "hands-on",
- "tagline": "Routes, secures and observes service-to-service traffic with Envoy.",
+ "tagline": "Four Kubernetes clusters, one mesh: shared trust, an istiod and a cluster gateway in each.",
  "whatItIs": "",
  "howItWorks": [
   {
    "title": "What it is and where it sits",
-   "body": "Istio adds a programmable proxy layer beside every workload, so apps need no code changes.\nIt works at L4 for mTLS and TCP policy, and L7 for HTTP and gRPC routing.\nThe control plane is istiod; the data plane is Envoy sidecars or ambient ztunnel and waypoint proxies.\nIt lives in the Platform layer and complements Kubernetes Services rather than replacing them.\nUse it when you need canaries, mutual TLS and uniform telemetry across many services."
+   "body": "Istio adds a programmable proxy layer beside every workload, so apps need no code changes.\nIt works at L4 for mTLS and TCP policy, and L7 for HTTP and gRPC routing.\nHere it joins four Kubernetes clusters into one mesh: a service in cluster A calls a service in cluster D by its normal name.\nIt sits above the Kubernetes Services and below your edge proxy (HAProxy or NGINX with a floating address)."
   },
   {
    "title": "Components and architecture",
-   "body": "istiod is one binary: xDS config server, certificate authority and sidecar injection webhook.\nEnvoy sidecars intercept pod traffic with iptables redirect and enforce routes and policy.\nIngress and egress gateways are standalone Envoys at the mesh edge.\nAmbient mode splits the mesh: a node-level ztunnel for L4 and optional waypoint proxies for L7.\nSidecars cost memory in every pod; ambient avoids that cost but is a different operating model."
+   "body": "Shared root CA: one root of trust; each cluster gets its own intermediate CA signed by it.\nistiod (control plane), one per cluster: issues workload certificates, pushes routes and policy, and reads the other clusters' Services.\nPods with an Envoy sidecar (data plane): enforce routes and mTLS on every call, in this cluster or another.\nCluster gateway (data plane), one per cluster: an Envoy pod that lets the other clusters' sidecars reach Services here.\nNodePort Service, one per cluster: exposes the cluster gateway on every node. A load balancer or VIP in front is optional."
+  },
+  {
+   "title": "Four clusters, one mesh",
+   "body": "Install Istio in every cluster with the same mesh ID and one shared root CA; each cluster keeps its own istiod.\nEach istiod issues SPIFFE certificates from an intermediate CA signed by the common root, so a workload in cluster A can prove its identity to cluster D.\nEach istiod reads the other clusters' Services through a remote secret, so every sidecar knows every endpoint in all four clusters.\nA call to a Service in another cluster leaves through the local sidecar, reaches the peer's gateway pod on port 18443, and stays mTLS from sidecar to sidecar.\nThe gateway uses SNI passthrough: it routes by server name and never decrypts the traffic.\nEvery pair of clusters connects both ways; the diagram draws one direction per pair to stay readable."
+  },
+  {
+   "title": "Control plane and data plane",
+   "body": "The control plane is istiod: it issues workload certificates, pushes routes and policy, and watches the Kubernetes API. Each cluster in the diagram has its own.\nThe data plane is every Envoy that carries traffic: the sidecar next to each app on the worker nodes, and the gateway pods at the edge.\nIf a control plane goes down, running proxies keep their last configuration and keep serving traffic; only new config and new certificates wait.\nThe control plane never sits in the request path; the data plane does, so size and scale gateways, not istiod, for throughput."
+  },
+  {
+   "title": "What topology.istio.io/network does",
+   "body": "It is a label that names the network a workload lives on, for example topology.istio.io/network=network-a on the istio-system namespace and on the gateway.\nIstio compares networks: an endpoint on the same network is reached directly by its pod IP; an endpoint on another network is reached through that network's gateway.\nWith four clusters on four separate networks, give each its own value (network-a to network-d) so sidecars know when a peer needs the gateway path.\nTwo clusters with the same network label are treated as one flat network: pod IPs must be routable between them and no gateway is used.\nSet the matching network when you install Istio, and tell Istio the address peers should use for each network's gateway."
+  },
+  {
+   "title": "Kinds of gateway",
+   "body": "Ingress gateway: an Envoy pod at the mesh edge for traffic entering from outside (north-south). A Gateway resource opens ports and hosts; a VirtualService routes them.\nEgress gateway: an Envoy pod that traffic leaves through to external hosts, so exit traffic can be controlled and audited from one place.\nCluster gateway (the one in the four-cluster diagram): an Envoy pod that exposes port 18443 so sidecars in other clusters can reach Services here. It uses SNI passthrough, so mTLS stays end to end.\nA gateway is either defined with the Istio Gateway resource, which selects a gateway pod, or with the Kubernetes Gateway API, where Istio creates the pod for you.\nIn ambient mode the equivalent roles are played by waypoint proxies and a gateway per network."
+  },
+  {
+   "title": "Flat network or separate networks?",
+   "body": "Flat network (one network): pod IPs are routable between all clusters, so sidecars call remote pods directly. No gateway hop, but pod CIDRs must not overlap and the network must route them, usually with a VPN, BGP or a shared CNI fabric.\nSeparate networks (multi-network): clusters need not route pod IPs; traffic crosses through each cluster's gateway. Pod CIDRs may overlap, at the cost of one extra hop and gateways to scale.\nControl plane: multi-primary runs an istiod in every cluster, so each cluster survives alone. Primary-remote runs istiod in one or two clusters and the others use it: fewer istiods, but those clusters depend on it for new config.\nFor four clusters a common choice is multi-primary on separate networks. Choose a flat network only when the clusters genuinely share one routable fabric.\nEither way: one mesh ID, one shared root CA, a unique cluster name per cluster, and API access between clusters for endpoint discovery."
+  },
+  {
+   "title": "Load balancer or NodePort?",
+   "body": "NodePort plus the gateway pod is enough when the clusters share a private network: peers dial any node IP on the NodePort and kube-proxy hands the connection to the gateway pod.\nAdd a load balancer or VIP (MetalLB, HAProxy with VRRP, or a cloud load balancer) when node IPs change, a node can disappear, or a firewall rule wants one stable address per cluster.\nA load balancer here must be plain TCP passthrough on the gateway port; terminating TLS on it breaks cross-cluster mTLS.\nWith four clusters you need at most four addresses, one per cluster, never one balancer in front of all four.\nTell Istio which address peers should use for each cluster's gateway, and list two or more nodes so one failure does not cut a cluster off."
   },
   {
    "title": "Request flow",
-   "body": "The app calls a Service name as usual; the sidecar intercepts the outbound connection.\nEnvoy matches host and path against VirtualService rules and picks a destination subset.\nDestinationRule settings apply: load balancing, connection pool, outlier detection.\nEnvoy opens mTLS to the endpoint using its SPIFFE identity certificate.\nThe server-side proxy checks AuthorizationPolicy, then hands the request to the app."
+   "body": "The app calls a Service name as usual; the local sidecar intercepts the outbound connection.\nEnvoy matches the host against VirtualService rules and picks a destination; endpoints from all four clusters are candidates.\nA local endpoint is called directly. A remote one is called through that cluster's gateway: the sidecar opens mTLS to the NodePort address and the gateway passes it through untouched.\nThe remote sidecar checks the caller's certificate and AuthorizationPolicy, then hands the request to the app.\nFrom outside the mesh, traffic enters through the ingress gateway behind your edge proxy, then follows the same path."
   },
   {
    "title": "Configuration model",
-   "body": "Gateway opens ports and hosts at the edge; VirtualService binds routes to it or to mesh traffic.\nDestinationRule defines subsets by pod label plus traffic policy; apply it before weighted routes.\nServiceEntry adds external hosts; Sidecar resource limits what each proxy loads.\nPeerAuthentication sets mTLS mode; AuthorizationPolicy allows by identity, method and path.\nGateway API resources are the newer, vendor-neutral way to express edge and mesh routing."
+   "body": "Gateway opens ports and hosts at the edge; VirtualService binds routes to it or to mesh traffic.\nDestinationRule defines subsets by pod label plus traffic policy; apply it before weighted routes. A subset can span clusters: version v1 in A and v2 in B is a cross-cluster canary.\nA Service with the same name and namespace in several clusters is one logical service; keep namespaces identical.\nmeshNetworks maps each network to the address and port of its cluster gateway (the NodePort); the network label says which network a workload is on.\nPeerAuthentication sets mTLS (STRICT or PERMISSIVE); AuthorizationPolicy allows or denies by identity and is evaluated on the receiving sidecar."
   },
   {
    "title": "Connecting to its neighbours",
-   "body": "In front (Edge): an external balancer or NGINX forwards to the ingress gateway Service.\nEvery Gateway is backed by a Service of type LoadBalancer; without a balancer, use NodePort or MetalLB.\nBehind (Platform): sidecars route to Kubernetes Services and pods using the VirtualService rules.\nOutside the mesh, ServiceEntry adds external hosts; Prometheus and Grafana (Operators) consume mesh metrics.\nAn cluster gateway on port 15443 links clusters on different networks.\nSidecar mode suits fine-grained L7 per pod; ambient suits low overhead and mostly L4 mTLS."
+   "body": "In front (Edge): your edge proxy (HAProxy or NGINX with a floating address) forwards to the ingress gateway Service, usually a NodePort on bare metal.\nBeside (the other clusters): each cluster's cluster gateway, reached on a NodePort or a VIP; each istiod also needs to reach every peer's Kubernetes API for discovery.\nBehind (Platform): sidecars route to Kubernetes Services and pods using the VirtualService and DestinationRule rules.\nBeside (Operators): Prometheus and Grafana consume mesh metrics from every cluster."
   },
   {
    "title": "Security",
-   "body": "istiod issues short-lived workload certificates; rotation is automatic.\nPERMISSIVE accepts plaintext and mTLS; STRICT demands mTLS. Migrate in that order.\nAuthorizationPolicy is default-allow until an ALLOW policy selects a workload; then deny the rest.\nRequestAuthentication validates JWTs; pair it with AuthorizationPolicy to require them.\nMulti-cluster trust needs a shared root CA so certificates verify across clusters."
+   "body": "One root CA signs every cluster's intermediate CA, so a certificate from any cluster verifies in all four. Clusters with different roots cannot talk.\nistiod issues short-lived workload certificates; rotation is automatic. The trust domain stays the same across clusters, so identities such as cluster.local/ns/shop/sa/frontend mean the same thing everywhere.\nPERMISSIVE accepts plaintext and mTLS; STRICT demands mTLS. Migrate in that order, mesh-wide in istio-system once every client is meshed.\nAuthorizationPolicy is default-allow until an ALLOW policy selects a workload; then deny the rest. Cross-cluster callers are matched by the same principals.\nThe cluster gateway never decrypts cross-cluster traffic, so a compromised gateway pod cannot read it."
   },
   {
    "title": "Resilience, HA and scaling",
-   "body": "Run two or more istiod replicas with a PodDisruptionBudget; proxies keep last config if it is down.\nTimeouts, retries and outlier detection live in VirtualService and DestinationRule.\nSet retry attempts explicitly; stacked retries across hops multiply load.\nScale ingress gateways with HPA like any Deployment.\nUpgrade with revisions: install the new control plane, move namespaces by label, roll pods."
+   "body": "Multi-primary means each cluster has its own istiod; a cluster keeps working if the other three are down. Run two or more istiod replicas with a PodDisruptionBudget.\nProxies keep their last config if istiod is down; only new config and new certificates wait.\nOutlier detection ejects a failing endpoint, local or remote, so traffic shifts to healthy clusters.\nScale cluster gateways with replicas and spread them across nodes; the gateway, not istiod, carries cross-cluster throughput.\nA VIP (VRRP or MetalLB) per cluster gives peers one healthy address; without it, list two or more node addresses."
   },
   {
    "title": "Observability",
-   "body": "Every sidecar emits request count, duration and size metrics for Prometheus.\nAccess logs and Envoy tracing headers feed Grafana, Jaeger or Tempo and Kiali.\nGolden signals come free per workload without touching application code.\nAlert on 5xx rate and request p95 per destination service."
+   "body": "Every sidecar emits request count, duration and size metrics for Prometheus, tagged with source and destination cluster.\nAccess logs and Envoy tracing headers feed Grafana, Jaeger or Tempo and Kiali across all four clusters.\nGolden signals come free per workload without touching application code.\nAlert on 5xx rate and request p95 per destination service, and on proxies not SYNCED or a peer cluster not synced."
   },
   {
    "title": "Failure modes and troubleshooting",
-   "body": "istioctl analyze finds config errors before they cause failures.\nistioctl proxy-status shows which proxies are STALE or not SYNCED with istiod.\n503 with NR means no route; UH means no healthy upstream; UF is upstream connection failure.\nA missing DestinationRule subset is the classic cause of 503s after a VirtualService change.\nStrict mTLS resets plaintext callers; check that clients are injected before enforcing."
+   "body": "istioctl analyze finds config errors before they cause failures.\nistioctl remote-clusters shows whether each peer's remote secret is synced; a missing peer means no endpoints from that cluster.\nistioctl proxy-status shows which proxies are STALE or not SYNCED with istiod.\n503 with NR means no route; UH means no healthy upstream; UF is upstream connection failure. A remote cluster that is only reachable through a blocked NodePort shows as UF.\nCertificate errors across clusters almost always mean the clusters do not share one root CA, or the clocks differ."
   },
   {
    "title": "Alternatives",
-   "body": "Linkerd: choose it for a smaller, simpler mesh with automatic mTLS.\nCilium service mesh: choose it for an eBPF data plane without sidecars.\nConsul: choose it when VMs and Kubernetes share one mesh.\nNo mesh: Kubernetes Services plus Ingress are enough when you do not need mTLS or traffic splitting."
+   "body": "Linkerd: choose it for a smaller, simpler mesh with automatic mTLS and multi-cluster via service mirroring.\nCilium Cluster Mesh: choose it for an eBPF data plane and a flat pod network across clusters.\nConsul: choose it when VMs and Kubernetes share one mesh.\nNo mesh: Kubernetes Services plus Ingress are enough when you do not need mTLS or traffic splitting between clusters."
   }
  ],
  "flow": [
   "The client calls the Service name as normal.",
   "The sidecar intercepts the outbound connection through iptables redirect.",
-  "Envoy matches the host and applies VirtualService route rules.",
-  "Weights pick the subset: stable or canary.",
-  "DestinationRule applies load balancing, pool limits and outlier detection.",
-  "Envoy opens mTLS to the endpoint with its SPIFFE certificate.",
-  "The server sidecar checks AuthorizationPolicy and forwards to the app.",
-  "From outside, traffic enters through the ingress gateway first."
+  "Envoy matches the host and picks a destination from endpoints in all four clusters.",
+  "A local endpoint is called directly; a remote one goes through that cluster's gateway.",
+  "The sidecar opens mTLS to the NodePort address of the peer's cluster gateway.",
+  "The gateway passes the encrypted stream through to the right Service, using the TLS server name.",
+  "The remote sidecar verifies the certificate chain back to the shared root CA.",
+  "The remote sidecar checks AuthorizationPolicy and forwards to the app."
  ],
  "deploy": {
-  "summary": "Install Istio on one cluster, split traffic, expose the gateway, enforce mTLS.",
+  "summary": "Join four clusters into one mesh: shared root CA, istiod and a cluster gateway on a NodePort in each, then verify.",
   "prerequisites": [
-   "A Kubernetes cluster and kubectl",
-   "istioctl 1.24.1",
-   "Linux nodes with sudo and SSH",
+   "Four Kubernetes clusters with kubectl contexts, for example ctx-a, ctx-b, ctx-c and ctx-d",
+   "istioctl 1.24.1, openssl and make",
+   "Node addresses of every cluster reachable from the others on the NodePort range",
+   "Each istiod able to reach the other clusters' API servers (port 6443) for discovery",
    "Placeholders in <angle brackets> are yours to set"
   ],
   "steps": [
    {
-    "title": "Harden SSH on every node",
+    "title": "Create one shared root CA and an intermediate per cluster",
     "lang": "bash",
-    "code": "ssh-keygen -t ed25519 -C ops@<HOST> -f ~/.ssh/id_ed25519\nssh-copy-id -i ~/.ssh/id_ed25519.pub <USER>@<NODE_IP>\nprintf 'PasswordAuthentication no\\nPermitRootLogin no\\n' | sudo tee /etc/ssh/sshd_config.d/10-harden.conf\nsudo sshd -t && sudo systemctl reload ssh",
-    "note": "Test key login in a second session before reloading. The unit is sshd on RHEL-family hosts."
+    "code": "curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.24.1 sh -\ncd istio-1.24.1 && export PATH=$PWD/bin:$PATH\nmkdir -p certs && cd certs\nmake -f ../tools/certs/Makefile.selfsigned.mk root-ca\nfor c in a b c d; do make -f ../tools/certs/Makefile.selfsigned.mk cluster-$c-cacerts; done",
+    "note": "Keep the root key offline. Every cluster must be signed by the same root, or cross-cluster mTLS cannot work."
    },
    {
-    "title": "Static address and firewall",
+    "title": "Create the cacerts secret and the network label in each cluster",
     "lang": "bash",
-    "code": "# /etc/netplan/50-static.yaml (placeholders)\n# network: {version: 2, ethernets: {ens18: {addresses: [<NODE_IP>/24], routes: [{to: default, via: <GW>}], nameservers: {addresses: [<DNS_IP>]}}}}\nsudo netplan apply\nsudo ufw allow from <LB_CIDR> to any port 30000:32767 proto tcp\nsudo ufw allow from <NODE_CIDR> to any port 6443,10250 proto tcp",
-    "note": "Add a DNS A record for the API server. Restrict the NodePort range to your load balancer."
+    "code": "for c in a b c d; do\n  kubectl --context ctx-$c create namespace istio-system\n  kubectl --context ctx-$c create secret generic cacerts -n istio-system \\\n    --from-file=cluster-$c/ca-cert.pem --from-file=cluster-$c/ca-key.pem \\\n    --from-file=cluster-$c/root-cert.pem --from-file=cluster-$c/cert-chain.pem\n  kubectl --context ctx-$c label namespace istio-system topology.istio.io/network=network-$c\ndone",
+    "note": "Create the secret before installing Istio, or each cluster generates its own root. The label names the cluster's network."
    },
    {
-    "title": "Install istioctl and the control plane",
+    "title": "Install Istio in each cluster (multi-primary, separate networks)",
+    "lang": "yaml",
+    "code": "# cluster-a.yaml (repeat per cluster: cluster-b/network-b, and so on)\napiVersion: install.istio.io/v1alpha1\nkind: IstioOperator\nspec:\n  values:\n    global:\n      meshID: mesh1\n      multiCluster:\n        clusterName: cluster-a\n      network: network-a\n\n# istioctl install --context ctx-a -f cluster-a.yaml -y",
+    "note": "One meshID for all four, a unique clusterName and network for each. Pods must show the istiod running in every cluster."
+   },
+   {
+    "title": "Add the cluster gateway on a NodePort in each cluster",
     "lang": "bash",
-    "code": "curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.24.1 sh -\ncd istio-1.24.1 && export PATH=$PWD/bin:$PATH\nistioctl x precheck\nistioctl install --set profile=default -y\nkubectl -n istio-system get pods",
-    "note": "On bare metal there is no cloud LoadBalancer, so expose the ingress gateway through a NodePort or MetalLB."
+    "code": "# gateway deployment labelled with the network, service type NodePort\n# listener port <GW_PORT> (for example 18443), nodePort <NODE_PORT> (for example 31843)\nkubectl --context ctx-a -n istio-system get svc istio-clustergateway\n# then apply a Gateway on selector istio=clustergateway: a TLS server on <GW_PORT>,\n# passthrough mode, hosts *.local",
+    "note": "The gateway pod only passes encrypted traffic through. Label it with topology.istio.io/network=network-a, then repeat in B, C and D."
    },
    {
-    "title": "Inject the sidecar by annotation",
+    "title": "Tell each cluster where the other networks' gateways are",
     "lang": "yaml",
-    "code": "apiVersion: apps/v1\nkind: Deployment\nmetadata: {name: frontend-v1, namespace: shop}\nspec:\n  selector: {matchLabels: {app: frontend, version: v1}}\n  template:\n    metadata:\n      labels: {app: frontend, version: v1}\n      annotations:\n        sidecar.istio.io/inject: \"true\"\n    spec:\n      containers:\n        - name: frontend\n          image: <REGISTRY>/frontend:1.0.0",
-    "note": "First run kubectl label namespace shop istio-injection=enabled. Pods must show 2/2 ready."
+    "code": "# in cluster A's mesh config (repeat for B, C and D, listing the other three)\nmeshNetworks:\n  network-b:\n    endpoints: [{fromRegistry: cluster-b}]\n    gateways: [{address: <NODE_IP_B>, port: <NODE_PORT>}]\n  network-c:\n    endpoints: [{fromRegistry: cluster-c}]\n    gateways: [{address: <NODE_IP_C>, port: <NODE_PORT>}]\n  network-d:\n    endpoints: [{fromRegistry: cluster-d}]\n    gateways: [{address: <NODE_IP_D>, port: <NODE_PORT>}]",
+    "note": "With a VIP in front of the NodePort, use the VIP as the address. Without one, a node address works but does not follow node failures."
    },
    {
-    "title": "DestinationRule: subsets and outlier detection",
-    "lang": "yaml",
-    "code": "apiVersion: networking.istio.io/v1\nkind: DestinationRule\nmetadata: {name: frontend, namespace: shop}\nspec:\n  host: frontend\n  trafficPolicy:\n    outlierDetection: {consecutive5xxErrors: 3, interval: 10s, baseEjectionTime: 30s}\n  subsets:\n    - {name: stable, labels: {version: v1}}\n    - {name: canary, labels: {version: v2}}",
-    "note": "Apply this before the VirtualService. A missing subset returns 503 with NR or UH flags."
-   },
-   {
-    "title": "VirtualService: 90/10 to 0/100",
-    "lang": "yaml",
-    "code": "apiVersion: networking.istio.io/v1\nkind: VirtualService\nmetadata: {name: frontend, namespace: shop}\nspec:\n  hosts: [frontend]\n  http:\n    - route:\n        - {destination: {host: frontend, subset: stable}, weight: 90}\n        - {destination: {host: frontend, subset: canary}, weight: 10}\n      timeout: 3s\n      retries: {attempts: 2, perTryTimeout: 1s, retryOn: \"5xx,connect-failure\"}",
-    "note": "Raise canary to 50, then 100, by editing weights. Blue-green is 100/0 flipped to 0/100 in one apply."
-   },
-   {
-    "title": "STRICT mTLS and AuthorizationPolicy",
-    "lang": "yaml",
-    "code": "apiVersion: security.istio.io/v1\nkind: PeerAuthentication\nmetadata: {name: default, namespace: shop}\nspec: {mtls: {mode: STRICT}}\n---\napiVersion: security.istio.io/v1\nkind: AuthorizationPolicy\nmetadata: {name: frontend-allow, namespace: shop}\nspec:\n  selector: {matchLabels: {app: frontend}}\n  action: ALLOW\n  rules:\n    - from: [{source: {principals: [\"cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account\"]}}]\n      to: [{operation: {methods: [\"GET\"]}}]",
-    "note": "Once any ALLOW policy matches a workload, everything else is denied. Confirm meshed clients first."
-   },
-   {
-    "title": "Expose the ingress gateway",
+    "title": "Exchange remote secrets so every istiod discovers every peer",
     "lang": "bash",
-    "code": "cat <<'EOF' | kubectl apply -f -\napiVersion: networking.istio.io/v1\nkind: Gateway\nmetadata: {name: shop-gw, namespace: shop}\nspec:\n  selector: {istio: ingressgateway}\n  servers:\n    - port: {number: 80, name: http, protocol: HTTP}\n      hosts: [\"shop.example.com\"]\n---\napiVersion: networking.istio.io/v1\nkind: VirtualService\nmetadata: {name: frontend-edge, namespace: shop}\nspec:\n  hosts: [\"shop.example.com\"]\n  gateways: [shop-gw]\n  http:\n    - route: [{destination: {host: frontend, subset: stable}}]\nEOF\nkubectl -n istio-system patch svc istio-ingressgateway -p '{\"spec\":{\"type\":\"NodePort\"}}'\nNP=$(kubectl -n istio-system get svc istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name==\"http2\")].nodePort}')\ncurl -s -o /dev/null -w '%{http_code}\\n' -H 'Host: shop.example.com' http://<NODE_IP>:$NP/",
-    "note": "Point an external proxy at <NODE_IP>:$NP; on cloud keep LoadBalancer. shop.example.com is a placeholder."
+    "code": "for from in a b c d; do for to in a b c d; do\n  [ $from = $to ] && continue\n  istioctl create-remote-secret --context ctx-$from --name cluster-$from |\n    kubectl apply -f - --context ctx-$to\ndone; done\nistioctl remote-clusters --context ctx-a",
+    "note": "Twelve secrets for four clusters: each cluster reads the other three. The last command lists each peer as synced."
+   },
+   {
+    "title": "Test a call across clusters",
+    "lang": "bash",
+    "code": "for c in a b c d; do kubectl --context ctx-$c create namespace sample\n  kubectl --context ctx-$c label namespace sample istio-injection=enabled; done\n# helloworld v1 in cluster A, v2 in cluster B; sleep client in cluster A\nfor i in 1 2 3 4 5 6; do\n  kubectl --context ctx-a -n sample exec deploy/sleep -c sleep -- curl -sS helloworld.sample:5000/hello\ndone",
+    "note": "Replies alternate between v1 and v2: the second one came from another cluster, through its gateway, over mTLS."
+   },
+   {
+    "title": "Weighted routing across clusters",
+    "lang": "yaml",
+    "code": "apiVersion: networking.istio.io/v1\nkind: DestinationRule\nmetadata: {name: helloworld, namespace: sample}\nspec:\n  host: helloworld\n  trafficPolicy:\n    outlierDetection: {consecutive5xxErrors: 3, interval: 10s, baseEjectionTime: 30s}\n  subsets:\n    - {name: stable, labels: {version: v1}}\n    - {name: canary, labels: {version: v2}}\n---\napiVersion: networking.istio.io/v1\nkind: VirtualService\nmetadata: {name: helloworld, namespace: sample}\nspec:\n  hosts: [helloworld]\n  http:\n    - route:\n        - {destination: {host: helloworld, subset: stable}, weight: 90}\n        - {destination: {host: helloworld, subset: canary}, weight: 10}",
+    "note": "Apply the DestinationRule first. A subset spans clusters, so v1 in A and v2 in B is a cross-cluster canary."
+   },
+   {
+    "title": "STRICT mTLS across the mesh",
+    "lang": "yaml",
+    "code": "apiVersion: security.istio.io/v1\nkind: PeerAuthentication\nmetadata: {name: default, namespace: istio-system}\nspec: {mtls: {mode: STRICT}}",
+    "note": "Apply it in every cluster once all clients are meshed. Plaintext callers are reset, and so are other clusters' sidecars without certificates."
    }
   ]
  },
  "verify": [
-  "istioctl analyze -A reports no issues.",
-  "istioctl proxy-status shows every proxy SYNCED.",
-  "istioctl x describe pod <frontend-pod> -n shop shows STRICT mTLS and weights.",
-  "curl -H 'Host: shop.example.com' http://<NODE_IP>:$NP/ returns 200 via the gateway.",
-  "kubectl -n shop get pods shows 2/2 ready for injected workloads."
+  "istioctl analyze -A reports no issues in each cluster.",
+  "istioctl remote-clusters --context ctx-a lists cluster-b, cluster-c and cluster-d as synced.",
+  "istioctl proxy-status shows every proxy SYNCED in every cluster.",
+  "Calls to helloworld alternate between v1 and v2 across clusters.",
+  "istioctl proxy-config secret <pod> shows the same root certificate in all four clusters."
  ],
  "pitfalls": [
+  "Clusters with different root CAs cannot establish cross-cluster mTLS; create cacerts before installing Istio.",
+  "A duplicate clusterName or a missing network label makes remote endpoints invisible or misrouted.",
+  "A remote secret that is missing or blocked by the firewall means no endpoints from that cluster.",
+  "A load balancer that terminates TLS in front of the cluster gateway breaks cross-cluster mTLS.",
+  "Peers cannot reach a NodePort that a firewall blocks; open the NodePort range between the clusters.",
+  "A meshNetworks port that does not match the gateway NodePort fails with upstream connection errors.",
+  "Clock skew between clusters invalidates short-lived certificates.",
   "A missing subset in the DestinationRule returns 503 with NR or UH response flags.",
   "Enabling STRICT before every client is meshed resets plaintext callers.",
-  "Annotation needs the namespace injection label or revision; restart existing pods.",
-  "The Gateway selector must match the gateway pod labels, or no listener appears.",
-  "Clusters with different root CAs cannot establish cross-cluster mTLS.",
-  "A Gateway host that does not match the VirtualService hosts returns 404.",
   "Default retries plus your own retries multiply load; set attempts explicitly."
  ],
  "furtherReading": [
@@ -152,27 +186,31 @@
   }
  ],
  "keyPoints": [
-  "VirtualService and DestinationRule drive canary, blue-green and weighted splits.",
-  "The ingress gateway is a Service exposed by LoadBalancer or NodePort.",
-  "Strict mTLS plus AuthorizationPolicy decide which identity may call what.",
-  "Sidecar or ambient: same control plane, different data-plane cost."
+  "One shared root CA lets any cluster verify any other cluster's certificates.",
+  "Each cluster runs its own istiod (control plane); the sidecars and gateways are the data plane.",
+  "The cluster gateway passes mTLS through; NodePort plus the gateway is enough on a private network.",
+  "The network label tells Istio whether a peer is reached directly or through its gateway.",
+  "VirtualService and DestinationRule subsets drive canary and blue-green, even across clusters."
  ],
  "quickDeploy": [
-  "Install istioctl and the control plane.",
-  "Label the namespace for sidecar injection.",
-  "Apply DestinationRule subsets, then weighted VirtualService.",
-  "Expose the gateway, then enforce STRICT mTLS."
+  "Create one root CA and a cacerts secret per cluster.",
+  "Install Istio in each cluster with the same meshID and its own clusterName and network.",
+  "Add a cluster gateway on a NodePort, and list the peers in meshNetworks.",
+  "Exchange remote secrets, then test with helloworld across clusters.",
+  "Enforce STRICT mTLS mesh-wide."
  ],
  "osi": [
   "L4",
   "L7"
  ],
- "osiNote": "mTLS and TCP policy at L4; HTTP and gRPC routing at L7.",
+ "osiNote": "mTLS and TCP passthrough at L4; HTTP and gRPC routing at L7.",
  "production": [
-  "Run two or more istiod replicas with a PodDisruptionBudget.",
-  "Pin the Istio version; upgrade with revisions and canary the data plane.",
+  "Run multi-primary: an istiod in every cluster, with two or more replicas and a PodDisruptionBudget.",
+  "Use one mesh ID and one shared root CA across all clusters; give each its own intermediate CA and keep the root offline.",
+  "Put a VIP (VRRP or MetalLB) in front of each cluster gateway, or list two or more node addresses.",
+  "Pin the Istio version; upgrade with revisions, one cluster at a time, and canary the data plane.",
   "Set explicit timeouts, retries and outlier detection on every hot route.",
   "Keep PERMISSIVE until every client is meshed, then enforce STRICT.",
-  "Alert on 5xx rate, request p95 and proxies not SYNCED in istioctl proxy-status."
+  "Alert on 5xx rate, request p95, proxies not SYNCED and a peer cluster not synced."
  ]
 }
