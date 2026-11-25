@@ -62,13 +62,13 @@
   },
   {
    "id": "ewgw",
-   "label": "East-West GW",
-   "tech": "Istio east-west gateway",
+   "label": "Cluster Gateway",
+   "tech": "Istio cluster gateway",
    "icon": "istio",
    "layer": 0,
    "col": 3,
    "row": 0,
-   "says": "East-west links clusters.",
+   "says": "The cluster gateway links clusters.",
    "detail": "Port 15443 with SNI passthrough carries mTLS traffic between networks."
   },
   {

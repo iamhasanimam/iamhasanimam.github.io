@@ -25,7 +25,7 @@
   },
   {
    "title": "Connecting to its neighbours",
-   "body": "In front (Edge): an external balancer or NGINX forwards to the ingress gateway Service.\nEvery Gateway is backed by a Service of type LoadBalancer; without a balancer, use NodePort or MetalLB.\nBehind (Platform): sidecars route to Kubernetes Services and pods using the VirtualService rules.\nOutside the mesh, ServiceEntry adds external hosts; Prometheus and Grafana (Operators) consume mesh metrics.\nAn east-west gateway on port 15443 links clusters on different networks.\nSidecar mode suits fine-grained L7 per pod; ambient suits low overhead and mostly L4 mTLS."
+   "body": "In front (Edge): an external balancer or NGINX forwards to the ingress gateway Service.\nEvery Gateway is backed by a Service of type LoadBalancer; without a balancer, use NodePort or MetalLB.\nBehind (Platform): sidecars route to Kubernetes Services and pods using the VirtualService rules.\nOutside the mesh, ServiceEntry adds external hosts; Prometheus and Grafana (Operators) consume mesh metrics.\nAn cluster gateway on port 15443 links clusters on different networks.\nSidecar mode suits fine-grained L7 per pod; ambient suits low overhead and mostly L4 mTLS."
   },
   {
    "title": "Security",
