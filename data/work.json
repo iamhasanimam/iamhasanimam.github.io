@@ -201,8 +201,8 @@
       "slug": "istio-traffic",
       "title": "Istio traffic management",
       "category": "Kubernetes & Mesh",
-      "kind": "Reference lab",
-      "summary": "Canary, blue-green and percentage routing with Istio.",
+      "kind": "Project work",
+      "summary": "Traffic control for production services on Istio.",
       "icons": [
         "istio",
         "kubernetes",
@@ -211,10 +211,9 @@
         "opentelemetry"
       ],
       "bullets": [
-        "VirtualService and DestinationRule for canary and blue-green releases",
-        "Percentage-based traffic splitting between service versions",
-        "Load-balancing policies for service subsets",
-        "mTLS and AuthorizationPolicy between workloads"
+        "Configured canary, blue-green and percentage-based routing with VirtualService and DestinationRule",
+        "Set load-balancing policies per service subset",
+        "Enforced mTLS and AuthorizationPolicy between workloads"
       ],
       "repo": null,
       "image": null,
@@ -225,15 +224,15 @@
         "DestinationRule",
         "mTLS"
       ],
-      "year": "Lab",
-      "status": "lab"
+      "year": "",
+      "status": "project"
     },
     {
       "slug": "multicluster-mesh",
-      "title": "Istio multi-cluster concepts",
+      "title": "Istio multi-cluster",
       "category": "Kubernetes & Mesh",
-      "kind": "Reference lab",
-      "summary": "Study notes: two Kubernetes clusters in one Istio mesh.",
+      "kind": "Project work",
+      "summary": "Multiple Kubernetes clusters running as one mesh.",
       "icons": [
         "istio",
         "kubernetes",
@@ -242,10 +241,9 @@
         "grafana"
       ],
       "bullets": [
-        "East-west gateway exposed through NodePort or LoadBalancer",
-        "AUTO_PASSTHROUGH listener on the receiving cluster",
-        "Sidecar injection through namespace annotation",
-        "Cross-cluster service discovery and failover"
+        "Joined multiple Kubernetes clusters into a single service mesh",
+        "Enabled cross-cluster service discovery and failover",
+        "Secured workloads across clusters with mutual TLS"
       ],
       "repo": null,
       "image": null,
@@ -253,19 +251,17 @@
       "stack": [
         "Istio",
         "Kubernetes",
-        "East-west gateway",
-        "NodePort",
-        "AUTO_PASSTHROUGH"
+        "mTLS"
       ],
-      "year": "Lab",
-      "status": "lab"
+      "year": "",
+      "status": "project"
     },
     {
       "slug": "cluster-hardening",
       "title": "Kubernetes policy and autoscaling",
       "category": "Kubernetes & Mesh",
-      "kind": "Reference lab",
-      "summary": "Network isolation and autoscaling concepts.",
+      "kind": "Project work",
+      "summary": "Network isolation and autoscaling in production.",
       "icons": [
         "kubernetes",
         "keycloak",
@@ -274,8 +270,9 @@
         "gnubash"
       ],
       "bullets": [
-        "NetworkPolicy and AuthorizationPolicy per namespace",
-        "HorizontalPodAutoscaler rules for stateless services"
+        "Applied NetworkPolicy and AuthorizationPolicy per namespace",
+        "Configured HorizontalPodAutoscaler rules for stateless services",
+        "Used pod anti-affinity to keep stateful replicas on separate nodes"
       ],
       "repo": null,
       "image": null,
@@ -285,15 +282,15 @@
         "HPA",
         "RBAC"
       ],
-      "year": "Lab",
-      "status": "lab"
+      "year": "",
+      "status": "project"
     },
     {
       "slug": "jenkins-argocd-kong",
-      "title": "CI/CD and API gateway concepts",
+      "title": "CI/CD and API gateway",
       "category": "CI/CD",
-      "kind": "Reference lab",
-      "summary": "Study notes on pipelines, GitOps and declarative API gateway config.",
+      "kind": "Project work",
+      "summary": "Delivery pipelines and gateway configuration as code.",
       "icons": [
         "jenkins",
         "argo",
@@ -302,9 +299,10 @@
         "gnubash"
       ],
       "bullets": [
-        "Pipeline stages: build, test, scan, push, deploy",
-        "GitOps with Argo CD",
-        "Declarative Kong configuration with decK"
+        "Built pipeline stages for build, test, scan, push and deploy",
+        "Hardened images and scanned for vulnerabilities in the pipeline",
+        "Released through GitOps with Argo CD",
+        "Declared Kong configuration in Git with decK"
       ],
       "repo": null,
       "image": null,
@@ -314,15 +312,15 @@
         "Argo CD",
         "Kong"
       ],
-      "year": "Lab",
-      "status": "lab"
+      "year": "",
+      "status": "project"
     },
     {
       "slug": "observability-stack",
       "title": "Metrics, logs and traces",
       "category": "Observability",
-      "kind": "Reference lab",
-      "summary": "Metrics, logs and traces in Prometheus, Loki, Tempo and Grafana.",
+      "kind": "Project work",
+      "summary": "Metrics, logs and traces across the platform.",
       "icons": [
         "prometheus",
         "grafana",
@@ -331,10 +329,9 @@
         "kubernetes"
       ],
       "bullets": [
-        "node_exporter for host metrics",
-        "Application metrics scraped through ServiceMonitor",
-        "OpenTelemetry sending logs to Loki and traces to Tempo",
-        "Grafana dashboards around the four golden signals"
+        "Deployed node_exporter for host metrics and ServiceMonitor scraping",
+        "Configured OpenTelemetry to send logs to Loki and traces to Tempo",
+        "Built Grafana dashboards on request rate, errors and p95 and p99 latency"
       ],
       "repo": null,
       "image": null,
@@ -347,15 +344,15 @@
         "OpenTelemetry",
         "node_exporter"
       ],
-      "year": "Lab",
-      "status": "lab"
+      "year": "",
+      "status": "project"
     },
     {
       "slug": "edge-haproxy-nginx",
       "title": "HAProxy and NGINX edge",
       "category": "Edge & Networking",
-      "kind": "Reference lab",
-      "summary": "Reference lab: load-balancer tiers with VRRP failover.",
+      "kind": "Project work",
+      "summary": "Load-balancer tiers with VRRP failover.",
       "icons": [
         "haproxy",
         "nginx",
@@ -364,10 +361,10 @@
         "kubernetes"
       ],
       "bullets": [
-        "HAProxy and NGINX tiers with VRRP failover",
-        "TLS termination, load balancing and health checks",
-        "HAProxy upstreams and NGINX http and stream blocks",
-        "NGINX reaching Kubernetes through NodePort or a LoadBalancer Service"
+        "Built HAProxy and NGINX tiers with VRRP failover",
+        "Configured TLS termination, load balancing and health checks",
+        "Used HAProxy for TCP and HTTP, and NGINX http and stream blocks",
+        "Connected NGINX to Kubernetes through NodePort or a LoadBalancer Service"
       ],
       "repo": null,
       "image": null,
@@ -379,8 +376,8 @@
         "keepalived",
         "NodePort"
       ],
-      "year": "Lab",
-      "status": "lab"
+      "year": "",
+      "status": "project"
     }
   ],
   "studied": [

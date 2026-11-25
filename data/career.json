@@ -32,7 +32,7 @@
       "highlights": [
         "Istio service mesh with mTLS across multiple Kubernetes clusters",
         "6+ environments, each with its own Jenkins CI/CD pipeline",
-        "Highly available stateful Kafka, and Redis in sharded mode"
+        "Observability with Prometheus, Loki, Tempo and Grafana, fed by OpenTelemetry"
       ],
       "stack": [
         "Kubernetes",
@@ -105,7 +105,13 @@
           ]
         }
       ],
-      "outcome": "Achieved 400 req/s at p95 under 50 ms"
+      "outcome": "Achieved 400 req/s at p95 under 50 ms",
+      "quest": [
+        "Istio service mesh with mTLS across multiple Kubernetes clusters",
+        "Java microservices on Kubernetes with CPU and memory limits, Kustomize and autoscaling",
+        "APIOps on Kong with separate internal and external workspaces",
+        "Observability with Prometheus, Loki, Tempo and Grafana, fed by OpenTelemetry"
+      ]
     },
     {
       "company": "Wingify (VWO)",
@@ -116,6 +122,7 @@
       "summary": "Level 2 technical diagnostics and runbook authoring.",
       "highlights": [
         "Performed L2 diagnostics on customer issues",
+        "Debugged JavaScript SDK integration failures: async loading, CSP and SPA route-change events",
         "Wrote runbooks that cut average resolution time by 12%"
       ],
       "stack": [
@@ -264,7 +271,9 @@
       "end": "Dec 2021",
       "summary": "Built infrastructure for a remote-desktop service from the hardware up.",
       "highlights": [
-        "Built a secure remote-desktop platform from bare metal on VMware ESXi"
+        "Built a secure remote-desktop platform from bare metal on VMware ESXi",
+        "Provisioned Windows Server VMs from golden-image templates, with vSwitch WAN and LAN segmentation",
+        "Resolved RDP and network faults at OSI-layer level using ping, telnet and traceroute"
       ],
       "stack": [
         "VMware ESXi",
@@ -315,22 +324,11 @@
   "certs": [
     {
       "name": "AWS Certified Cloud Practitioner",
-      "issuer": "Amazon Web Services",
-      "date": "Sep 2025"
+      "issuer": "Amazon Web Services"
     },
     {
       "name": "Liongard Administrator",
       "issuer": "Liongard",
-      "date": null
-    },
-    {
-      "name": "ConnectWise Manage",
-      "issuer": "ConnectWise",
-      "date": null
-    },
-    {
-      "name": "ConnectWise Automate",
-      "issuer": "ConnectWise",
       "date": null
     },
     {

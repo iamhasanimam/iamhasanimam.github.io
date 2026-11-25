@@ -121,3 +121,11 @@
 @media (prefers-reduced-motion: reduce) {
   .quest *, .quest *::before, .quest *::after { animation: none !important; transition-duration: 0.01ms !important; }
 }
+.quest .q-more { margin: 10px 0 0; padding: 0; border: 0; background: none; font: inherit; font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; color: #0a84ff; cursor: pointer; text-decoration: none; }
+.quest .q-more:hover { text-decoration: underline; }
+.quest .q-more:focus-visible { outline: 2px solid #0a84ff; outline-offset: 3px; border-radius: 4px; }
+
+.quest .q-final-lv { margin: 4px 0 18px; display: grid; gap: 8px; justify-items: center; text-align: center; }
+.quest .q-final-lk { font-size: 11px; color: var(--q-accent); margin: 0; }
+.quest .q-final-lv .q-chips { display: flex !important; flex-wrap: wrap; justify-content: center; }
+.quest .q-hud-r, .quest .q-toast { display: none !important; }

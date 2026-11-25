@@ -1,5 +1,5 @@
 /* Portfolio SPA: hash routing, static JSON data, no build. All data text is inserted with textContent (no innerHTML on data). */
-import { parseRoute, nextRoute } from './route.js?v=20261128g';
+import { parseRoute, nextRoute } from './route.js?v=20261129q';
 (() => {
   'use strict';
 
@@ -8,7 +8,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261128g';
   const LINKEDIN_URL = 'https://www.linkedin.com/in/iamhasanimam';
   const TYPE_CODE_MS = 22; // code typing speed in the hero editor, git log and code blocks (ms per character)
   const PAUSE_MS = 1800;   // pause after a snippet is typed, before the next tab
-  const ASSET_V = '20261128g'; // cache-busting for dynamic imports; keep in sync with index.html
+  const ASSET_V = '20261129q'; // cache-busting for dynamic imports; keep in sync with index.html
 
   // Brand colours (tuned for the dark banner). Slugs missing from simple-icons get a monogram.
   const COLORS = {
@@ -464,7 +464,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261128g';
     });
     return wrap;
   }
-  let careerView = (() => { const v = new URLSearchParams(location.search).get('view'); return v === 'git' || v === 'quest' ? v : 'story'; })(); // Story is the default
+  let careerView = (() => { const v = new URLSearchParams(location.search).get('view'); return v === 'quest' ? v : 'story'; })(); // Story is the default
 
   // employer name plus its industry type (product based or service based); no logos
   const coTag = (r) => h('span', { class: 'ind-wrap' }, h('span', { class: 'ind ' + (/product/i.test(r.industry || '') ? 'prod' : 'svc') }, r.industry || ''), r.sector ? h('span', { class: 'sector' }, r.sector) : null);
@@ -496,7 +496,6 @@ import { parseRoute, nextRoute } from './route.js?v=20261128g';
     function paint() {
       stopQuest(); stopScroll(); const old = root.querySelector('.toolbar .q-skip'); if (old) old.remove();
       if (careerView === 'quest') paintQuest();
-      else if (careerView === 'git') { host.replaceChildren(gitLog(c, false)); reveal(host); }
       else paintStory();
     }
     async function paintQuest() {
@@ -507,11 +506,11 @@ import { parseRoute, nextRoute } from './route.js?v=20261128g';
         for (let k = 0; k < 40 && !qh.isConnected; k++) await new Promise((r) => setTimeout(r, 50));
         if (careerView !== 'quest' || !qh.isConnected) return;
         questMod = m;
-        await m.mountQuest(qh, { base: 'about:blank#', careerUrl: 'data/career.json', placeholder: true, onNavigate(hs) { navigate(hs); } });
+        await m.mountQuest(qh, { base: 'about:blank#', careerUrl: 'data/career.json', placeholder: true, onNavigate(hs) { navigate(hs); }, onMore(role) { careerView = 'story'; const sb = [...root.querySelectorAll('.toolbar button')].find((x) => /^Story$/.test(x.textContent.trim())); if (sb) sb.click(); else paint(); setTimeout(() => { const t = [...root.querySelectorAll('.rcard')].find((x) => x.dataset.co === role.company); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); t.classList.add('is-pick'); setTimeout(() => t.classList.remove('is-pick'), 2200); } }, 250); } });
         try { const sk = qh.querySelector('.q-skip'), tb = root.querySelector('.toolbar'); if (sk && tb && careerView === 'quest') tb.append(sk); } catch (e) { /* ignore */ }
       } catch (e) { careerView = 'story'; paintStory(); }
     }
-    root.append(h('div', { class: 'toolbar' }, seg(careerView, (v) => { careerView = v; paint(); }, [['quest', 'Quest'], ['story', 'Story'], ['git', 'git log']])), host);
+    root.append(h('div', { class: 'toolbar' }, seg(careerView, (v) => { careerView = v; paint(); }, [['quest', 'Quest'], ['story', 'Story']])), host);
     function paintStory() {
       const roles = orderedRoles(c, false); // newest first
       const first = roles[0], last = roles[roles.length - 1];
@@ -521,7 +520,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261128g';
       const story = h('div', { class: 'story' }, h('div', { class: 'path', 'aria-hidden': 'true' }, fill),
         roles.map((r) => {
           const p = roleParts(r);
-          return h('article', { class: 'rcard rv' + (p.current ? ' now' : '') },
+          return h('article', { class: 'rcard rv' + (p.current ? ' now' : ''), 'data-co': r.company },
             h('span', { class: 'node', 'aria-hidden': 'true' }),
             h('div', { class: 'ryear' }, p.years),
             h('h2', null, r.title), h('div', { class: 'cat co' }, h('span', null, [r.company, r.location].filter(Boolean).join(' \u00b7 ')), coTag(r)),
@@ -542,8 +541,12 @@ import { parseRoute, nextRoute } from './route.js?v=20261128g';
       upd(); reveal(host);
     }
     paint();
-    const rows = (title, arr) => arr && arr.length ? h('div', { class: 'card' }, h('h3', null, title),
-      h('ul', { class: 'plain' }, arr.map((x) => h('li', null, typeof x === 'string' ? x : [x.name || x.degree, x.institution || x.issuer, x.date || [x.start, x.end].filter(Boolean).join(' - ')].filter(Boolean).join(' \u00b7 '))))) : null;
+    const rows = (title, arr) => arr && arr.length ? h('div', { class: 'card cred' }, h('h3', null, title),
+      h('ul', { class: 'cred-list' }, arr.map((x) => {
+        if (typeof x === 'string') return h('li', null, h('b', null, x));
+        const name = x.name || x.degree, org = x.institution || x.issuer, when = x.date || [x.start, x.end].filter(Boolean).join(' - ');
+        return h('li', null, h('b', null, name || ''), [org, when].filter(Boolean).length ? h('span', null, [org, when].filter(Boolean).join(' · ')) : null);
+      }))) : null;
     root.append(h('div', { class: 'two mt6' }, rows('Education', c.education), rows('Certifications', c.certs)));
   }
 
@@ -580,14 +583,14 @@ import { parseRoute, nextRoute } from './route.js?v=20261128g';
     const more = h('div', { class: 'wk-more', hidden: true });
     card.append(...[
       h('div', { class: 'wk-icons', 'aria-hidden': 'true' }, p.icons.map((k) => h('span', { class: 'wk-ic' }, monoGlyph(k, k)))),
-      h('div', { class: 'wk-meta' }, [p.category, p.kind].filter(Boolean).join(' \u00b7 ')),
+      h('div', { class: 'wk-meta' }, p.category),
       h('h3', { class: 'wk-title', title: p.title }, p.title),
       h('p', { class: 'wk-sum' }, p.summary),
       h('ul', { class: 'wk-bul' }, p.bullets.slice(0, 3).map(bulletLi)),
       more,
       h('div', { class: 'wk-foot' },
         p.repo ? h('a', { class: 'btn wk-repo', href: p.repo, target: '_blank', rel: 'noopener noreferrer', onclick: (e) => e.stopPropagation() }, h('span', { class: 'wk-gh', 'aria-hidden': 'true' }, glyph('github', 'GH')), 'Repo')
-          : h('span', { class: 'badge ' + (/lab/i.test(p.kind) ? '' : 'soon') }, /lab/i.test(p.kind) ? 'Lab' : 'Coming soon'),
+          : h('span', { class: 'badge soon' }, 'Coming soon'),
         p.year ? h('span', { class: 'wk-year' }, fmtYears(p.year)) : null)].filter(Boolean));
     if (open) {
       if (p.image) more.append(h('img', { class: 'wk-img', src: p.image, alt: p.imageAlt || '', loading: 'lazy', decoding: 'async' }));
@@ -600,7 +603,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261128g';
     }
     return card;
   }
-  const workRank = (p) => (/shipped/i.test(p.status) ? 0 : 1) * 10 + (/personal/i.test(p.kind) ? 0 : 1);
+  const workRank = (p) => (/^project work/i.test(p.kind) ? 0 : /shipped/i.test(p.status) ? 10 : 20);
 
   function projectCard(p) {
     const repo = safeUrl(p.repo), demo = safeUrl(p.demo);
@@ -615,17 +618,18 @@ import { parseRoute, nextRoute } from './route.js?v=20261128g';
 
   async function projectsPage(root) {
     root.append(h('h1', { class: 'big-h' }, 'Work'));
-    const { projects, studied } = await loadWork();
+    const { projects: _pw, studied } = await loadWork();
+    const projects = _pw.slice().sort((a, b) => workRank(a) - workRank(b));
     if (!projects.length) { root.append(comingCard()); return; }
     const CATS = ['Cloud', 'Kubernetes & Mesh', 'CI/CD', 'Virtualization', 'Observability', 'Edge & Networking', 'Automation'];
     const present = new Set(projects.map((p) => p.category));
     const cats = CATS.filter((c) => present.has(c)).concat([...present].filter((c) => !CATS.includes(c)));
-    let cat = null, kind = 'all';
+    let cat = null;
     const gridEl = h('div', { class: 'grid work' });
     const chipsEl = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by category' });
     const paint = () => {
       gridEl.textContent = '';
-      projects.filter((p) => (!cat || p.category === cat) && (kind === 'all' || (kind === 'personal' ? /personal/i.test(p.kind) : /lab/i.test(p.kind))))
+      projects.filter((p) => !cat || p.category === cat)
         .forEach((p) => gridEl.append(workCard(p, { expand: true })));
       if (!gridEl.childNodes.length) gridEl.append(comingCard('Nothing here yet.'));
       chipsEl.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.c || null) === cat)));
@@ -633,9 +637,7 @@ import { parseRoute, nextRoute } from './route.js?v=20261128g';
     };
     chipsEl.append(h('button', { type: 'button', class: 'chip', 'data-c': '', onclick: () => { cat = null; paint(); } }, 'All'));
     cats.forEach((c) => chipsEl.append(h('button', { type: 'button', class: 'chip', 'data-c': c, onclick: () => { cat = c; paint(); } }, c)));
-    const kseg = seg(kind, (v) => { kind = v; paint(); }, [['all', 'All'], ['personal', 'Personal'], ['production', 'Labs']]);
-    kseg.setAttribute('aria-label', 'Kind');
-    root.append(h('div', { class: 'toolbar' }, chipsEl, kseg), gridEl);
+    root.append(h('div', { class: 'toolbar' }, chipsEl), gridEl);
     paint();
   }
 

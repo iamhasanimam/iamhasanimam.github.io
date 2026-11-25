@@ -119,15 +119,12 @@ function createQuest(host, opts) {
       el('span', 'q-impact-v', im, role.impact.value);
       el('span', 'q-impact-l', im, role.impact.label);
     }
-    let budget = 35 - wc(role.headline) - wc(role.impact && role.impact.label);
     const ul = el('ul', 'q-bul', c);
-    for (const h of role.highlights || []) {
-      const n = wc(h);
-      if (ul.children.length >= 3 || (ul.children.length >= 1 && budget - n < 0)) break;
-      el('li', '', ul, h); budget -= n;
-    }
+    (role.quest && role.quest.length ? role.quest : (role.highlights || []).slice(0, 3)).forEach((h) => el('li', '', ul, h));
     const chips = el('div', 'q-chips', c);
     (role.stack || []).slice(0, 5).forEach((s) => el('span', 'q-chip', chips, s));
+    const more = el('button', 'q-more', c, 'see more'); more.type = 'button'; more.setAttribute('aria-label', 'See more about ' + (role.company || 'this role') + ' in the career story');
+    more.onclick = (e) => { e.stopPropagation(); if (opts.onMore) opts.onMore(role); else navigate('#/career'); };
     top.setAttribute('aria-hidden', 'false');
     return hd;
   }
@@ -149,6 +146,15 @@ function createQuest(host, opts) {
     [['6+', 'years of experience'], ['5', 'roles, one path'], ['400 req/s', 'p95 under 50 ms']].forEach(([v, l]) => {
       const li = el('li', '', st); el('b', '', li, v); el('span', '', li, l);
     });
+    const cur = roles[roles.length - 1];
+    if (cur && cur.levels && cur.levels.length) {
+      const lv = el('div', 'q-final-lv', f);
+      el('p', 'q-mono q-final-lk', lv, 'WHAT I RUN IN PRODUCTION');
+      const cp = el('div', 'q-chips', lv);
+      cur.levels.forEach((l) => el('span', 'q-chip', cp, `${l.level} · ${(l.items || []).length}`));
+      const sm = el('button', 'q-more', lv, 'see the full story'); sm.type = 'button';
+      sm.onclick = () => { if (opts.onMore) opts.onMore(cur); else navigate('#/career'); };
+    }
     const row = el('div', 'q-final-btns', f);
     const a = el('a', 'q-btn q-primary', row, 'Connect on LinkedIn'); a.href = LINKEDIN; a.target = '_blank'; a.rel = 'noopener noreferrer';
     const b = btn('See the work', '', row); b.onclick = () => navigate('#/projects');
